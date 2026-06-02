@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monday CRE Square Connected Map</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --ink: #142033;
+      --muted: #536171;
+      --line: #64748b;
+      --blue: #1f5fbf;
+      --green: #16795b;
+      --orange: #b85c00;
+      --purple: #6f42c1;
+      --red: #b42318;
+      --teal: #0f766e;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); font-family: Inter, Arial, Helvetica, sans-serif; color: var(--ink); }
+    .canvas { position: relative; width: 940px; height: 940px; background: var(--bg); padding: 28px 34px; }
+    h1 { margin: 0; font-size: 32px; line-height: 1.05; }
+    .sub { margin: 8px 0 0; color: var(--muted); font-size: 17px; }
+    .box {
+      position: absolute;
+      background: #fff;
+      border: 2px solid #c8d2df;
+      border-left-width: 7px;
+      border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: 0 7px 15px rgba(20, 32, 51, 0.06);
+    }
+    .box h2 { margin: 0 0 7px; font-size: 18px; line-height: 1.05; }
+    .box p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.25; }
+    .core {
+      position: absolute;
+      left: 320px;
+      top: 116px;
+      width: 300px;
+      height: 110px;
+      background: #12213d;
+      color: #fff;
+      border-radius: 14px;
+      padding: 18px 20px;
+      text-align: center;
+      box-shadow: 0 10px 22px rgba(20, 32, 51, 0.18);
+    }
+    .core h2 { margin: 0 0 8px; color: #fff; font-size: 24px; }
+    .core p { margin: 4px 0; color: #e8eef8; font-size: 14px; }
+    .main { left: 320px; width: 300px; min-height: 82px; }
+    .side { width: 230px; min-height: 86px; }
+    .left { left: 45px; }
+    .right { left: 665px; }
+    .blue { border-left-color: var(--blue); }
+    .green { border-left-color: var(--green); }
+    .orange { border-left-color: var(--orange); }
+    .purple { border-left-color: var(--purple); }
+    .red { border-left-color: var(--red); }
+    .teal { border-left-color: var(--teal); }
+    .intake { top: 260px; }
+    .runner { top: 260px; }
+    .exports { top: 260px; }
+    .queue { top: 390px; }
+    .titlepro { top: 505px; }
+    .sos { top: 505px; }
+    .owner { top: 525px; }
+    .packet { top: 635px; }
+    .sync { top: 635px; }
+    .proofs { top: 755px; }
+    .rule {
+      position: absolute;
+      left: 45px;
+      bottom: 28px;
+      width: 850px;
+      min-height: 52px;
+      border: 2px solid var(--red);
+      background: #fff7f7;
+      border-radius: 9px;
+      padding: 12px 16px;
+      color: #5c1b16;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+    .rule strong { color: var(--ink); }
+    svg.lines { position: absolute; inset: 0; pointer-events: none; }
+    .arrow { fill: none; stroke: var(--line); stroke-width: 3.3; marker-end: url(#arrow); }
+    .blueLine { stroke: var(--blue); }
+    .greenLine { stroke: var(--green); }
+    .orangeLine { stroke: var(--orange); }
+    .tealLine { stroke: var(--teal); }
+    .purpleLine { stroke: var(--purple); }
+    .redLine { stroke: var(--red); stroke-dasharray: 7 7; marker-end: url(#redArrow); }
+  </style>
+</head>
+<body>
+  <main class="canvas">
+    <h1>Monday CRE Workflow</h1>
+    <p class="sub">Connected boxes showing the distressed-CRE workflow from intake to packet.</p>
+
+    <svg class="lines" width="940" height="940" viewBox="0 0 940 940" aria-hidden="true">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+        </marker>
+        <marker id="redArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#b42318"/>
+        </marker>
+      </defs>
+      <path class="arrow greenLine" d="M 470 226 L 470 260"/>
+      <path class="arrow blueLine" d="M 275 305 L 320 305"/>
+      <path class="arrow blueLine" d="M 665 305 L 620 305"/>
+      <path class="arrow greenLine" d="M 470 342 L 470 390"/>
+      <path class="arrow orangeLine" d="M 470 472 L 470 525"/>
+      <path class="arrow tealLine" d="M 275 548 C 295 548 300 560 320 565"/>
+      <path class="arrow tealLine" d="M 665 548 C 645 548 640 560 620 565"/>
+      <path class="arrow purpleLine" d="M 470 615 L 470 635"/>
+      <path class="arrow greenLine" d="M 470 717 L 470 755"/>
+      <path class="arrow redLine" d="M 620 675 C 640 675 650 675 665 675"/>
+      <path class="arrow redLine" d="M 620 790 C 670 790 700 724 735 717"/>
+    </svg>
+
+    <section class="core">
+      <h2>Monday CRE Core</h2>
+      <p>Evidence before claims</p>
+      <p>Roles stay separate</p>
+      <p>External actions need gates</p>
+    </section>
+
+    <section class="box side left blue intake">
+      <h2>Intake Sources</h2>
+      <p>PropertyRadar digest<br>Gmail full-body read<br>CSV batch export</p>
+    </section>
+
+    <section class="box main green runner">
+      <h2>Local Dry-Run Runner</h2>
+      <p>Parse, normalize, dedupe<br>Create previews, no external writes</p>
+    </section>
+
+    <section class="box side right blue exports">
+      <h2>Monday Exports</h2>
+      <p>Workflow map<br>Stages and subitems<br>Read-only lookup</p>
+    </section>
+
+    <section class="box main orange queue">
+      <h2>Preview Queues</h2>
+      <p>Monday action queue<br>TitlePro approval queue<br>Status + owner tasks</p>
+    </section>
+
+    <section class="box side left teal titlepro">
+      <h2>TitlePro Evidence</h2>
+      <p>Broker approval<br>Serial pull only<br>Download actual PDF</p>
+    </section>
+
+    <section class="box side right teal sos">
+      <h2>SOS / Status / Contacts</h2>
+      <p>Entity trace<br>Trustee status<br>Manual pasteback</p>
+    </section>
+
+    <section class="box main purple owner">
+      <h2>Owner / Control Review</h2>
+      <p>Title owner vs borrower/lender<br>Agents/trustees are service roles</p>
+    </section>
+
+    <section class="box main green packet">
+      <h2>Broker Packet</h2>
+      <p>HTML report + XLSX packet<br>Maps, visuals, caveats, next actions</p>
+    </section>
+
+    <section class="box side right red sync">
+      <h2>Optional Monday Sync</h2>
+      <p>Only after board, group, columns, rollback, broker approval</p>
+    </section>
+
+    <section class="box main red proofs">
+      <h2>Safety Proofs</h2>
+      <p>Tests, skill proof, safety audit<br>Forbidden counters stay zero</p>
+    </section>
+
+    <section class="rule">
+      <strong>Hard rule:</strong> owner strings, LLC clusters, agents, lawyers, trustees, lenders, and contacts are research leads, not final owner/control claims.
+    </section>
+  </main>
+</body>
+</html>
