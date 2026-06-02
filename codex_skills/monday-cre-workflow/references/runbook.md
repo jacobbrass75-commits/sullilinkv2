@@ -246,6 +246,7 @@ cd codex-monday-digest
 CODEX_PYTHON_BIN=/path/to/python-with-openpyxl PROPERTYRADAR_BATCH_CSV=/path/to/export.csv npm test
 npm run proof:skill
 npm run proof:skill-pack
+npm run proof:source-audit-real
 ```
 
 For share packets:

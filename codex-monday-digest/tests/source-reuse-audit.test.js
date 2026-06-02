@@ -35,6 +35,7 @@ test("source-audit maps SullyLink references without exposing old secrets or loc
   const recommendations = JSON.parse(fs.readFileSync(path.join(out, "source_reuse_recommendations.json"), "utf8"));
   const contract = JSON.parse(fs.readFileSync(path.join(out, "source_reuse_contract.json"), "utf8"));
   const risks = JSON.parse(fs.readFileSync(path.join(out, "source_risk_scan.json"), "utf8"));
+  const manifest = JSON.parse(fs.readFileSync(path.join(out, "run_manifest.json"), "utf8"));
   const auditText = fs.readFileSync(path.join(out, "source_reuse_audit.json"), "utf8");
   const planText = fs.readFileSync(path.join(out, "source_reuse_plan.md"), "utf8");
   const byId = Object.fromEntries(recommendations.map((row) => [row.id, row]));
@@ -51,6 +52,15 @@ test("source-audit maps SullyLink references without exposing old secrets or loc
   assert.ok(lanesById.titlepro_serial_worker.current_runner_surface.includes("titlepro-confirm"));
   assert.ok(lanesById.titlepro_serial_worker.blocked_actions.includes("paid_action"));
   assert.match(planText, /Runner Contract/);
+  assert.equal(manifest.output_path_scope, "run_folder_relative");
+  assert.deepEqual(manifest.output_paths, [
+    "source_reuse_audit.json",
+    "source_reuse_recommendations.json",
+    "source_reuse_contract.json",
+    "source_risk_scan.json",
+    "source_reuse_plan.md",
+    "run_manifest.json"
+  ]);
   assert.ok(risks.risk_categories.some((row) => row.id === "env_or_credentials"));
   assert.ok(risks.risk_categories.some((row) => row.id === "dependency_tree"));
   assert.ok(risks.secret_hits.some((hit) => hit.file.endsWith(".env") && hit.value_exposed === false));

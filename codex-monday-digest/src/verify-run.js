@@ -1248,7 +1248,7 @@ function hasRiskCategoryFields(row) {
 }
 
 function noAbsoluteLocalPathsInSourceAudit(runFolder) {
-  const files = SOURCE_AUDIT_FILES.filter((file) => file !== "run_manifest.json");
+  const files = SOURCE_AUDIT_FILES;
   return files.every((file) => {
     const text = fs.readFileSync(path.join(runFolder, file), "utf8");
     return !hasAbsoluteLocalPath(text);

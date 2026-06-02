@@ -107,6 +107,8 @@ codex-monday-digest sync --run RUN_FOLDER --mode live_write
 
 `source-audit` reads a SullyLink/retranToReel source zip and/or ignored extracted reference directory, plus the current goal markdown, and writes a compact reuse plan and `source_reuse_contract.json`. It reports which old patterns should be copied conceptually, maps digest parsing/APN dedupe/TitlePro worker/contact/status patterns to current runner commands and proof scripts, records excluded risk paths, and records zero external actions. It never copies old source files, credentials, cookies, raw paid docs, or dependency trees into the shareable repo.
 
+`npm run proof:source-audit-real` runs the same audit against local ignored references. It defaults to `$HOME/Downloads/retranToReel_codebase 2.zip` and `../external_references`; override with `SULLILINK_ZIP` and `SULLILINK_SOURCE_DIR` when those files live elsewhere.
+
 `workflow-map` reads the downloaded Monday workflow export workbooks and writes `monday_workflow_map.json`, `monday_workflow_stage_map.json`, `monday_workflow_source_profile.json`, and `monday_workflow_summary.md`. It is local-only: it extracts the board/checklist template shape for future runs and records zero Monday writes or external actions.
 
 ## Local Proofs
@@ -129,6 +131,7 @@ npm run proof:status
 npm run proof:skill
 npm run proof:skill-pack
 npm run proof:source-audit
+npm run proof:source-audit-real
 npm run proof:workflow-map
 npm run proof:edge
 npm run proof:batch

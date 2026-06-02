@@ -36,6 +36,7 @@ const REQUIRED_PROOF_SCRIPTS = [
   "proof:status",
   "proof:skill-pack",
   "proof:source-audit",
+  "proof:source-audit-real",
   "proof:workflow-map",
   "proof:batch"
 ];

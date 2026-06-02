@@ -83,6 +83,7 @@ CRE Brain / SullyLink database
 - `skill-check --skill-dir --package-json --goal-md` validates the Codex skill package, required references, UI metadata, proof-script alignment, and safety language without executing external actions.
 - `skill-pack --skill-dir --package-json --goal-md` creates an installable local skill package folder with file hashes and install instructions without executing external actions.
 - `source-audit --zip/--source-dir --goal-md` turns SullyLink/retranToReel reference material and the current goal markdown into a compact reuse plan and runner contract without copying old source, credentials, cookies, dependency trees, or raw paid docs.
+- `proof:source-audit-real` reruns that audit against the local ignored SullyLink/retranToReel zip and extracted references when those inputs are available.
 - Shareable packet files have no credentials, cookies, local absolute paths, or paid raw docs.
 - Every broker-facing owner/control claim has evidence and confidence language.
 - TitlePro actions remain serialized and approval-gated.
@@ -106,6 +107,7 @@ npm run proof:status
 npm run proof:skill
 npm run proof:skill-pack
 npm run proof:source-audit
+npm run proof:source-audit-real
 npm run proof:workflow-map
 npm run app
 ```

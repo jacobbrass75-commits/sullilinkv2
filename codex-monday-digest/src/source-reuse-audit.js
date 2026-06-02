@@ -433,7 +433,15 @@ function writeSourceAuditRun(outDir, audit) {
       audit.source_profile.source_dir ? `source_dir:${audit.source_profile.source_dir.source_path}` : null,
       audit.goal_profile ? `goal_md:${audit.goal_profile.source_path}:${audit.goal_profile.source_sha256.slice(0, 16)}` : null
     ].filter(Boolean),
-    output_paths: [...outputPaths, path.join(outDir, "run_manifest.json")],
+    output_path_scope: "run_folder_relative",
+    output_paths: [
+      "source_reuse_audit.json",
+      "source_reuse_recommendations.json",
+      "source_reuse_contract.json",
+      "source_risk_scan.json",
+      "source_reuse_plan.md",
+      "run_manifest.json"
+    ],
     forbidden_actions: { ...FORBIDDEN_ZERO },
     counts: audit.source_profile.counts
   });

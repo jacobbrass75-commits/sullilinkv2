@@ -37,6 +37,7 @@ cd /path/to/repo/codex-monday-digest
 npm test
 npm run proof:skill
 npm run proof:skill-pack
+npm run proof:source-audit-real
 npm run app
 ```
 
@@ -165,6 +166,14 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/source-audit
 ```
 
 `source-audit` turns the old zip/extracted reference directory and the current goal markdown into a compact reuse plan. It must copy patterns only, never old source files, credentials, cookies, raw paid docs, or dependency trees.
+
+For the local ignored SullyLink/retranToReel references, run:
+
+```bash
+npm run proof:source-audit-real
+```
+
+This defaults to `$HOME/Downloads/retranToReel_codebase 2.zip` and `../external_references`; set `SULLILINK_ZIP` or `SULLILINK_SOURCE_DIR` when those files are stored elsewhere.
 
 Skill package validation:
 
