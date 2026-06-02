@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { FORBIDDEN_ZERO, readJson, sha256File } = require("./runtime");
+const { FORBIDDEN_ZERO, readJson, sha256File, hasAbsoluteLocalPath } = require("./runtime");
 const { REQUIRED_GATE_COLUMNS } = require("./monday-field-map");
 const { DEFAULT_SUBITEMS } = require("./subitems");
 const { ACTION_QUEUE_HEADERS, readActionQueueCsv } = require("./monday-action-queue");
@@ -1584,10 +1584,6 @@ function noAbsoluteLocalPathsInSourceAudit(runFolder) {
     const text = fs.readFileSync(path.join(runFolder, file), "utf8");
     return !hasAbsoluteLocalPath(text);
   });
-}
-
-function hasAbsoluteLocalPath(text) {
-  return /\/Users\/[A-Za-z0-9._-]+|file:\/\/\/Users\/[A-Za-z0-9._-]+|(^|[\s"'])\/(var\/folders|private\/var|tmp|Volumes)\b|file:\/\/[A-Za-z]:[\\/][^\s|"']+|(^|[\s"'])[A-Za-z]:[\\/][^\s"']*/.test(text);
 }
 
 function isSortedBySourceRow(candidates) {

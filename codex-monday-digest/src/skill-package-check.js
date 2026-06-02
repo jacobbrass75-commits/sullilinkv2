@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { FORBIDDEN_ZERO, ensureDir, writeJson, sha256File, nowIso, manifestPathList } = require("./runtime");
+const { FORBIDDEN_ZERO, ensureDir, writeJson, sha256File, nowIso, manifestPathList, hasAbsoluteLocalPath } = require("./runtime");
 
 const REQUIRED_REFERENCES = [
   "references/runbook.md",
@@ -478,10 +478,6 @@ function oneLevelReferences(skillPath) {
   if (!fs.existsSync(referencesDir)) return false;
   const entries = fs.readdirSync(referencesDir, { withFileTypes: true });
   return entries.every((entry) => entry.isFile());
-}
-
-function hasAbsoluteLocalPath(text) {
-  return /\/Users\/[A-Za-z0-9._-]+|file:\/\/\/Users\/[A-Za-z0-9._-]+|file:\/\/[A-Za-z]:[\\/][^\s|"']+|(^|[\s"'])[A-Za-z]:[\\/][^\s"']*/.test(String(text || ""));
 }
 
 function hasSecretPattern(text) {

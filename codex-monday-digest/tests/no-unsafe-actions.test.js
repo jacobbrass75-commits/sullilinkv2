@@ -18,6 +18,7 @@ test("Monday live writes require board, column map, rollback, and broker approva
     process.env.ALLOW_EXTERNAL_WRITES = "true";
     process.env.ALLOW_MONDAY_WRITES = "true";
     process.env.MONDAY_DRY_RUN = "false";
+    delete process.env.MONDAY_SYNC_MODE;
     delete process.env.MONDAY_LEAD_BOARD_ID;
     delete process.env.MONDAY_GROUP_NEW_LEAD_RESEARCH_ID;
     delete process.env.MONDAY_COLUMN_MAP_JSON;
@@ -26,6 +27,7 @@ test("Monday live writes require board, column map, rollback, and broker approva
     delete process.env.MONDAY_BROKER_APPROVAL;
 
     assert.deepEqual(liveWriteGateFailures(), [
+      "MONDAY_SYNC_MODE",
       "MONDAY_LEAD_BOARD_ID",
       "MONDAY_GROUP_NEW_LEAD_RESEARCH_ID",
       "MONDAY_COLUMN_MAP_JSON",

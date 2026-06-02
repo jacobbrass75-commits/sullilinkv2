@@ -12,6 +12,7 @@ const SAFE_DEFAULTS = Object.freeze({
   TITLEPRO247_ALLOW_PROFILE_PULLS: "false",
   TITLEPRO247_ALLOW_PAID_PULLS: "false",
   OFFICIAL_NOD_ALLOW_BACKFILL: "false",
+  MONDAY_SYNC_MODE: "local_dry_run",
   MONDAY_DRY_RUN: "true",
   REALNEX_DRY_RUN: "true",
   GMAIL_DRAFTS_ONLY: "true"
@@ -36,6 +37,7 @@ function liveWriteGates() {
     ALLOW_EXTERNAL_WRITES: safeFlag("ALLOW_EXTERNAL_WRITES") === "true",
     ALLOW_MONDAY_WRITES: safeFlag("ALLOW_MONDAY_WRITES") === "true",
     MONDAY_DRY_RUN: safeFlag("MONDAY_DRY_RUN") === "false",
+    MONDAY_SYNC_MODE: safeFlag("MONDAY_SYNC_MODE") === "live_write",
     MONDAY_LEAD_BOARD_ID: Boolean(process.env.MONDAY_LEAD_BOARD_ID),
     MONDAY_GROUP_NEW_LEAD_RESEARCH_ID: Boolean(process.env.MONDAY_GROUP_NEW_LEAD_RESEARCH_ID),
     MONDAY_COLUMN_MAP_JSON: hasRequiredMondayColumnMap(),
