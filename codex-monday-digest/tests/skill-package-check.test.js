@@ -29,6 +29,7 @@ test("skill package check validates the Monday CRE skill against repo proofs", (
   assert.ok(report.required_references.includes("references/sullilink-reuse.md"));
   assert.ok(report.required_proof_scripts.includes("proof:workflow-map"));
   assert.ok(report.required_proof_scripts.includes("proof:source-audit-real"));
+  assert.ok(report.required_proof_scripts.includes("proof:goal-audit"));
   assert.ok(report.required_proof_scripts.includes("proof:status"));
   assert.ok(report.checks.every((check) => check.status === "pass"));
   assert.equal(report.forbidden_actions.monday_live_writes, 0);

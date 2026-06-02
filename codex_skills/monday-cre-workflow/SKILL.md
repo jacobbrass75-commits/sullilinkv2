@@ -37,6 +37,7 @@ cd /path/to/repo/codex-monday-digest
 npm test
 npm run proof:skill
 npm run proof:skill-pack
+npm run proof:goal-audit
 npm run proof:source-audit-real
 npm run app
 ```
@@ -190,6 +191,14 @@ npm run proof:skill-pack
 ```
 
 Run this when the skill needs to be shared or reinstalled. It writes an installable local copy under `../outputs/monday_digest_runs/skill-package-bundle/skill_package/monday-cre-workflow` plus file hashes and install instructions.
+
+Goal completion audit:
+
+```bash
+npm run proof:goal-audit
+```
+
+Run this after proof runs when deciding what remains. It maps `docs/TONIGHT_BUILD_GOAL.md` acceptance gates to proof scripts, prior verified run folders, documented/manual review, or deferred external gates. It must not claim the active thread goal is complete.
 
 If Python workbook export fails because `openpyxl` is missing, set `CODEX_PYTHON_BIN` to a Python that has the workspace spreadsheet dependencies.
 

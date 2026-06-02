@@ -18,6 +18,7 @@ const { readTitleProEvidenceFile, matchTitleProEvidenceToLeads, buildTitleProRol
 const { readContactEnrichmentFile, matchContactEnrichmentToLeads, buildContactRoleAssertions, buildContactNeedsReview } = require("./contact-enrichment-intake");
 const { readCurrentStatusFile, matchCurrentStatusToLeads, buildCurrentStatusAssertions, buildCurrentStatusNeedsReview } = require("./current-status-intake");
 const { buildSourceReuseAudit, writeSourceAuditRun } = require("./source-reuse-audit");
+const { buildGoalAudit, writeGoalAuditRun } = require("./goal-audit");
 const { buildConnectorReadiness, writeConnectorReadinessRun } = require("./connector-readiness");
 const { buildWorkflowMap, writeWorkflowMapRun } = require("./monday-workflow-map");
 const { buildSkillPackageCheck, writeSkillPackageCheckRun, buildSkillPackageBundle, writeSkillPackageBundleRun } = require("./skill-package-check");
@@ -65,6 +66,7 @@ function usage() {
     "  codex-monday-digest status-import --run RUN_FOLDER --status STATUS.json|csv",
     "  codex-monday-digest skill-check --skill-dir SKILL_DIR --package-json PACKAGE.json --goal-md GOAL.md --out RUN_FOLDER",
     "  codex-monday-digest skill-pack --skill-dir SKILL_DIR --package-json PACKAGE.json --goal-md GOAL.md --out RUN_FOLDER",
+    "  codex-monday-digest goal-audit --goal-md GOAL.md --package-json PACKAGE.json --proof-root OUTPUT_ROOT --out RUN_FOLDER",
     "  codex-monday-digest source-audit --zip SOURCE.zip --source-dir EXTERNAL_REFERENCE_DIR --goal-md GOAL.md --out RUN_FOLDER",
     "  codex-monday-digest connector-readiness --gmail-json GMAIL_CONNECTOR_READ.json --monday-json MONDAY_CONNECTOR_READ.json --label LABEL --since WINDOW --out RUN_FOLDER",
     "  codex-monday-digest sync --run RUN_FOLDER --mode live_write"
@@ -748,6 +750,18 @@ function skillPackCommand(args) {
   console.log(`skill_package_bundle=${bundle.package_ready ? "ready" : "not_ready"} files=${bundle.files.length} failed_checks=${failed} out=${args.out}`);
 }
 
+function goalAuditCommand(args) {
+  if (!args.out) {
+    throw new Error("goal-audit requires --out RUN_FOLDER");
+  }
+  const goalMd = args["goal-md"] || args.goal_md || args.goalMd;
+  const packageJson = args["package-json"] || args.package_json || args.packageJson;
+  const proofRoot = args["proof-root"] || args.proof_root || args.proofRoot;
+  const audit = buildGoalAudit({ goalMd, packageJson, proofRoot });
+  writeGoalAuditRun(args.out, audit);
+  console.log(`goal_audit=review_ready gates=${audit.counts.acceptance_gate_count} missing=${audit.counts.missing_or_uncategorized_count} deferred=${audit.counts.deferred_external_gate_count} out=${args.out}`);
+}
+
 function verifyCommand(args) {
   if (!args.run) throw new Error("verify requires --run RUN_FOLDER");
   const result = verifyRun(args.run);
@@ -804,6 +818,9 @@ function main() {
       case "skill-pack":
         skillPackCommand(args);
         break;
+      case "goal-audit":
+        goalAuditCommand(args);
+        break;
       case "verify":
         verifyCommand(args);
         break;
@@ -836,5 +853,6 @@ module.exports = {
   connectorReadinessCommand,
   skillCheckCommand,
   skillPackCommand,
+  goalAuditCommand,
   verifyCommand
 };

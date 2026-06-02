@@ -78,15 +78,23 @@ const SKILL_BUNDLE_FILES = [
   "run_manifest.json"
 ];
 
+const GOAL_AUDIT_FILES = [
+  "goal_audit_report.json",
+  "goal_audit_summary.md",
+  "run_manifest.json"
+];
+
 function verifyRun(runFolder) {
   const isSkillBundle = fs.existsSync(path.join(runFolder, "skill_package_bundle_manifest.json"));
   const isSkillPackage = fs.existsSync(path.join(runFolder, "skill_package_report.json"));
+  const isGoalAudit = fs.existsSync(path.join(runFolder, "goal_audit_report.json"));
   const isConnectorReadiness = fs.existsSync(path.join(runFolder, "connector_readiness_report.json"));
   const isWorkflowMap = fs.existsSync(path.join(runFolder, "monday_workflow_map.json"));
   const isSourceAudit = fs.existsSync(path.join(runFolder, "source_reuse_audit.json"));
   const isBatch = fs.existsSync(path.join(runFolder, "batch_source_profile.json"));
   if (isSkillBundle) return verifySkillBundleRun(runFolder);
   if (isSkillPackage) return verifySkillPackageRun(runFolder);
+  if (isGoalAudit) return verifyGoalAuditRun(runFolder);
   if (isConnectorReadiness) return verifyConnectorReadinessRun(runFolder);
   if (isWorkflowMap) return verifyWorkflowMapRun(runFolder);
   if (isSourceAudit) return verifySourceAuditRun(runFolder);
@@ -989,8 +997,68 @@ function verifySkillBundleRun(runFolder) {
   return makeReport(runFolder, "codex-monday-digest Skill Bundle Verification", checks);
 }
 
+function verifyGoalAuditRun(runFolder) {
+  const checks = [];
+  checkFiles(runFolder, GOAL_AUDIT_FILES, checks);
+  if (checks.some((check) => !check.pass)) return makeReport(runFolder, "codex-monday-digest Goal Audit Verification", checks);
+
+  const audit = readJson(path.join(runFolder, "goal_audit_report.json"));
+  const manifest = readJson(path.join(runFolder, "run_manifest.json"));
+  const summary = fs.readFileSync(path.join(runFolder, "goal_audit_summary.md"), "utf8");
+  const gates = audit.acceptance_gates || [];
+  const proofCommands = audit.proof_commands || [];
+
+  checks.push({ pass: manifest.mode === "goal_audit", message: "manifest records goal_audit mode" });
+  checks.push({ pass: forbiddenZero(manifest), message: "forbidden action counts are zero" });
+  checks.push({ pass: manifest.output_path_scope === "run_folder_relative", message: "goal audit output paths are run-folder-relative" });
+  checks.push({ pass: audit.mode === "goal_audit", message: "goal audit report records goal_audit mode" });
+  checks.push({ pass: audit.completion_claimed === false, message: "goal audit does not claim thread goal completion" });
+  checks.push({ pass: audit.forbidden_actions && forbiddenZero(audit), message: "goal audit forbidden action counts are zero" });
+  checks.push({ pass: audit.goal_source?.source_path_scope === "basename_only" && !String(audit.goal_source?.source_path || "").includes("/"), message: "goal source path is basename-only" });
+  checks.push({ pass: audit.package_source?.source_path_scope === "basename_only" && !String(audit.package_source?.source_path || "").includes("/"), message: "package source path is basename-only" });
+  checks.push({ pass: Array.isArray(gates) && gates.length >= 20 && gates.every(hasGoalAuditGateFields), message: "goal audit covers acceptance gates with structured rows" });
+  checks.push({ pass: gates.every((row) => row.status !== "uncategorized" && row.status !== "missing_proof"), message: "goal audit has no uncategorized or missing local-proof gates" });
+  checks.push({ pass: gates.some((row) => row.id === "source_audit_real" && row.status === "covered_by_local_proof"), message: "goal audit covers real SullyLink source audit proof" });
+  checks.push({ pass: gates.some((row) => row.id === "monday_live_write_gate" && row.status === "deferred_external_gate"), message: "goal audit keeps Monday live write as deferred gated work" });
+  checks.push({ pass: gates.some((row) => row.id === "shareable_packet_safety" && row.status === "documented_manual_gate"), message: "goal audit keeps shareable packet safety as a tracked manual gate" });
+  checks.push({ pass: proofCommands.every(hasGoalAuditProofFields), message: "goal audit proof command rows are structured" });
+  checks.push({ pass: proofCommands.filter((row) => row.script_present).length >= 15, message: "goal audit records proof script coverage" });
+  checks.push({ pass: summary.includes("Status: REVIEW_READY"), message: "goal audit summary is review-ready" });
+  checks.push({ pass: noAbsoluteLocalPathsInGoalAudit(runFolder), message: "goal audit outputs contain no absolute local paths" });
+  checks.push({ pass: !summary.includes("Authorization:") && !summary.includes("PASSWORD="), message: "goal audit summary contains no credential values" });
+  checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
+
+  return makeReport(runFolder, "codex-monday-digest Goal Audit Verification", checks);
+}
+
 function hasSkillPackageCheckFields(row) {
   return ["id", "status", "message"].every((field) => Object.prototype.hasOwnProperty.call(row, field));
+}
+
+function hasGoalAuditGateFields(row) {
+  return [
+    "id",
+    "requirement",
+    "status",
+    "classification",
+    "evidence_basis",
+    "proof_commands",
+    "evidence"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && Array.isArray(row.proof_commands)
+    && Array.isArray(row.evidence);
+}
+
+function hasGoalAuditProofFields(row) {
+  return [
+    "command",
+    "script_present",
+    "run_folder",
+    "artifact_status",
+    "artifact_source_path"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && typeof row.command === "string"
+    && !String(row.artifact_source_path || "").includes("/");
 }
 
 function hasSkillBundleFileFields(row) {
@@ -1167,6 +1235,13 @@ function noAbsoluteLocalPathsInSkillBundle(runFolder, bundle) {
     const fullPath = path.join(packageDir, file.relative_path || "");
     if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) return false;
     const text = fs.readFileSync(fullPath, "utf8");
+    return !hasAbsoluteLocalPath(text);
+  });
+}
+
+function noAbsoluteLocalPathsInGoalAudit(runFolder) {
+  return GOAL_AUDIT_FILES.every((file) => {
+    const text = fs.readFileSync(path.join(runFolder, file), "utf8");
     return !hasAbsoluteLocalPath(text);
   });
 }
@@ -1363,5 +1438,6 @@ module.exports = {
   verifySourceAuditRun,
   verifyConnectorReadinessRun,
   verifySkillPackageRun,
-  verifySkillBundleRun
+  verifySkillBundleRun,
+  verifyGoalAuditRun
 };

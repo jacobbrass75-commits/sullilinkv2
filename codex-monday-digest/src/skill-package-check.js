@@ -19,6 +19,7 @@ const REQUIRED_COMMAND_SNIPPETS = [
   "titlepro-import",
   "contact-import",
   "status-import",
+  "goal-audit",
   "source-audit",
   "verify --run"
 ];
@@ -35,6 +36,7 @@ const REQUIRED_PROOF_SCRIPTS = [
   "proof:contact",
   "proof:status",
   "proof:skill-pack",
+  "proof:goal-audit",
   "proof:source-audit",
   "proof:source-audit-real",
   "proof:workflow-map",
