@@ -10,6 +10,8 @@ It does not write to Monday, send Gmail, pull TitlePro, write RealNex, backfill 
 
 For Gmail-sourced alerts, save or paste the email body to a local text/HTML file and use `preview --input`. This records the Gmail label/window as provenance without reading Gmail or mutating external systems.
 
+For connector-sourced alerts, use the Gmail connector read tools to search/read messages, save the read-only result JSON locally, and run `preview --gmail-json ... --mode gmail_connector_preview`. The runner never calls Gmail directly and never labels, archives, drafts, or sends.
+
 ## Team Dashboard
 
 Start the shared browser app:
@@ -63,6 +65,7 @@ PROPERTYRADAR_BATCH_CSV=/path/to/propertyradar_export.csv npm run app
 ```text
 codex-monday-digest parse --input EMAIL_OR_TEXT_FILE --mode local_dry_run --out RUN_FOLDER
 codex-monday-digest preview --input SAVED_EMAIL_FILE --label "CRE/PropertyRadar Alerts" --since 2d --mode gmail_preview --out RUN_FOLDER
+codex-monday-digest preview --gmail-json GMAIL_CONNECTOR_READ.json --label "CRE/PropertyRadar Alerts" --since 2d --mode gmail_connector_preview --out RUN_FOLDER
 codex-monday-digest export --run RUN_FOLDER --xlsx RUN_FOLDER/monday_import_preview.xlsx
 codex-monday-digest verify --run RUN_FOLDER
 codex-monday-digest batch-owner-clusters --input PROPERTYRADAR_CSV --mode local_dry_run --out RUN_FOLDER
@@ -83,6 +86,7 @@ From this folder:
 npm test
 npm run proof:ken
 npm run proof:preview
+npm run proof:gmail-connector
 npm run proof:lookup
 npm run proof:titlepro-approval
 npm run proof:edge
@@ -92,6 +96,8 @@ npm run proof:batch
 The batch owner-cluster lane treats CSV owner strings as candidate grouping clues only. If a CSV includes an APN column, rows with the same normalized APN collapse into one candidate and retain all source row indexes; if APN is missing, row/address keys remain provisional. Every output stays blocked until APN/county/Radar ID, title evidence, SOS role evidence, current-status evidence, and approval gates are added.
 
 Digest and `gmail_preview` runs also write `titlepro_approval_queue_preview.json` and include the same rows in the workbook's `TitlePro Approval` sheet. This is an operations queue for deciding whether TitlePro evidence is needed; every row is approval-required and has `paid_action_allowed: false`.
+
+`gmail_connector_preview` additionally writes `gmail_connector_source_profile.json` with connector source hash, message counts, parsed row counts, and `gmail_mutations_executed=0` / `gmail_sends_executed=0`. Configure and verify the canonical `CRE/PropertyRadar Alerts` label/query before scheduled use.
 
 After a scoped approval is supplied, run `titlepro-approve` to create the separate decision and pending-pull artifacts. These artifacts make the approval reviewable in the dashboard/workbook, but the actual TitlePro browser/order step still requires separate action-time confirmation.
 

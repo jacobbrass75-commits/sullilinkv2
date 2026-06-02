@@ -2,7 +2,8 @@
 const fs = require("fs");
 const path = require("path");
 const { parseDigestFile } = require("./parse-digest");
-const { dedupeLeads } = require("./dedupe-leads");
+const { readGmailConnectorPreviewFile } = require("./gmail-connector-preview");
+const { dedupeLeads, eventFingerprint } = require("./dedupe-leads");
 const { mutationPreviewForLead, lookupPlaceholderForLead } = require("./monday-field-map");
 const { buildSubitems } = require("./subitems");
 const { buildBrokerPackets } = require("./broker-packet-preview");
@@ -41,6 +42,7 @@ function usage() {
     "Usage:",
     "  codex-monday-digest parse --input FILE --mode local_dry_run --out RUN_FOLDER",
     "  codex-monday-digest preview --input SAVED_EMAIL_FILE --label LABEL --since WINDOW --mode gmail_preview --out RUN_FOLDER",
+    "  codex-monday-digest preview --gmail-json GMAIL_CONNECTOR_READ.json --label LABEL --since WINDOW --mode gmail_connector_preview --out RUN_FOLDER",
     "  codex-monday-digest export --run RUN_FOLDER --xlsx RUN_FOLDER/monday_import_preview.xlsx",
     "  codex-monday-digest verify --run RUN_FOLDER",
     "  codex-monday-digest batch-owner-clusters --input CSV --mode local_dry_run --out RUN_FOLDER",
@@ -61,20 +63,33 @@ function rejectAmbiguousDryRun(mode) {
 }
 
 function writeDigestRunFromFile({ input, out, mode, inputPaths = [input], sourceOverrides = {} }) {
+  const parsed = parseDigestFile(input);
+  return writeDigestRunFromParsed({
+    parsedRows: parsed.parsedRows,
+    needsReview: parsed.needsReview,
+    sourceEmails: [parsed.source],
+    out,
+    mode,
+    inputPaths,
+    sourceOverrides
+  });
+}
+
+function writeDigestRunFromParsed({ parsedRows, needsReview = [], sourceEmails = [], out, mode, inputPaths, sourceOverrides = {}, extraFiles = {} }) {
   const outDir = out;
   ensureDir(outDir);
   const runId = runIdFromOut(outDir);
   const at = nowIso();
-  const parsed = parseDigestFile(input);
-  const deduped = dedupeLeads(parsed.parsedRows, { runFolder: outDir });
+  const deduped = dedupeLeads(parsedRows, { runFolder: outDir });
   const leads = deduped.leads;
-  const sourceEmail = {
-    ...parsed.source,
+  const sourceStats = sourceEventStats(parsedRows);
+  const sourceEmailRows = sourceEmails.map((source) => ({
+    ...source,
     ...sourceOverrides,
-    row_count_raw: parsed.parsedRows.length,
-    row_count_unique: leads.length,
-    exact_duplicate_count: leads.reduce((sum, lead) => sum + lead.exact_duplicate_count, 0)
-  };
+    row_count_raw: sourceStats.get(source.source_id)?.raw || 0,
+    row_count_unique: sourceStats.get(source.source_id)?.unique || 0,
+    exact_duplicate_count: sourceStats.get(source.source_id)?.duplicates || 0
+  }));
   const lookup = leads.map(lookupPlaceholderForLead);
   const mutations = leads.map((lead) => mutationPreviewForLead(lead, mode));
   const titleproQueue = buildTitleProApprovalQueue(leads, runId);
@@ -84,8 +99,7 @@ function writeDigestRunFromFile({ input, out, mode, inputPaths = [input], source
   const approvals = buildApprovalEvents(leads, runId, at);
   const comments = buildComments(leads);
   const queue = buildQueueDecisions(leads, { titleproQueue });
-  const audit = buildAuditEvents(runId, parsed.parsedRows, leads, deduped.auditEvents, at);
-  const needsReview = parsed.needsReview;
+  const audit = buildAuditEvents(runId, parsedRows, leads, deduped.auditEvents, at);
   const manifest = {
     run_id: runId,
     started_at: at,
@@ -94,15 +108,15 @@ function writeDigestRunFromFile({ input, out, mode, inputPaths = [input], source
     output_paths: [],
     forbidden_actions: { ...FORBIDDEN_ZERO },
     counts: {
-      parsed_rows: parsed.parsedRows.length,
+      parsed_rows: parsedRows.length,
       deduped_leads: leads.length,
-      exact_duplicate_count: sourceEmail.exact_duplicate_count
+      exact_duplicate_count: leads.reduce((sum, lead) => sum + lead.exact_duplicate_count, 0)
     }
   };
 
   const files = {
-    "source_emails.json": [sourceEmail],
-    "parsed_rows.json": parsed.parsedRows,
+    "source_emails.json": sourceEmailRows,
+    "parsed_rows.json": parsedRows,
     "deduped_leads.json": leads,
     "monday_lookup_results.json": lookup,
     "monday_mutations_preview.json": mutations,
@@ -115,6 +129,7 @@ function writeDigestRunFromFile({ input, out, mode, inputPaths = [input], source
     "approval_events_preview.json": approvals,
     "queue_decisions_preview.json": queue,
     "needs_review.json": needsReview,
+    ...extraFiles,
     "run_manifest.json": manifest
   };
   const outputPaths = [];
@@ -133,7 +148,26 @@ function writeDigestRunFromFile({ input, out, mode, inputPaths = [input], source
   for (const lead of leads) {
     ensureDir(path.join(outDir, "evidence", lead.radar_id || lead.dedupe_key.replace(/[^a-z0-9]+/gi, "-"), "titlepro"));
   }
-  return { parsedRows: parsed.parsedRows, leads, outDir };
+  return { parsedRows, leads, outDir };
+}
+
+function sourceEventStats(parsedRows) {
+  const stats = new Map();
+  const seen = new Set();
+  for (const row of parsedRows) {
+    const sourceId = row.source_id || "unknown_source";
+    if (!stats.has(sourceId)) stats.set(sourceId, { raw: 0, unique: 0, duplicates: 0 });
+    const sourceStats = stats.get(sourceId);
+    sourceStats.raw += 1;
+    const fingerprint = eventFingerprint(row);
+    if (seen.has(fingerprint)) {
+      sourceStats.duplicates += 1;
+    } else {
+      sourceStats.unique += 1;
+      seen.add(fingerprint);
+    }
+  }
+  return stats;
 }
 
 function parseCommand(args) {
@@ -151,8 +185,35 @@ function parseCommand(args) {
 
 function previewCommand(args) {
   rejectAmbiguousDryRun(args.mode);
-  if (args.mode !== "gmail_preview" || !args.out) {
-    throw new Error("preview requires --input SAVED_EMAIL_FILE --label LABEL --since WINDOW --mode gmail_preview --out RUN_FOLDER");
+  if (!["gmail_preview", "gmail_connector_preview"].includes(args.mode) || !args.out) {
+    throw new Error("preview requires --input SAVED_EMAIL_FILE --mode gmail_preview or --gmail-json GMAIL_CONNECTOR_READ.json --mode gmail_connector_preview");
+  }
+  if (args.mode === "gmail_connector_preview") {
+    const gmailJson = args["gmail-json"] || args.gmail_json || args.gmailJson;
+    if (!gmailJson) throw new Error("gmail_connector_preview requires --gmail-json GMAIL_CONNECTOR_READ.json");
+    const label = args.label || "CRE/PropertyRadar Alerts";
+    const since = args.since || "2d";
+    const connector = readGmailConnectorPreviewFile(gmailJson, {
+      label,
+      since,
+      query: args.query
+    });
+    const { parsedRows, leads, outDir } = writeDigestRunFromParsed({
+      parsedRows: connector.parsedRows,
+      needsReview: connector.needsReview,
+      sourceEmails: connector.sourceEmails,
+      out: args.out,
+      mode: "gmail_connector_preview",
+      inputPaths: [
+        `gmail_connector_preview:${label}:${since}`,
+        `gmail_connector_json:${path.basename(gmailJson)}:${connector.sourceProfile.source_sha256.slice(0, 16)}`
+      ],
+      extraFiles: {
+        "gmail_connector_source_profile.json": connector.sourceProfile
+      }
+    });
+    console.log(`gmail_connector_preview_rows=${parsedRows.length} deduped_leads=${leads.length} out=${outDir}`);
+    return;
   }
   if (args.input) {
     const label = args.label || "CRE/PropertyRadar Alerts";
@@ -181,7 +242,7 @@ function previewCommand(args) {
     input_paths: [`gmail:${args.label || "CRE/PropertyRadar Alerts"}:${args.since || "2d"}`],
     output_paths: [],
     forbidden_actions: { ...FORBIDDEN_ZERO },
-    blocked_reason: "Gmail connector read is intentionally not implemented in the first local runner proof."
+    blocked_reason: "Supply --input SAVED_EMAIL_FILE or --gmail-json GMAIL_CONNECTOR_READ.json; the local runner does not call Gmail directly."
   };
   writeJson(path.join(args.out, "source_emails.json"), []);
   writeJson(path.join(args.out, "parsed_rows.json"), []);
@@ -197,8 +258,8 @@ function previewCommand(args) {
   writeJson(path.join(args.out, "approval_events_preview.json"), []);
   writeJson(path.join(args.out, "queue_decisions_preview.json"), []);
   writeActionQueueCsv(path.join(args.out, "monday_action_queue.csv"), []);
-  writeJson(path.join(args.out, "needs_review.json"), [{ source_id: "gmail_preview", reason: "unsupported_format", severity: "blocker", summary: "Use saved digest text until Gmail preview is promoted." }]);
-  appendJsonl(path.join(args.out, "audit_events_preview.jsonl"), [{ run_id: runId, event_type: "preview_blocked", at, lead_key: null, summary: "Gmail preview blocked in first local proof." }]);
+  writeJson(path.join(args.out, "needs_review.json"), [{ source_id: "gmail_preview", reason: "missing_preview_input", severity: "blocker", summary: "Supply a saved email file or Gmail connector read JSON." }]);
+  appendJsonl(path.join(args.out, "audit_events_preview.jsonl"), [{ run_id: runId, event_type: "preview_blocked", at, lead_key: null, summary: "Gmail preview blocked because no input file or connector JSON was supplied." }]);
   writeJson(path.join(args.out, "run_manifest.json"), manifest);
   console.log(`gmail_preview_blocked out=${args.out}`);
 }

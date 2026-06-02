@@ -54,6 +54,15 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/gmail-preview
 
 `gmail_preview` records the Gmail label/window as provenance but still reads only the saved local file. It does not access Gmail, write Monday, send email, or trigger TitlePro.
 
+Gmail connector read preview:
+
+```bash
+node src/cli.js preview --gmail-json path/to/gmail_connector_read.json --label "CRE/PropertyRadar Alerts" --since 2d --mode gmail_connector_preview --out ../outputs/monday_digest_runs/gmail-connector-preview
+node src/cli.js verify --run ../outputs/monday_digest_runs/gmail-connector-preview
+```
+
+Use the Gmail connector read/search tools outside the runner to create the JSON file. The runner consumes that read-only result, preserves Gmail message/thread IDs, writes `gmail_connector_source_profile.json`, and must leave Gmail mutations/sends at zero. If the canonical label is missing, stop at setup/readiness and do not broaden the query without approval.
+
 Digest and `gmail_preview` runs should include `titlepro_approval_queue_preview.json` and, when exported, a workbook `TitlePro Approval` sheet. Treat it as a decision queue only: approval IDs may be linked to blocked subitems, but `paid_action_allowed` must remain `false` until the user explicitly approves a scoped TitlePro pull.
 
 Digest and batch runs should include `monday_action_queue.csv` and, when exported, a workbook `Monday Action Queue` sheet. Treat it as a preview/import queue: it must preserve lead/property identity, task status, approval fields, and keep `monday_write_executed`, `external_write_executed`, `broker_ready`, and `control_claim_allowed` false.

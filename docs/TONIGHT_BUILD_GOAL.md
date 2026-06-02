@@ -61,6 +61,7 @@ CRE Brain / SullyLink database
 
 - `npm test` passes in `codex-monday-digest`.
 - Digest parser handles both saved text and HTML PropertyRadar tables.
+- Gmail connector preview consumes saved read-only connector JSON, preserves Gmail message/thread IDs, and records zero Gmail mutations/sends.
 - Batch owner-cluster preview remains local-only and provisional.
 - Batch CSV preview normalizes APNs when present, collapses duplicate APN rows, and preserves source row indexes.
 - Digest preview writes `titlepro_approval_queue_preview.json`, plus a workbook `TitlePro Approval` sheet, with approval IDs linked to blocked TitlePro subitems and queue decisions.
@@ -78,6 +79,7 @@ CRE Brain / SullyLink database
 cd codex-monday-digest
 CODEX_PYTHON_BIN=/path/to/python-with-openpyxl PROPERTYRADAR_BATCH_CSV=/path/to/propertyradar_export.csv npm test
 npm run proof:preview
+npm run proof:gmail-connector
 npm run proof:lookup
 npm run proof:titlepro-approval
 npm run app
@@ -91,7 +93,7 @@ http://localhost:8787
 
 ## Open Work
 
-- Add live Gmail connector read preview after the saved-email `gmail_preview --input` lane is used successfully.
+- Configure the canonical Gmail label/query (`CRE/PropertyRadar Alerts`) in the connected mailbox before scheduled connector use.
 - Add live Monday connector read lookup after the board-export lookup lane is used successfully.
 - Add action-time TitlePro pull execution after an approved request is re-confirmed for property, APN/county when known, doc/profile type, reason, and cost ceiling.
 - Add official-provider status checks only after source rights and API shape are confirmed.

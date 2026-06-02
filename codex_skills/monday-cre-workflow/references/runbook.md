@@ -32,10 +32,20 @@ node src/cli.js preview --input path/to/saved_digest_email.html --label "CRE/Pro
 node src/cli.js verify --run ../outputs/monday_digest_runs/gmail-preview
 ```
 
+For a read-only Gmail connector result, first use the Gmail connector to search/read the canonical label/query, save the connector output JSON locally, then run:
+
+```bash
+node src/cli.js preview --gmail-json path/to/gmail_connector_read.json --label "CRE/PropertyRadar Alerts" --since 2d --mode gmail_connector_preview --out ../outputs/monday_digest_runs/gmail-connector-preview
+node src/cli.js verify --run ../outputs/monday_digest_runs/gmail-connector-preview
+```
+
+Treat a missing `CRE/PropertyRadar Alerts` Gmail label as a setup gap; do not broaden scheduled Gmail scope without broker/admin approval.
+
 Required evidence for a digest run:
 
 - raw/pasted email text or HTML saved under run input
 - Gmail preview provenance when applicable: label/window plus saved input file path
+- Gmail connector provenance when applicable: message IDs, thread IDs, connector source profile, and zero Gmail mutations/sends
 - `source_emails.json`
 - `parsed_rows.json`
 - `deduped_leads.json`

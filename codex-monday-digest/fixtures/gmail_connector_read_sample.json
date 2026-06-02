@@ -1,0 +1,13 @@
+{
+  "emails": [
+    {
+      "id": "gmail-msg-ken-kahan-001",
+      "thread_id": "gmail-thread-ken-kahan",
+      "subject": "FW: Daily Digest Alert: Ken Kahan List",
+      "from": "Broker User <broker@example.com>",
+      "to": "ops@example.com",
+      "timestamp": "2026-05-30T04:16:22.000Z",
+      "body": "From: PropertyRadar Alerts <no-reply@propertyradar.info>\nSent: Friday, May 29, 2026 9:16:18 PM (UTC-08:00) Pacific Time (US & Canada)\nSubject: Daily Digest Alert: Ken Kahan List\n\n<p>Your daily digest alert, Ken Kahan List, found matches.</p>\n<table>\n  <tr><th>Radar ID</th><th>Street</th><th>City</th><th>Zip</th><th>State</th><th>Type</th><th>Sq Ft</th><th>Beds</th><th>Baths</th><th>Est. Value</th><th>What Changed</th></tr>\n  <tr><td><a href=\"https://goradar.it/P15F1852\">P15F1852</a></td><td>2701 STATHAM BLVD</td><td>OXNARD</td><td>93033</td><td>CA</td><td>IND</td><td>102,543</td><td></td><td></td><td>$8,458,447</td><td>New Notice</td></tr>\n  <tr><td><a href=\"https://goradar.it/P15F1852\">P15F1852</a></td><td>2701 STATHAM BLVD</td><td>OXNARD</td><td>93033</td><td>CA</td><td>IND</td><td>102,543</td><td></td><td></td><td>$8,458,447</td><td>New Notice</td></tr>\n  <tr><td><a href=\"https://goradar.it/P1555F5F\">P1555F5F</a></td><td>16757 SLOVER AVE</td><td>FONTANA</td><td>92337</td><td>CA</td><td>COM</td><td>59,524</td><td></td><td></td><td>$2,750,000</td><td>New Matches</td></tr>\n</table>"
+    }
+  ]
+}

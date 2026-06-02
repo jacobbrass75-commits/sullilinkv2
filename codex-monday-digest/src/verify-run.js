@@ -93,6 +93,7 @@ function verifyDigestRun(runFolder) {
   const approvals = readJson(path.join(runFolder, "approval_events_preview.json"));
   const queueDecisions = readJson(path.join(runFolder, "queue_decisions_preview.json"));
   const manifest = readJson(path.join(runFolder, "run_manifest.json"));
+  const gmailConnectorProfilePath = path.join(runFolder, "gmail_connector_source_profile.json");
   const auditEvents = parseJsonl(path.join(runFolder, "audit_events_preview.jsonl"));
 
   checks.push({ pass: Array.isArray(sourceEmails) && sourceEmails.length >= 1, message: "source_emails has at least one source" });
@@ -120,6 +121,15 @@ function verifyDigestRun(runFolder) {
   checks.push({ pass: auditEvents.length >= leads.length + 2, message: "audit events exist for parse, dedupe, and blocked decisions" });
   checks.push({ pass: queueDecisions.length >= leads.length, message: "queue decisions exist for every lead" });
   checks.push({ pass: packets.length === leads.length && packets.every((packet) => packet.packet_type !== "action_ready"), message: "broker packets exist and are not call-ready by default" });
+  if (manifest.mode === "gmail_connector_preview") {
+    checks.push({ pass: fs.existsSync(gmailConnectorProfilePath), message: "Gmail connector source profile exists for connector preview mode" });
+    if (fs.existsSync(gmailConnectorProfilePath)) {
+      const gmailProfile = readJson(gmailConnectorProfilePath);
+      checks.push({ pass: gmailProfile.gmail_mutations_executed === 0 && gmailProfile.gmail_sends_executed === 0 && gmailProfile.external_writes_executed === 0, message: "Gmail connector preview executed no Gmail mutations, sends, or external writes" });
+      checks.push({ pass: gmailProfile.parsed_row_count === parsedRows.length, message: "Gmail connector profile parsed row count matches parsed rows" });
+      checks.push({ pass: parsedRows.length > 0 && leads.length > 0, message: "Gmail connector preview contains at least one parsed PropertyRadar lead" });
+    }
+  }
   checks.push({ pass: forbiddenZero(manifest), message: "forbidden action counts are zero" });
   checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
 
