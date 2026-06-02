@@ -9,7 +9,12 @@ const REUSE_CATALOG = [
     useful_pattern: "PropertyRadar daily digest HTML/text parsing with source-event preservation.",
     monday_lane_action: "Keep parser support in local preview and Gmail connector preview lanes.",
     treatment: "reuse_pattern_only",
-    implementation_status: "implemented"
+    implementation_status: "implemented",
+    current_runner_surface: ["parse", "preview --input", "preview --gmail-json"],
+    proof_scripts: ["proof:ken", "proof:preview", "proof:gmail-connector"],
+    acceptance_gate: "Text/HTML digest rows parse into source events and dedupe by Radar ID without Gmail mutations.",
+    allowed_input: "Saved digest text/HTML or saved read-only Gmail connector JSON.",
+    blocked_actions: ["gmail_mutation", "gmail_send", "monday_live_write", "titlepro_pull"]
   },
   {
     id: "apn_dedupe",
@@ -17,7 +22,12 @@ const REUSE_CATALOG = [
     useful_pattern: "Normalize APNs, skip existing APNs, and report imported/skipped counts.",
     monday_lane_action: "Keep APN dedupe in batch owner-cluster preview with source row indexes.",
     treatment: "reuse_pattern_only",
-    implementation_status: "implemented"
+    implementation_status: "implemented",
+    current_runner_surface: ["batch-owner-clusters"],
+    proof_scripts: ["proof:batch"],
+    acceptance_gate: "APN-bearing batch rows collapse by normalized APN while preserving all source row indexes.",
+    allowed_input: "PropertyRadar CSV/XLSX export.",
+    blocked_actions: ["control_claim_promotion", "monday_live_write", "provider_backfill"]
   },
   {
     id: "daily_import_loop",
@@ -25,7 +35,12 @@ const REUSE_CATALOG = [
     useful_pattern: "Daily polling/import loop with idempotency and counts.",
     monday_lane_action: "Use only after Gmail/Monday read configuration is confirmed.",
     treatment: "future_after_connector_setup",
-    implementation_status: "not_started"
+    implementation_status: "not_started",
+    current_runner_surface: ["connector-readiness", "preview --gmail-json", "sync --connector-json"],
+    proof_scripts: ["proof:connector-readiness", "proof:gmail-connector", "proof:monday-connector"],
+    acceptance_gate: "Saved connector reads preserve message/thread IDs and Monday item/board/group IDs with zero writes.",
+    allowed_input: "Saved read-only Gmail and Monday connector JSON.",
+    blocked_actions: ["scheduled_live_read_without_readiness", "gmail_mutation", "monday_live_write"]
   },
   {
     id: "titlepro_serial_worker",
@@ -33,7 +48,12 @@ const REUSE_CATALOG = [
     useful_pattern: "One-at-a-time TitlePro worker with queued, processing, success, mismatch, failed, skipped statuses.",
     monday_lane_action: "Keep TitlePro execution serialized and approval-gated; no unsupervised pulls.",
     treatment: "reuse_queue_shape_only",
-    implementation_status: "approval_and_saved_evidence_present"
+    implementation_status: "approval_and_saved_evidence_present",
+    current_runner_surface: ["titlepro-approve", "titlepro-confirm", "titlepro-import"],
+    proof_scripts: ["proof:titlepro-approval", "proof:titlepro-confirm", "proof:titlepro-evidence"],
+    acceptance_gate: "Approval and action-time confirmation are recorded, but browser/order execution remains separate and serialized.",
+    allowed_input: "Approval CSV/JSON, action-time confirmation CSV/JSON, or already-saved TitlePro evidence JSON.",
+    blocked_actions: ["titlepro_pull", "browser_action", "paid_action", "external_write"]
   },
   {
     id: "recording_document_schema",
@@ -41,7 +61,12 @@ const REUSE_CATALOG = [
     useful_pattern: "Recording document fact schema for NOD/NTS/DOT extraction.",
     monday_lane_action: "Use fields for saved TitlePro evidence import and role assertions.",
     treatment: "reuse_schema_only",
-    implementation_status: "implemented"
+    implementation_status: "implemented",
+    current_runner_surface: ["titlepro-import", "status-import"],
+    proof_scripts: ["proof:titlepro-evidence", "proof:status"],
+    acceptance_gate: "Saved document/status facts import into role/status assertions without control or outreach promotion.",
+    allowed_input: "Already-saved document extraction JSON or saved current-status/provider evidence JSON.",
+    blocked_actions: ["beneficial_owner_claim", "outreach_ready_claim", "provider_backfill"]
   },
   {
     id: "owner_entity_clustering",
@@ -49,7 +74,12 @@ const REUSE_CATALOG = [
     useful_pattern: "Entity/portfolio grouping and distress scoring as candidate signals.",
     monday_lane_action: "Keep owner clusters provisional until title/SOS/current-status proof exists.",
     treatment: "future_candidate_scoring_only",
-    implementation_status: "partial_batch_preview"
+    implementation_status: "partial_batch_preview",
+    current_runner_surface: ["batch-owner-clusters", "monday_action_queue.csv"],
+    proof_scripts: ["proof:batch"],
+    acceptance_gate: "Owner-string clusters are candidate-only with control_claim_allowed=false and broker_ready=false.",
+    allowed_input: "PropertyRadar CSV/XLSX batch export.",
+    blocked_actions: ["control_claim_promotion", "beneficial_owner_claim", "broker_ready_claim"]
   },
   {
     id: "contact_enrichment",
@@ -57,7 +87,12 @@ const REUSE_CATALOG = [
     useful_pattern: "Contact lookup and CRM enrichment tools.",
     monday_lane_action: "Treat as manual pasteback or separately approved enrichment lane.",
     treatment: "manual_or_approved_lane_only",
-    implementation_status: "not_started"
+    implementation_status: "not_started",
+    current_runner_surface: ["contact-import"],
+    proof_scripts: ["proof:contact"],
+    acceptance_gate: "Manual contacts import as blocked assertions with no RocketReach reveal, outreach, RealNex write, or owner/control promotion.",
+    allowed_input: "Manual contact enrichment CSV/JSON pasteback.",
+    blocked_actions: ["rocketreach_reveal", "outreach_send", "realnex_write", "beneficial_owner_claim"]
   }
 ];
 
@@ -107,6 +142,7 @@ function buildSourceReuseAudit({ zipPath, goalMd, sourceDir }) {
     ...sourceDirEntries.skippedTrees.map((entry) => entry.path)
   ];
   const recommendations = buildRecommendations(allEntryNames);
+  const reuseContract = buildReuseContract(recommendations);
   const riskScan = buildRiskScan({ zipEntries, sourceDirEntries, sourceDir });
   const goalProfile = goalMd ? readGoalMarkdown(goalMd) : null;
 
@@ -137,8 +173,9 @@ function buildSourceReuseAudit({ zipPath, goalMd, sourceDir }) {
     source_profile: sourceProfile,
     goal_profile: goalProfile,
     recommendations,
+    reuse_contract: reuseContract,
     risk_scan: riskScan,
-    plan_markdown: renderPlanMarkdown({ sourceProfile, goalProfile, recommendations, riskScan })
+    plan_markdown: renderPlanMarkdown({ sourceProfile, goalProfile, recommendations, reuseContract, riskScan })
   };
 }
 
@@ -228,9 +265,37 @@ function buildRecommendations(entryNames) {
       copy_strategy: "copy_pattern_not_source",
       monday_lane_action: rule.monday_lane_action,
       implementation_status: rule.implementation_status,
+      current_runner_surface: rule.current_runner_surface,
+      proof_scripts: rule.proof_scripts,
+      acceptance_gate: rule.acceptance_gate,
+      allowed_input: rule.allowed_input,
+      blocked_actions: rule.blocked_actions,
       guardrail: "Do not copy credentials, sessions, raw paid docs, or unsupervised browser automation."
     };
   });
+}
+
+function buildReuseContract(recommendations) {
+  return {
+    schema_version: 1,
+    mode: "sullilink_pattern_contract",
+    contract_scope: "Map old SullyLink/retranToReel patterns to current local Monday runner surfaces without copying old source.",
+    lanes: recommendations.map((row) => ({
+      pattern_id: row.id,
+      matched: row.matched,
+      matched_files: row.matched_files,
+      useful_pattern: row.useful_pattern,
+      implementation_status: row.implementation_status,
+      current_runner_surface: row.current_runner_surface,
+      proof_scripts: row.proof_scripts,
+      acceptance_gate: row.acceptance_gate,
+      allowed_input: row.allowed_input,
+      blocked_actions: row.blocked_actions,
+      copy_strategy: row.copy_strategy,
+      live_action_gate: "External reads/writes/pulls require separate explicit approval and runner-specific gates."
+    })),
+    forbidden_actions: { ...FORBIDDEN_ZERO }
+  };
 }
 
 function buildRiskScan({ zipEntries, sourceDirEntries, sourceDir }) {
@@ -310,7 +375,7 @@ function readGoalMarkdown(goalMd) {
   };
 }
 
-function renderPlanMarkdown({ sourceProfile, goalProfile, recommendations, riskScan }) {
+function renderPlanMarkdown({ sourceProfile, goalProfile, recommendations, reuseContract, riskScan }) {
   const matched = recommendations.filter((row) => row.matched);
   const future = recommendations.filter((row) => row.matched && row.implementation_status.includes("not_started"));
   const lines = [
@@ -325,6 +390,9 @@ function renderPlanMarkdown({ sourceProfile, goalProfile, recommendations, riskS
     "",
     "## Reuse Patterns",
     ...matched.map((row) => `- ${row.id}: ${row.treatment}; ${row.monday_lane_action}`),
+    "",
+    "## Runner Contract",
+    ...reuseContract.lanes.map((row) => `- ${row.pattern_id}: ${row.current_runner_surface.join(", ")}; proofs: ${row.proof_scripts.join(", ")}; blocked: ${row.blocked_actions.join(", ")}`),
     "",
     "## Future Work",
     ...(future.length ? future.map((row) => `- ${row.id}: ${row.monday_lane_action}`) : ["- No matched not-started pattern was promoted in this audit."]),
@@ -344,6 +412,7 @@ function writeSourceAuditRun(outDir, audit) {
   const outputPaths = [
     path.join(outDir, "source_reuse_audit.json"),
     path.join(outDir, "source_reuse_recommendations.json"),
+    path.join(outDir, "source_reuse_contract.json"),
     path.join(outDir, "source_risk_scan.json"),
     path.join(outDir, "source_reuse_plan.md")
   ];
@@ -352,8 +421,9 @@ function writeSourceAuditRun(outDir, audit) {
     goal_profile: audit.goal_profile
   });
   writeJson(outputPaths[1], audit.recommendations);
-  writeJson(outputPaths[2], audit.risk_scan);
-  fs.writeFileSync(outputPaths[3], audit.plan_markdown);
+  writeJson(outputPaths[2], audit.reuse_contract);
+  writeJson(outputPaths[3], audit.risk_scan);
+  fs.writeFileSync(outputPaths[4], audit.plan_markdown);
   writeJson(path.join(outDir, "run_manifest.json"), {
     run_id: path.basename(path.resolve(outDir)).replace(/[^a-zA-Z0-9_-]+/g, "_") || `source_audit_${hash16(outDir)}`,
     started_at: audit.source_profile.generated_at,
@@ -376,6 +446,7 @@ function normalizeEntryPath(value) {
 module.exports = {
   REUSE_CATALOG,
   buildSourceReuseAudit,
+  buildReuseContract,
   readZipEntryNames,
   writeSourceAuditRun
 };

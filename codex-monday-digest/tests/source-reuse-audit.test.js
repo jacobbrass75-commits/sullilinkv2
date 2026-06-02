@@ -33,13 +33,24 @@ test("source-audit maps SullyLink references without exposing old secrets or loc
   verifyCommand({ run: out });
 
   const recommendations = JSON.parse(fs.readFileSync(path.join(out, "source_reuse_recommendations.json"), "utf8"));
+  const contract = JSON.parse(fs.readFileSync(path.join(out, "source_reuse_contract.json"), "utf8"));
   const risks = JSON.parse(fs.readFileSync(path.join(out, "source_risk_scan.json"), "utf8"));
   const auditText = fs.readFileSync(path.join(out, "source_reuse_audit.json"), "utf8");
+  const planText = fs.readFileSync(path.join(out, "source_reuse_plan.md"), "utf8");
   const byId = Object.fromEntries(recommendations.map((row) => [row.id, row]));
+  const lanesById = Object.fromEntries(contract.lanes.map((row) => [row.pattern_id, row]));
   assert.equal(byId.propertyradar_digest_parser.matched, true);
   assert.equal(byId.apn_dedupe.matched, true);
   assert.equal(byId.recording_document_schema.matched, true);
   assert.equal(byId.titlepro_serial_worker.copy_strategy, "copy_pattern_not_source");
+  assert.equal(contract.mode, "sullilink_pattern_contract");
+  assert.ok(lanesById.propertyradar_digest_parser.current_runner_surface.includes("preview --gmail-json"));
+  assert.ok(lanesById.propertyradar_digest_parser.proof_scripts.includes("proof:gmail-connector"));
+  assert.ok(lanesById.apn_dedupe.current_runner_surface.includes("batch-owner-clusters"));
+  assert.ok(lanesById.apn_dedupe.proof_scripts.includes("proof:batch"));
+  assert.ok(lanesById.titlepro_serial_worker.current_runner_surface.includes("titlepro-confirm"));
+  assert.ok(lanesById.titlepro_serial_worker.blocked_actions.includes("paid_action"));
+  assert.match(planText, /Runner Contract/);
   assert.ok(risks.risk_categories.some((row) => row.id === "env_or_credentials"));
   assert.ok(risks.risk_categories.some((row) => row.id === "dependency_tree"));
   assert.ok(risks.secret_hits.some((hit) => hit.file.endsWith(".env") && hit.value_exposed === false));

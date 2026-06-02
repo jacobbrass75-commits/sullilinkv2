@@ -46,7 +46,11 @@ const REQUIRED_SAFETY_PHRASES = [
   "no unsupervised TitlePro paid pulls",
   "no owner/control claims from CSV owner strings alone",
   "day_of_action_recheck_required=true",
-  "copy patterns only"
+  "copy patterns only",
+  "source_reuse_contract.json",
+  "Daily digest parser",
+  "APN dedupe",
+  "TitlePro serial worker"
 ];
 
 function buildSkillPackageCheck({ skillDir, packageJson, goalMd }) {

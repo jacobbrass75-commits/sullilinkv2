@@ -81,7 +81,7 @@ CRE Brain / SullyLink database
 - `contact-import --contacts` consumes manual contact enrichment pasteback, writes contact assertions, and records zero RocketReach reveals, outreach actions, RealNex writes, or control/beneficial-owner promotions.
 - `status-import --status` consumes saved current-status/provider evidence, writes status assertions, records zero provider lookups/backfills/outreach/external writes, and keeps broker action blocked until day-of-action official recheck.
 - `skill-check --skill-dir --package-json --goal-md` validates the Codex skill package, required references, UI metadata, proof-script alignment, and safety language without executing external actions.
-- `source-audit --zip/--source-dir --goal-md` turns SullyLink/retranToReel reference material and the current goal markdown into a compact reuse plan without copying old source, credentials, cookies, dependency trees, or raw paid docs.
+- `source-audit --zip/--source-dir --goal-md` turns SullyLink/retranToReel reference material and the current goal markdown into a compact reuse plan and runner contract without copying old source, credentials, cookies, dependency trees, or raw paid docs.
 - Shareable packet files have no credentials, cookies, local absolute paths, or paid raw docs.
 - Every broker-facing owner/control claim has evidence and confidence language.
 - TitlePro actions remain serialized and approval-gated.

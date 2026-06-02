@@ -31,7 +31,7 @@
 - Keep `codex-monday-digest` as the immediate implementation target.
 - Keep old app/zip code under ignored `external_references/`.
 - Copy patterns, not credentials or full source files.
-- Run `codex-monday-digest source-audit` before adapting additional old code so the source bundle and goal markdown produce a compact, shareable reuse plan.
+- Run `codex-monday-digest source-audit` before adapting additional old code so the source bundle and goal markdown produce a compact, shareable reuse plan and runner contract.
 - Add only narrow code that improves the Monday lane now.
 - Put broader CRE Brain/SullyLink database work after the Monday lane has proven daily value.
 
@@ -53,5 +53,5 @@ Never commit or publish:
 - Added saved-email `gmail_preview --input` provenance.
 - Added preview-only TitlePro approval queue and workbook tab.
 - Added APN-aware batch dedupe for CSV exports with APN columns while keeping owner-string clusters provisional.
-- Added `source-audit` to convert the SullyLink/retranToReel zip or extracted reference directory plus the goal markdown into `source_reuse_audit.json`, `source_reuse_recommendations.json`, `source_risk_scan.json`, and `source_reuse_plan.md` without copying old source or exposing secret values.
+- Added `source-audit` to convert the SullyLink/retranToReel zip or extracted reference directory plus the goal markdown into `source_reuse_audit.json`, `source_reuse_recommendations.json`, `source_reuse_contract.json`, `source_risk_scan.json`, and `source_reuse_plan.md` without copying old source or exposing secret values.
 - Added this reuse audit and tonight build goal docs.

@@ -41,6 +41,7 @@ const BATCH_FILES = [
 const SOURCE_AUDIT_FILES = [
   "source_reuse_audit.json",
   "source_reuse_recommendations.json",
+  "source_reuse_contract.json",
   "source_risk_scan.json",
   "source_reuse_plan.md",
   "run_manifest.json"
@@ -813,6 +814,7 @@ function verifySourceAuditRun(runFolder) {
 
   const audit = readJson(path.join(runFolder, "source_reuse_audit.json"));
   const recommendations = readJson(path.join(runFolder, "source_reuse_recommendations.json"));
+  const reuseContract = readJson(path.join(runFolder, "source_reuse_contract.json"));
   const riskScan = readJson(path.join(runFolder, "source_risk_scan.json"));
   const manifest = readJson(path.join(runFolder, "run_manifest.json"));
   const plan = fs.readFileSync(path.join(runFolder, "source_reuse_plan.md"), "utf8");
@@ -825,6 +827,13 @@ function verifySourceAuditRun(runFolder) {
   checks.push({ pass: recommendations.some((row) => row.id === "propertyradar_digest_parser" && row.matched), message: "PropertyRadar parser pattern is matched when present" });
   checks.push({ pass: recommendations.every(hasSourceRecommendationFields), message: "source reuse recommendations are structured" });
   checks.push({ pass: recommendations.every((row) => row.copy_strategy === "copy_pattern_not_source"), message: "recommendations copy patterns, not old source files" });
+  checks.push({ pass: reuseContract.schema_version === 1 && reuseContract.mode === "sullilink_pattern_contract", message: "source reuse contract records schema version and mode" });
+  checks.push({ pass: reuseContract.forbidden_actions && forbiddenZero(reuseContract), message: "source reuse contract forbidden action counts are zero" });
+  checks.push({ pass: Array.isArray(reuseContract.lanes) && reuseContract.lanes.length === recommendations.length && reuseContract.lanes.every(hasSourceReuseContractLaneFields), message: "source reuse contract lanes are structured and recommendation-aligned" });
+  checks.push({ pass: sourceReuseContractHasLane(reuseContract, "propertyradar_digest_parser", "preview --gmail-json", "proof:gmail-connector"), message: "source reuse contract maps daily digest parser to Gmail preview proof" });
+  checks.push({ pass: sourceReuseContractHasLane(reuseContract, "apn_dedupe", "batch-owner-clusters", "proof:batch"), message: "source reuse contract maps APN dedupe to batch proof" });
+  checks.push({ pass: sourceReuseContractHasLane(reuseContract, "titlepro_serial_worker", "titlepro-confirm", "proof:titlepro-confirm"), message: "source reuse contract maps TitlePro worker shape to confirmation proof" });
+  checks.push({ pass: reuseContract.lanes.every((lane) => Array.isArray(lane.blocked_actions) && lane.blocked_actions.length > 0), message: "every source reuse contract lane records blocked actions" });
   checks.push({ pass: riskScan.secret_values_exposed === false && riskScan.secret_hits.every((hit) => hit.value_exposed === false), message: "secret scan exposes no secret values" });
   checks.push({ pass: Array.isArray(riskScan.risk_categories) && riskScan.risk_categories.every(hasRiskCategoryFields), message: "risk scan categories are structured" });
   checks.push({ pass: noAbsoluteLocalPathsInSourceAudit(runFolder), message: "source audit outputs contain no absolute local paths" });
@@ -1081,9 +1090,47 @@ function hasSourceRecommendationFields(row) {
     "copy_strategy",
     "monday_lane_action",
     "implementation_status",
+    "current_runner_surface",
+    "proof_scripts",
+    "acceptance_gate",
+    "allowed_input",
+    "blocked_actions",
     "guardrail"
   ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
-    && Array.isArray(row.matched_files);
+    && Array.isArray(row.matched_files)
+    && Array.isArray(row.current_runner_surface)
+    && Array.isArray(row.proof_scripts)
+    && Array.isArray(row.blocked_actions);
+}
+
+function hasSourceReuseContractLaneFields(row) {
+  return [
+    "pattern_id",
+    "matched",
+    "matched_files",
+    "useful_pattern",
+    "implementation_status",
+    "current_runner_surface",
+    "proof_scripts",
+    "acceptance_gate",
+    "allowed_input",
+    "blocked_actions",
+    "copy_strategy",
+    "live_action_gate"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && Array.isArray(row.matched_files)
+    && Array.isArray(row.current_runner_surface)
+    && Array.isArray(row.proof_scripts)
+    && Array.isArray(row.blocked_actions)
+    && row.copy_strategy === "copy_pattern_not_source";
+}
+
+function sourceReuseContractHasLane(contract, patternId, runnerSurface, proofScript) {
+  const lane = (contract.lanes || []).find((row) => row.pattern_id === patternId);
+  return Boolean(lane
+    && lane.current_runner_surface.includes(runnerSurface)
+    && lane.proof_scripts.includes(proofScript)
+    && lane.copy_strategy === "copy_pattern_not_source");
 }
 
 function hasRiskCategoryFields(row) {

@@ -24,6 +24,18 @@ Use these patterns when adapting the user's older foreclosure app code into the 
 - **Priority workers:** current status and recording-doc extraction come before AI summaries, building research, contact enrichment, and outreach.
 - **Evidence-first output:** save raw source files locally, then generate compact broker-facing summaries with source dates and confidence.
 
+## Runner Contract
+
+Use `source-audit` to generate `source_reuse_contract.json` before adapting more old app behavior. The contract should map each old pattern to current runner surfaces and proof scripts:
+
+- **Daily digest parser:** `parse`, `preview --input`, `preview --gmail-json`; proofs `proof:ken`, `proof:preview`, `proof:gmail-connector`; blocked Gmail mutations, Gmail sends, Monday writes, and TitlePro pulls.
+- **APN dedupe:** `batch-owner-clusters`; proof `proof:batch`; blocked control claims, Monday writes, and provider backfills.
+- **Daily import loop:** `connector-readiness`, `preview --gmail-json`, `sync --connector-json`; proofs `proof:connector-readiness`, `proof:gmail-connector`, `proof:monday-connector`; blocked scheduled live reads before readiness, Gmail mutations, and Monday writes.
+- **TitlePro serial worker:** `titlepro-approve`, `titlepro-confirm`, `titlepro-import`; proofs `proof:titlepro-approval`, `proof:titlepro-confirm`, `proof:titlepro-evidence`; blocked TitlePro pulls, browser actions, paid actions, and external writes.
+- **Recording document schema:** `titlepro-import`, `status-import`; proofs `proof:titlepro-evidence`, `proof:status`; blocked beneficial-owner claims, outreach-ready claims, and provider backfills.
+- **Owner/entity clustering:** `batch-owner-clusters`; proof `proof:batch`; blocked control claims, beneficial-owner claims, and broker-ready claims.
+- **Contact enrichment:** `contact-import`; proof `proof:contact`; blocked RocketReach reveals, outreach sends, RealNex writes, and beneficial-owner claims.
+
 ## Do Not Reuse Blindly
 
 - Hardcoded credentials, `.env` values, cookies, browser sessions, raw PDFs, and old service passwords.

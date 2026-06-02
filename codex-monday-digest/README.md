@@ -102,7 +102,7 @@ codex-monday-digest sync --run RUN_FOLDER --mode live_write
 
 `skill-check` validates the repo skill package against the current runner and goal markdown. It writes `skill_package_report.json` and `skill_package_summary.md`, checking `SKILL.md`, `agents/openai.yaml`, required references, proof-script alignment, safety language, and basename-only provenance.
 
-`source-audit` reads a SullyLink/retranToReel source zip and/or ignored extracted reference directory, plus the current goal markdown, and writes a compact reuse plan. It reports which old patterns should be copied conceptually, which paths are excluded as risky, and records zero external actions. It never copies old source files, credentials, cookies, raw paid docs, or dependency trees into the shareable repo.
+`source-audit` reads a SullyLink/retranToReel source zip and/or ignored extracted reference directory, plus the current goal markdown, and writes a compact reuse plan and `source_reuse_contract.json`. It reports which old patterns should be copied conceptually, maps digest parsing/APN dedupe/TitlePro worker/contact/status patterns to current runner commands and proof scripts, records excluded risk paths, and records zero external actions. It never copies old source files, credentials, cookies, raw paid docs, or dependency trees into the shareable repo.
 
 `workflow-map` reads the downloaded Monday workflow export workbooks and writes `monday_workflow_map.json`, `monday_workflow_stage_map.json`, `monday_workflow_source_profile.json`, and `monday_workflow_summary.md`. It is local-only: it extracts the board/checklist template shape for future runs and records zero Monday writes or external actions.
 
@@ -152,7 +152,7 @@ Every digest and batch run writes `monday_action_queue.csv` and a workbook `Mond
 
 `sync --connector-json ... --mode monday_lookup_dry_run` writes `monday_connector_source_profile.json` with board/item counts, matched/duplicate/not-found counts, basename-only source provenance, and zero Monday/external writes. Use this for saved read-only connector results; use `--lookup-file` for CSV/XLSX board exports.
 
-`source-audit` writes `source_reuse_audit.json`, `source_reuse_recommendations.json`, `source_risk_scan.json`, and `source_reuse_plan.md`. Use it before importing more SullyLink code so the next change is tied to the Monday workflow and does not accidentally promote old credentials, raw evidence, or broad app rewrites.
+`source-audit` writes `source_reuse_audit.json`, `source_reuse_recommendations.json`, `source_reuse_contract.json`, `source_risk_scan.json`, and `source_reuse_plan.md`. Use it before importing more SullyLink code so the next change is tied to the Monday workflow and does not accidentally promote old credentials, raw evidence, or broad app rewrites.
 
 `workflow-map` writes a reusable local contract from the exported Monday workflow workbooks. Use it when the Monday board/checklist shape needs to be reloaded or compared without opening Monday.com.
 
