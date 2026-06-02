@@ -15,6 +15,7 @@ const { buildTitleProApprovalQueue } = require("./titlepro-approval-queue");
 const { applyTitleProApprovals, readApprovalFile } = require("./titlepro-approval-intake");
 const { readTitleProEvidenceFile, matchTitleProEvidenceToLeads, buildTitleProRoleAssertions, buildTitleProNeedsReview } = require("./titlepro-evidence-intake");
 const { buildSourceReuseAudit, writeSourceAuditRun } = require("./source-reuse-audit");
+const { buildConnectorReadiness, writeConnectorReadinessRun } = require("./connector-readiness");
 const { buildDigestActionQueue, writeActionQueueCsv } = require("./monday-action-queue");
 const { lookupLeads, readLookupFile, readMondayConnectorLookupFile } = require("./monday-lookup");
 const { assertLiveWriteAllowed, redactedBoardShapeFromEnv } = require("./monday-graphql");
@@ -53,6 +54,7 @@ function usage() {
     "  codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|json",
     "  codex-monday-digest titlepro-import --run RUN_FOLDER --evidence TITLEPRO_EVIDENCE.json",
     "  codex-monday-digest source-audit --zip SOURCE.zip --source-dir EXTERNAL_REFERENCE_DIR --goal-md GOAL.md --out RUN_FOLDER",
+    "  codex-monday-digest connector-readiness --gmail-json GMAIL_CONNECTOR_READ.json --monday-json MONDAY_CONNECTOR_READ.json --label LABEL --since WINDOW --out RUN_FOLDER",
     "  codex-monday-digest sync --run RUN_FOLDER --mode live_write"
   ].join("\n");
 }
@@ -509,6 +511,24 @@ function sourceAuditCommand(args) {
   console.log(`source_audit_patterns=${matched} risk_path_count=${risks} out=${args.out}`);
 }
 
+function connectorReadinessCommand(args) {
+  if (!args.out) {
+    throw new Error("connector-readiness requires --out RUN_FOLDER");
+  }
+  const gmailJson = args["gmail-json"] || args.gmail_json || args.gmailJson;
+  const mondayJson = args["monday-json"] || args.monday_json || args.mondayJson || args["connector-json"] || args.connector_json || args.connectorJson;
+  const readiness = buildConnectorReadiness({
+    gmailJson,
+    mondayJson,
+    label: args.label || "CRE/PropertyRadar Alerts",
+    since: args.since || "2d",
+    query: args.query
+  });
+  writeConnectorReadinessRun(args.out, readiness);
+  const failed = readiness.report.checks.filter((check) => check.status !== "ready").length;
+  console.log(`connector_readiness=${readiness.report.ready ? "ready" : "not_ready"} checks=${readiness.report.checks.length} failed=${failed} out=${args.out}`);
+}
+
 function verifyCommand(args) {
   if (!args.run) throw new Error("verify requires --run RUN_FOLDER");
   const result = verifyRun(args.run);
@@ -544,6 +564,9 @@ function main() {
       case "source-audit":
         sourceAuditCommand(args);
         break;
+      case "connector-readiness":
+        connectorReadinessCommand(args);
+        break;
       case "verify":
         verifyCommand(args);
         break;
@@ -569,5 +592,6 @@ module.exports = {
   titleProImportCommand,
   batchCommand,
   sourceAuditCommand,
+  connectorReadinessCommand,
   verifyCommand
 };

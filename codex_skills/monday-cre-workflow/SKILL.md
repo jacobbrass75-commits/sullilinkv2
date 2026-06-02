@@ -91,6 +91,15 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 Use the Monday connector read/list tools outside the runner to create the JSON file. The runner consumes the saved result, preserves item/board/group IDs in `monday_lookup_results.json`, writes `monday_connector_source_profile.json`, and must leave Monday/external writes at zero.
 
+Connector readiness before scheduled use:
+
+```bash
+node src/cli.js connector-readiness --gmail-json path/to/gmail_connector_read.json --monday-json path/to/monday_connector_read.json --label "CRE/PropertyRadar Alerts" --since 2d --out ../outputs/monday_digest_runs/connector-readiness
+node src/cli.js verify --run ../outputs/monday_digest_runs/connector-readiness
+```
+
+`connector-readiness` validates the saved read-only Gmail and Monday connector JSON together. It must prove the canonical Gmail label/query, full PropertyRadar email bodies, Monday board/item/group ID preservation, Radar ID availability, basename-only source provenance, and zero Gmail/Monday/external writes.
+
 TitlePro approval intake after broker/admin approval:
 
 ```bash

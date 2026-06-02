@@ -62,6 +62,7 @@ CRE Brain / SullyLink database
 - `npm test` passes in `codex-monday-digest`.
 - Digest parser handles both saved text and HTML PropertyRadar tables.
 - Gmail connector preview consumes saved read-only connector JSON, preserves Gmail message/thread IDs, and records zero Gmail mutations/sends.
+- `connector-readiness --gmail-json --monday-json` validates the canonical Gmail label/query and saved Monday board-item connector export shape before scheduled connector use.
 - Batch owner-cluster preview remains local-only and provisional.
 - Batch CSV preview normalizes APNs when present, collapses duplicate APN rows, and preserves source row indexes.
 - Digest preview writes `titlepro_approval_queue_preview.json`, plus a workbook `TitlePro Approval` sheet, with approval IDs linked to blocked TitlePro subitems and queue decisions.
@@ -83,6 +84,7 @@ cd codex-monday-digest
 CODEX_PYTHON_BIN=/path/to/python-with-openpyxl PROPERTYRADAR_BATCH_CSV=/path/to/propertyradar_export.csv npm test
 npm run proof:preview
 npm run proof:gmail-connector
+npm run proof:connector-readiness
 npm run proof:lookup
 npm run proof:monday-connector
 npm run proof:titlepro-approval
@@ -99,8 +101,7 @@ http://localhost:8787
 
 ## Open Work
 
-- Configure the canonical Gmail label/query (`CRE/PropertyRadar Alerts`) in the connected mailbox before scheduled connector use.
-- Configure the live Monday connector read/export step that saves board items into the `--connector-json` shape; local connector-result matching is present.
+- Run the connected Gmail read and Monday board-item read tools against the live mailbox/board, save their JSON, and pass them through `connector-readiness`; the local readiness contract is present.
 - Add action-time TitlePro pull execution after an approved request is re-confirmed for property, APN/county when known, doc/profile type, reason, and cost ceiling. Saved TitlePro evidence intake is present; browser/order execution remains gated.
 - Add official-provider status checks only after source rights and API shape are confirmed.
 - Use `source-audit` before adapting additional SullyLink/retranToReel patterns so broad app code, credentials, and raw artifacts stay out of the Monday-first lane.

@@ -92,6 +92,25 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 Connector JSON lookup also writes `monday_connector_source_profile.json` with board/item counts and basename-only source provenance. Both lookup lanes are read-only and must leave `forbidden_actions.monday_live_writes = 0`.
 
+### Connector Readiness
+
+Before scheduled connector use, save one read-only Gmail connector result and one read-only Monday board-item connector result, then run:
+
+```bash
+node src/cli.js connector-readiness --gmail-json path/to/gmail_connector_read.json --monday-json path/to/monday_connector_read.json --label "CRE/PropertyRadar Alerts" --since 2d --out ../outputs/monday_digest_runs/connector-readiness
+node src/cli.js verify --run ../outputs/monday_digest_runs/connector-readiness
+```
+
+Required output:
+
+- `connector_readiness_report.json`
+- `gmail_connector_contract.json`
+- `monday_connector_contract.json`
+- `connector_readiness_plan.md`
+- `run_manifest.json`
+
+The Gmail read must include full message bodies, not snippets only, and must preserve message/thread IDs. The Monday read must include board IDs, item IDs, group IDs, and a Radar ID column value or item-name Radar ID for each lookup item. The readiness runner consumes saved JSON only and must not label/archive/send Gmail, mutate Monday, or execute external writes.
+
 ### TitlePro Evidence
 
 Start from `titlepro_approval_queue_preview.json`. If a broker/admin approves a specific pull, record the decision before any browser/order work:

@@ -71,6 +71,7 @@ codex-monday-digest preview --gmail-json GMAIL_CONNECTOR_READ.json --label "CRE/
 codex-monday-digest export --run RUN_FOLDER --xlsx RUN_FOLDER/monday_import_preview.xlsx
 codex-monday-digest verify --run RUN_FOLDER
 codex-monday-digest batch-owner-clusters --input PROPERTYRADAR_CSV --mode local_dry_run --out RUN_FOLDER
+codex-monday-digest connector-readiness --gmail-json GMAIL_CONNECTOR_READ.json --monday-json MONDAY_CONNECTOR_READ.json --label "CRE/PropertyRadar Alerts" --since 2d --out RUN_FOLDER
 codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --lookup-file MONDAY_EXPORT.csv
 codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --connector-json MONDAY_CONNECTOR_READ.json
 codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|json
@@ -80,6 +81,8 @@ codex-monday-digest sync --run RUN_FOLDER --mode live_write
 ```
 
 `local_dry_run` and `monday_lookup_dry_run` need no credentials. The lookup mode reads a Monday board export CSV/JSON/XLSX or saved read-only connector JSON, matches existing items by Radar ID, and writes `monday_lookup_results.json` without changing Monday. `live_write` is intentionally blocked unless the later Monday approval and environment gates are satisfied.
+
+`connector-readiness` validates the saved read-only Gmail and Monday connector JSON before scheduled use. It proves the canonical Gmail label/query, full PropertyRadar email bodies, Monday board/item/group IDs, Radar ID columns, basename-only provenance, and zero Gmail/Monday/external writes.
 
 `titlepro-approve` reads a broker/admin approval CSV or JSON and writes `titlepro_approval_decisions.json`, `titlepro_pull_requests_approved.json`, and `titlepro_approval_source_profile.json`. It is intake only: approved rows become pending manual TitlePro pull requests, but `pull_executed` stays `false` and no paid TitlePro action is performed.
 
@@ -96,6 +99,7 @@ npm test
 npm run proof:ken
 npm run proof:preview
 npm run proof:gmail-connector
+npm run proof:connector-readiness
 npm run proof:lookup
 npm run proof:monday-connector
 npm run proof:titlepro-approval
@@ -110,6 +114,8 @@ The batch owner-cluster lane treats CSV owner strings as candidate grouping clue
 Digest and `gmail_preview` runs also write `titlepro_approval_queue_preview.json` and include the same rows in the workbook's `TitlePro Approval` sheet. This is an operations queue for deciding whether TitlePro evidence is needed; every row is approval-required and has `paid_action_allowed: false`.
 
 `gmail_connector_preview` additionally writes `gmail_connector_source_profile.json` with connector source hash, message counts, parsed row counts, and `gmail_mutations_executed=0` / `gmail_sends_executed=0`. Configure and verify the canonical `CRE/PropertyRadar Alerts` label/query before scheduled use.
+
+`connector-readiness` writes `connector_readiness_report.json`, `gmail_connector_contract.json`, `monday_connector_contract.json`, and `connector_readiness_plan.md`. Run it after saving read-only Gmail and Monday connector results and before relying on scheduled connector reads.
 
 After a scoped approval is supplied, run `titlepro-approve` to create the separate decision and pending-pull artifacts. These artifacts make the approval reviewable in the dashboard/workbook, but the actual TitlePro browser/order step still requires separate action-time confirmation.
 

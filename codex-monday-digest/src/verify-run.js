@@ -46,9 +46,19 @@ const SOURCE_AUDIT_FILES = [
   "run_manifest.json"
 ];
 
+const CONNECTOR_READINESS_FILES = [
+  "connector_readiness_report.json",
+  "gmail_connector_contract.json",
+  "monday_connector_contract.json",
+  "connector_readiness_plan.md",
+  "run_manifest.json"
+];
+
 function verifyRun(runFolder) {
+  const isConnectorReadiness = fs.existsSync(path.join(runFolder, "connector_readiness_report.json"));
   const isSourceAudit = fs.existsSync(path.join(runFolder, "source_reuse_audit.json"));
   const isBatch = fs.existsSync(path.join(runFolder, "batch_source_profile.json"));
+  if (isConnectorReadiness) return verifyConnectorReadinessRun(runFolder);
   if (isSourceAudit) return verifySourceAuditRun(runFolder);
   return isBatch ? verifyBatchRun(runFolder) : verifyDigestRun(runFolder);
 }
@@ -545,6 +555,53 @@ function verifySourceAuditRun(runFolder) {
   return makeReport(runFolder, "codex-monday-digest Source Audit Verification", checks);
 }
 
+function verifyConnectorReadinessRun(runFolder) {
+  const checks = [];
+  checkFiles(runFolder, CONNECTOR_READINESS_FILES, checks);
+  if (checks.some((check) => !check.pass)) return makeReport(runFolder, "codex-monday-digest Connector Readiness Verification", checks);
+
+  const report = readJson(path.join(runFolder, "connector_readiness_report.json"));
+  const gmailContract = readJson(path.join(runFolder, "gmail_connector_contract.json"));
+  const mondayContract = readJson(path.join(runFolder, "monday_connector_contract.json"));
+  const manifest = readJson(path.join(runFolder, "run_manifest.json"));
+  const plan = fs.readFileSync(path.join(runFolder, "connector_readiness_plan.md"), "utf8");
+
+  checks.push({ pass: manifest.mode === "connector_readiness", message: "manifest records connector_readiness mode" });
+  checks.push({ pass: forbiddenZero(manifest), message: "forbidden action counts are zero" });
+  checks.push({ pass: report.mode === "connector_readiness" && report.ready === true, message: "connector readiness report is ready" });
+  checks.push({ pass: report.forbidden_actions && forbiddenZero(report), message: "connector readiness report forbidden action counts are zero" });
+  checks.push({ pass: Array.isArray(report.checks) && report.checks.length >= 10 && report.checks.every(hasConnectorReadinessCheckFields), message: "connector readiness checks are structured" });
+  checks.push({ pass: report.checks.every((check) => check.status === "ready"), message: "all connector readiness checks are ready" });
+  checks.push({ pass: report.canonical_gmail_label === "CRE/PropertyRadar Alerts", message: "canonical Gmail label is CRE/PropertyRadar Alerts" });
+  checks.push({ pass: Boolean(report.canonical_gmail_query) && report.canonical_gmail_query.includes("CRE/PropertyRadar Alerts"), message: "canonical Gmail query is recorded" });
+  checks.push({ pass: report.gmail_source_profile?.source_path_scope === "basename_only" && !String(report.gmail_source_profile?.source_path || "").includes("/"), message: "Gmail readiness source path is basename-only" });
+  checks.push({ pass: report.gmail_source_profile?.parsed_row_count > 0, message: "Gmail readiness parsed at least one PropertyRadar row" });
+  checks.push({ pass: report.gmail_source_profile?.gmail_mutations_executed === 0 && report.gmail_source_profile?.gmail_sends_executed === 0 && report.gmail_source_profile?.external_writes_executed === 0, message: "Gmail readiness records zero Gmail mutations/sends/external writes" });
+  checks.push({ pass: report.monday_source_profile?.source_path_scope === "basename_only" && !String(report.monday_source_profile?.source_path || "").includes("/"), message: "Monday readiness source path is basename-only" });
+  checks.push({ pass: report.monday_source_profile?.board_count > 0 && report.monday_source_profile?.lookup_record_count > 0, message: "Monday readiness has board and item records" });
+  checks.push({ pass: report.monday_source_profile?.record_with_item_board_group_ids_count === report.monday_source_profile?.lookup_record_count, message: "Monday readiness preserves item, board, and group IDs for every record" });
+  checks.push({ pass: report.monday_source_profile?.monday_live_writes_executed === 0 && report.monday_source_profile?.write_actions_executed === 0 && report.monday_source_profile?.external_writes_executed === 0, message: "Monday readiness records zero Monday/external writes" });
+  checks.push({ pass: gmailContract.connector === "gmail" && gmailContract.operation === "read_only_search_then_save_json", message: "Gmail connector contract records read-only save shape" });
+  checks.push({ pass: mondayContract.connector === "monday" && mondayContract.operation === "read_only_board_items_then_save_json", message: "Monday connector contract records read-only save shape" });
+  checks.push({ pass: noAbsoluteLocalPathsInConnectorReadiness(runFolder), message: "connector readiness outputs contain no absolute local paths" });
+  checks.push({ pass: !plan.includes("Authorization:") && !plan.includes("PASSWORD="), message: "connector readiness plan contains no credential values" });
+  checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
+
+  return makeReport(runFolder, "codex-monday-digest Connector Readiness Verification", checks);
+}
+
+function hasConnectorReadinessCheckFields(row) {
+  return ["id", "status", "message"].every((field) => Object.prototype.hasOwnProperty.call(row, field));
+}
+
+function noAbsoluteLocalPathsInConnectorReadiness(runFolder) {
+  const files = CONNECTOR_READINESS_FILES.filter((file) => file !== "run_manifest.json");
+  return files.every((file) => {
+    const text = fs.readFileSync(path.join(runFolder, file), "utf8");
+    return !hasAbsoluteLocalPath(text);
+  });
+}
+
 function hasSourceRecommendationFields(row) {
   return [
     "id",
@@ -575,8 +632,12 @@ function noAbsoluteLocalPathsInSourceAudit(runFolder) {
   const files = SOURCE_AUDIT_FILES.filter((file) => file !== "run_manifest.json");
   return files.every((file) => {
     const text = fs.readFileSync(path.join(runFolder, file), "utf8");
-    return !/\/Users\/|file:\/\/|[A-Za-z]:\\/.test(text);
+    return !hasAbsoluteLocalPath(text);
   });
+}
+
+function hasAbsoluteLocalPath(text) {
+  return /\/Users\/|file:\/\/|(^|[\s"'])[A-Za-z]:[\\/][^\s"']*/.test(text);
 }
 
 function isSortedBySourceRow(candidates) {
@@ -680,5 +741,6 @@ module.exports = {
   verifyRun,
   verifyDigestRun,
   verifyBatchRun,
-  verifySourceAuditRun
+  verifySourceAuditRun,
+  verifyConnectorReadinessRun
 };
