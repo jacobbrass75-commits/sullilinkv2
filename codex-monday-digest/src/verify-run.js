@@ -12,6 +12,7 @@ const DIGEST_FILES = [
   "monday_mutations_preview.json",
   "monday_subitems_preview.json",
   "monday_comments_preview.json",
+  "titlepro_approval_queue_preview.json",
   "broker_packets_preview.json",
   "approval_events_preview.json",
   "audit_events_preview.jsonl",
@@ -78,6 +79,7 @@ function verifyDigestRun(runFolder) {
   const mutations = readJson(path.join(runFolder, "monday_mutations_preview.json"));
   const subitems = readJson(path.join(runFolder, "monday_subitems_preview.json"));
   const comments = readJson(path.join(runFolder, "monday_comments_preview.json"));
+  const titleproQueue = readJson(path.join(runFolder, "titlepro_approval_queue_preview.json"));
   const packets = readJson(path.join(runFolder, "broker_packets_preview.json"));
   const approvals = readJson(path.join(runFolder, "approval_events_preview.json"));
   const queueDecisions = readJson(path.join(runFolder, "queue_decisions_preview.json"));
@@ -93,6 +95,9 @@ function verifyDigestRun(runFolder) {
   checks.push({ pass: mutations.every((mutation) => REQUIRED_GATE_COLUMNS.every((column) => Object.prototype.hasOwnProperty.call(mutation.columns || {}, column))), message: "mutation previews include default gate columns" });
   checks.push({ pass: leads.every((lead) => hasRequiredSubitems(lead, subitems)), message: "every lead has current-status, owner/control, provider, and relationship subitems" });
   checks.push({ pass: comments.length >= leads.length, message: "comment previews exist for every lead" });
+  checks.push({ pass: titleproQueue.length >= leads.length && titleproQueue.every(hasTitleProQueueFields), message: "TitlePro approval queue exists with required fields for every lead" });
+  checks.push({ pass: titleproQueue.every((row) => row.approval_required === true && row.paid_action_allowed === false), message: "TitlePro queue requires approval and allows no paid actions" });
+  checks.push({ pass: leads.every((lead) => hasTitleProQueueLinks(lead, titleproQueue, subitems, queueDecisions)), message: "TitlePro queue approval ids are linked to subitems and queue decisions" });
   checks.push({ pass: approvals.length >= leads.length, message: "approval previews exist for every lead" });
   checks.push({ pass: auditEvents.length >= leads.length + 2, message: "audit events exist for parse, dedupe, and blocked decisions" });
   checks.push({ pass: queueDecisions.length >= leads.length, message: "queue decisions exist for every lead" });
@@ -181,6 +186,43 @@ function hasRequiredSubitems(lead, subitems) {
     "Relationship/suppression readiness"
   ];
   return required.every((task) => leadSubitems.includes(task)) && DEFAULT_SUBITEMS.length <= leadSubitems.length;
+}
+
+function hasTitleProQueueFields(row) {
+  return [
+    "lead_key",
+    "radar_id",
+    "apn",
+    "county",
+    "address",
+    "city",
+    "requested_doc_type",
+    "reason",
+    "status",
+    "approval_required",
+    "approval_id",
+    "cost_ceiling",
+    "existing_evidence_path",
+    "paid_action_allowed"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field));
+}
+
+function hasTitleProQueueLinks(lead, titleproQueue, subitems, queueDecisions) {
+  const queueRow = titleproQueue.find((row) => row.lead_key === lead.dedupe_key);
+  if (!queueRow || !queueRow.approval_id) return false;
+  const titleproSubitem = subitems.find((subitem) => {
+    return subitem.lead_key === lead.dedupe_key
+      && subitem.task === "Pull/save approved TitlePro docs"
+      && subitem.approval_id === queueRow.approval_id
+      && subitem.status === "blocked";
+  });
+  const queueDecision = queueDecisions.find((decision) => {
+    return decision.lead_key === lead.dedupe_key
+      && decision.queue_name === "titlepro_approval"
+      && decision.approval_id === queueRow.approval_id
+      && decision.decision === "hold";
+  });
+  return Boolean(titleproSubitem && queueDecision);
 }
 
 function noCredentialLeaks(runFolder) {

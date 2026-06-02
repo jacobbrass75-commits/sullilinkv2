@@ -8,6 +8,8 @@ The digest parser supports saved plain text and the HTML table shape commonly pr
 
 It does not write to Monday, send Gmail, pull TitlePro, write RealNex, backfill providers, or promote owner/control claims in the default path.
 
+For Gmail-sourced alerts, save or paste the email body to a local text/HTML file and use `preview --input`. This records the Gmail label/window as provenance without reading Gmail or mutating external systems.
+
 ## Team Dashboard
 
 Start the shared browser app:
@@ -39,7 +41,7 @@ The dashboard supports:
 - paste or upload a PropertyRadar digest text file
 - build a digest review run
 - upload or use the default PropertyRadar CSV for owner clusters
-- review lead rows, source-event preservation, default tasks, hard holds, owner clusters, and verification status
+- review lead rows, source-event preservation, default tasks, hard holds, TitlePro approval holds, owner clusters, and verification status
 - download `monday_import_preview.xlsx` and the JSON/verification artifacts
 
 Run folders are saved under:
@@ -60,6 +62,7 @@ PROPERTYRADAR_BATCH_CSV=/path/to/propertyradar_export.csv npm run app
 
 ```text
 codex-monday-digest parse --input EMAIL_OR_TEXT_FILE --mode local_dry_run --out RUN_FOLDER
+codex-monday-digest preview --input SAVED_EMAIL_FILE --label "CRE/PropertyRadar Alerts" --since 2d --mode gmail_preview --out RUN_FOLDER
 codex-monday-digest export --run RUN_FOLDER --xlsx RUN_FOLDER/monday_import_preview.xlsx
 codex-monday-digest verify --run RUN_FOLDER
 codex-monday-digest batch-owner-clusters --input PROPERTYRADAR_CSV --mode local_dry_run --out RUN_FOLDER
@@ -76,8 +79,11 @@ From this folder:
 ```text
 npm test
 npm run proof:ken
+npm run proof:preview
 npm run proof:edge
 npm run proof:batch
 ```
 
 The batch owner-cluster lane treats CSV owner strings as candidate grouping clues only. Every output remains provisional until APN/county/Radar ID, title evidence, SOS role evidence, current-status evidence, and approval gates are added.
+
+Digest and `gmail_preview` runs also write `titlepro_approval_queue_preview.json` and include the same rows in the workbook's `TitlePro Approval` sheet. This is an operations queue for deciding whether TitlePro evidence is needed; every row is approval-required and has `paid_action_allowed: false`.

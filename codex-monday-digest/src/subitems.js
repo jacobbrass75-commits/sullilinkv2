@@ -13,7 +13,8 @@ const DEFAULT_SUBITEMS = [
   ["Broker review decision", "Broker", "item moved to next workflow stage", "broker_review"]
 ];
 
-function buildSubitems(leads) {
+function buildSubitems(leads, options = {}) {
+  const titleProApprovalByLead = new Map((options.titleproQueue || []).map((row) => [row.lead_key, row.approval_id]));
   return leads.flatMap((lead) =>
     DEFAULT_SUBITEMS.map(([task, ownerRole, exitCriteria, queueName]) => ({
       lead_key: lead.dedupe_key,
@@ -24,7 +25,7 @@ function buildSubitems(leads) {
       due_offset: queueName === "current_status" ? "next business day" : null,
       exit_criteria: exitCriteria,
       approval_required: task === "Pull/save approved TitlePro docs",
-      approval_id: null,
+      approval_id: task === "Pull/save approved TitlePro docs" ? titleProApprovalByLead.get(lead.dedupe_key) || null : null,
       subitem_delivery: "preview"
     }))
   );

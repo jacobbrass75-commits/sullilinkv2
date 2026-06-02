@@ -36,7 +36,8 @@ function buildAuditEvents(runId, parsedRows, leads, extraEvents = [], at = nowIs
   return events;
 }
 
-function buildQueueDecisions(leads) {
+function buildQueueDecisions(leads, options = {}) {
+  const titleProApprovalByLead = new Map((options.titleproQueue || []).map((row) => [row.lead_key, row.approval_id]));
   return leads.flatMap((lead) => [
     {
       lead_key: lead.dedupe_key,
@@ -58,6 +59,13 @@ function buildQueueDecisions(leads) {
       decision: "hold",
       reason: "Outreach readiness remains blocked until relationship context, suppression, current status, and broker approval clear.",
       approval_id: null
+    },
+    {
+      lead_key: lead.dedupe_key,
+      queue_name: "titlepro_approval",
+      decision: "hold",
+      reason: "TitlePro profile/document pulls require screened scope, cost ceiling, and explicit broker/admin approval.",
+      approval_id: titleProApprovalByLead.get(lead.dedupe_key) || null
     }
   ]);
 }

@@ -11,6 +11,7 @@
     "start": "node src/server.js",
     "test": "node --test tests/*.test.js",
     "proof:ken": "node src/cli.js parse --input fixtures/ken_kahan_digest_2026-05-30.txt --mode local_dry_run --out ../outputs/monday_digest_runs/dev && node src/cli.js export --run ../outputs/monday_digest_runs/dev --xlsx ../outputs/monday_digest_runs/dev/monday_import_preview.xlsx && node src/cli.js verify --run ../outputs/monday_digest_runs/dev",
+    "proof:preview": "node src/cli.js preview --input fixtures/ken_kahan_digest_2026-05-30.txt --label \"CRE/PropertyRadar Alerts\" --since 2d --mode gmail_preview --out ../outputs/monday_digest_runs/gmail-preview && node src/cli.js verify --run ../outputs/monday_digest_runs/gmail-preview",
     "proof:edge": "node src/cli.js parse --input fixtures/southern_california_edge_cases_2026-05-30_excerpt.txt --mode local_dry_run --out ../outputs/monday_digest_runs/edge && node src/cli.js verify --run ../outputs/monday_digest_runs/edge",
     "proof:batch": "node src/cli.js batch-owner-clusters --input ${PROPERTYRADAR_BATCH_CSV:-../data/Export-20260526-091844.csv} --mode local_dry_run --out ../outputs/monday_digest_runs/batch-owner-clusters && node src/cli.js verify --run ../outputs/monday_digest_runs/batch-owner-clusters"
   },

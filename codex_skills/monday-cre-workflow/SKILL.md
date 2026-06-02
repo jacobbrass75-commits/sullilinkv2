@@ -45,6 +45,17 @@ node src/cli.js export --run ../outputs/monday_digest_runs/dev --xlsx ../outputs
 node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 ```
 
+Saved Gmail/PropertyRadar preview:
+
+```bash
+node src/cli.js preview --input path/to/saved_digest_email.html --label "CRE/PropertyRadar Alerts" --since 2d --mode gmail_preview --out ../outputs/monday_digest_runs/gmail-preview
+node src/cli.js verify --run ../outputs/monday_digest_runs/gmail-preview
+```
+
+`gmail_preview` records the Gmail label/window as provenance but still reads only the saved local file. It does not access Gmail, write Monday, send email, or trigger TitlePro.
+
+Digest and `gmail_preview` runs should include `titlepro_approval_queue_preview.json` and, when exported, a workbook `TitlePro Approval` sheet. Treat it as a decision queue only: approval IDs may be linked to blocked subitems, but `paid_action_allowed` must remain `false` until the user explicitly approves a scoped TitlePro pull.
+
 Batch owner-cluster preview:
 
 ```bash

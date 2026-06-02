@@ -10,6 +10,7 @@ const { buildApprovalEvents, buildAuditEvents, buildQueueDecisions, buildComment
 const { exportWorkbook, updateManifestWithWorkbook } = require("./export-workbook");
 const { verifyRun } = require("./verify-run");
 const { buildBatchArtifacts, writeBatchRun } = require("./batch-owner-clusters");
+const { buildTitleProApprovalQueue } = require("./titlepro-approval-queue");
 const { assertLiveWriteAllowed, redactedBoardShapeFromEnv } = require("./monday-graphql");
 const { FORBIDDEN_ZERO, ensureDir, writeJson, appendJsonl, nowIso } = require("./runtime");
 
@@ -36,6 +37,7 @@ function usage() {
   return [
     "Usage:",
     "  codex-monday-digest parse --input FILE --mode local_dry_run --out RUN_FOLDER",
+    "  codex-monday-digest preview --input SAVED_EMAIL_FILE --label LABEL --since WINDOW --mode gmail_preview --out RUN_FOLDER",
     "  codex-monday-digest export --run RUN_FOLDER --xlsx RUN_FOLDER/monday_import_preview.xlsx",
     "  codex-monday-digest verify --run RUN_FOLDER",
     "  codex-monday-digest batch-owner-clusters --input CSV --mode local_dry_run --out RUN_FOLDER",
@@ -53,38 +55,36 @@ function rejectAmbiguousDryRun(mode) {
   }
 }
 
-function parseCommand(args) {
-  rejectAmbiguousDryRun(args.mode);
-  if (!args.input || !args.out || args.mode !== "local_dry_run") {
-    throw new Error("parse requires --input FILE --mode local_dry_run --out RUN_FOLDER");
-  }
-  const outDir = args.out;
+function writeDigestRunFromFile({ input, out, mode, inputPaths = [input], sourceOverrides = {} }) {
+  const outDir = out;
   ensureDir(outDir);
   const runId = runIdFromOut(outDir);
   const at = nowIso();
-  const parsed = parseDigestFile(args.input);
+  const parsed = parseDigestFile(input);
   const deduped = dedupeLeads(parsed.parsedRows, { runFolder: outDir });
   const leads = deduped.leads;
   const sourceEmail = {
     ...parsed.source,
+    ...sourceOverrides,
     row_count_raw: parsed.parsedRows.length,
     row_count_unique: leads.length,
     exact_duplicate_count: leads.reduce((sum, lead) => sum + lead.exact_duplicate_count, 0)
   };
   const lookup = leads.map(lookupPlaceholderForLead);
-  const mutations = leads.map((lead) => mutationPreviewForLead(lead, args.mode));
-  const subitems = buildSubitems(leads);
+  const mutations = leads.map((lead) => mutationPreviewForLead(lead, mode));
+  const titleproQueue = buildTitleProApprovalQueue(leads, runId);
+  const subitems = buildSubitems(leads, { titleproQueue });
   const packets = buildBrokerPackets(leads);
   const approvals = buildApprovalEvents(leads, runId, at);
   const comments = buildComments(leads);
-  const queue = buildQueueDecisions(leads);
+  const queue = buildQueueDecisions(leads, { titleproQueue });
   const audit = buildAuditEvents(runId, parsed.parsedRows, leads, deduped.auditEvents, at);
   const needsReview = parsed.needsReview;
   const manifest = {
     run_id: runId,
     started_at: at,
-    mode: args.mode,
-    input_paths: [args.input],
+    mode,
+    input_paths: inputPaths,
     output_paths: [],
     forbidden_actions: { ...FORBIDDEN_ZERO },
     counts: {
@@ -102,6 +102,7 @@ function parseCommand(args) {
     "monday_mutations_preview.json": mutations,
     "monday_subitems_preview.json": subitems,
     "monday_comments_preview.json": comments,
+    "titlepro_approval_queue_preview.json": titleproQueue,
     "broker_packets_preview.json": packets,
     "approval_events_preview.json": approvals,
     "queue_decisions_preview.json": queue,
@@ -122,13 +123,43 @@ function parseCommand(args) {
   for (const lead of leads) {
     ensureDir(path.join(outDir, "evidence", lead.radar_id || lead.dedupe_key.replace(/[^a-z0-9]+/gi, "-"), "titlepro"));
   }
-  console.log(`parsed_rows=${parsed.parsedRows.length} deduped_leads=${leads.length} out=${outDir}`);
+  return { parsedRows: parsed.parsedRows, leads, outDir };
+}
+
+function parseCommand(args) {
+  rejectAmbiguousDryRun(args.mode);
+  if (!args.input || !args.out || args.mode !== "local_dry_run") {
+    throw new Error("parse requires --input FILE --mode local_dry_run --out RUN_FOLDER");
+  }
+  const { parsedRows, leads, outDir } = writeDigestRunFromFile({
+    input: args.input,
+    out: args.out,
+    mode: args.mode
+  });
+  console.log(`parsed_rows=${parsedRows.length} deduped_leads=${leads.length} out=${outDir}`);
 }
 
 function previewCommand(args) {
   rejectAmbiguousDryRun(args.mode);
   if (args.mode !== "gmail_preview" || !args.out) {
-    throw new Error("preview requires --label LABEL --since WINDOW --mode gmail_preview --out RUN_FOLDER");
+    throw new Error("preview requires --input SAVED_EMAIL_FILE --label LABEL --since WINDOW --mode gmail_preview --out RUN_FOLDER");
+  }
+  if (args.input) {
+    const label = args.label || "CRE/PropertyRadar Alerts";
+    const since = args.since || "2d";
+    const { parsedRows, leads, outDir } = writeDigestRunFromFile({
+      input: args.input,
+      out: args.out,
+      mode: "gmail_preview",
+      inputPaths: [`gmail_preview:${label}:${since}`, args.input],
+      sourceOverrides: {
+        collection_mode: "gmail_preview",
+        gmail_selector_label: label,
+        gmail_selector_since: since
+      }
+    });
+    console.log(`gmail_preview_rows=${parsedRows.length} deduped_leads=${leads.length} out=${outDir}`);
+    return;
   }
   ensureDir(args.out);
   const runId = runIdFromOut(args.out);
@@ -149,6 +180,7 @@ function previewCommand(args) {
   writeJson(path.join(args.out, "monday_mutations_preview.json"), []);
   writeJson(path.join(args.out, "monday_subitems_preview.json"), []);
   writeJson(path.join(args.out, "monday_comments_preview.json"), []);
+  writeJson(path.join(args.out, "titlepro_approval_queue_preview.json"), []);
   writeJson(path.join(args.out, "broker_packets_preview.json"), []);
   writeJson(path.join(args.out, "approval_events_preview.json"), []);
   writeJson(path.join(args.out, "queue_decisions_preview.json"), []);
@@ -242,6 +274,7 @@ if (require.main === module) main();
 module.exports = {
   parseArgs,
   parseCommand,
+  previewCommand,
   exportCommand,
   batchCommand,
   verifyCommand

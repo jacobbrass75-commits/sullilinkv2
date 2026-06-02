@@ -25,14 +25,23 @@ Look for:
 
 Use `parse`, `export`, and `verify`.
 
+For a saved Gmail/PropertyRadar email body, use `preview --input` instead of live mailbox access:
+
+```bash
+node src/cli.js preview --input path/to/saved_digest_email.html --label "CRE/PropertyRadar Alerts" --since 2d --mode gmail_preview --out ../outputs/monday_digest_runs/gmail-preview
+node src/cli.js verify --run ../outputs/monday_digest_runs/gmail-preview
+```
+
 Required evidence for a digest run:
 
 - raw/pasted email text or HTML saved under run input
+- Gmail preview provenance when applicable: label/window plus saved input file path
 - `source_emails.json`
 - `parsed_rows.json`
 - `deduped_leads.json`
 - Monday preview JSON
 - subitem/task preview JSON
+- `titlepro_approval_queue_preview.json` and workbook `TitlePro Approval` sheet with approval IDs linked to blocked TitlePro subitems and `paid_action_allowed: false`
 - verification report
 
 ### CSV/XLSX Batch Export

@@ -11,13 +11,15 @@ The workflow should take PropertyRadar daily digest rows or batch CSV exports, d
 1. Codify the process as a Codex skill: `monday-cre-workflow`.
 2. Keep `codex-monday-digest` as the first runnable automation surface.
 3. Add digest parsing improvements from SullyLink-style logic, especially HTML table support.
-4. Preserve the current safety model:
+4. Add saved-Gmail preview support: a pasted/exported email file can run through the digest pipeline in `gmail_preview` mode while preserving label/window provenance.
+5. Add a preview-only TitlePro approval queue so missing-evidence decisions become Monday-operational without enabling paid pulls.
+6. Preserve the current safety model:
    - no Monday live writes by default
    - no Gmail sends
    - no RealNex writes
    - no unsupervised TitlePro paid pulls
    - no owner/control claims from CSV owner strings alone
-5. Keep shareable packet output separate from raw evidence, credentials, cookies, PDFs, and old app dumps.
+7. Keep shareable packet output separate from raw evidence, credentials, cookies, PDFs, and old app dumps.
 
 ## Reused SullyLink / retranToReel Patterns
 
@@ -60,6 +62,7 @@ CRE Brain / SullyLink database
 - `npm test` passes in `codex-monday-digest`.
 - Digest parser handles both saved text and HTML PropertyRadar tables.
 - Batch owner-cluster preview remains local-only and provisional.
+- Digest preview writes `titlepro_approval_queue_preview.json`, plus a workbook `TitlePro Approval` sheet, with approval IDs linked to blocked TitlePro subitems and queue decisions.
 - Shareable packet files have no credentials, cookies, local absolute paths, or paid raw docs.
 - Every broker-facing owner/control claim has evidence and confidence language.
 - TitlePro actions remain serialized and approval-gated.
@@ -70,6 +73,7 @@ CRE Brain / SullyLink database
 ```bash
 cd codex-monday-digest
 CODEX_PYTHON_BIN=/path/to/python-with-openpyxl PROPERTYRADAR_BATCH_CSV=/path/to/propertyradar_export.csv npm test
+npm run proof:preview
 npm run app
 ```
 
@@ -81,8 +85,8 @@ http://localhost:8787
 
 ## Open Work
 
-- Add Gmail connector preview once manual digest parsing is stable.
+- Add live Gmail connector read preview after the saved-email `gmail_preview --input` lane is used successfully.
 - Add Monday read-only lookup for existing items by Radar ID.
-- Add a formal TitlePro approval queue/export from the runner.
+- Add approval intake for TitlePro decisions after a broker/admin supplies property, APN/county when known, doc/profile type, reason, and cost ceiling.
 - Add APN-aware batch dedupe when the source CSV includes APN columns.
 - Add official-provider status checks only after source rights and API shape are confirmed.

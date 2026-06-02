@@ -157,13 +157,14 @@ function downloadLinks(summary) {
   const id = encodeURIComponent(summary.id);
   const files = summary.type === "batch"
     ? ["monday_import_preview.xlsx", "verification_report.md", "candidate_properties.json", "owner_cluster_candidates.json"]
-    : ["monday_import_preview.xlsx", "verification_report.md", "deduped_leads.json", "monday_subitems_preview.json"];
+    : ["monday_import_preview.xlsx", "verification_report.md", "deduped_leads.json", "monday_subitems_preview.json", "titlepro_approval_queue_preview.json"];
   return files.map((file) => `<a href="/api/runs/${id}/download/${encodeURIComponent(file)}">${escapeHtml(file)}</a>`);
 }
 
 function renderDigestDetail(detail) {
   const leads = detail.leads || [];
   const subitems = detail.subitems || [];
+  const titleproQueue = detail.titlepro_approval_queue || [];
   els.detailBody.innerHTML = `
     <h3>Leads</h3>
     <table>
@@ -177,6 +178,22 @@ function renderDigestDetail(detail) {
             <td class="${lead.hard_hold ? "hold" : ""}">${escapeHtml(lead.current_status)}</td>
             <td>${lead.source_events.length} distinct / ${lead.exact_duplicate_count} duplicate</td>
             <td class="wrap">${escapeHtml(lead.next_action)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    <h3>TitlePro Approval Queue</h3>
+    <table>
+      <thead><tr><th>Lead</th><th>Address</th><th>Request</th><th>Status</th><th>Approval</th><th>Paid Pull</th></tr></thead>
+      <tbody>
+        ${titleproQueue.map((row) => `
+          <tr>
+            <td class="wrap">${escapeHtml(row.lead_key)}</td>
+            <td class="wrap">${escapeHtml(`${row.address || ""}, ${row.city || ""}`)}</td>
+            <td class="wrap">${escapeHtml(row.requested_doc_type)}</td>
+            <td class="blocked">${escapeHtml(row.status)}</td>
+            <td>${row.approval_required ? escapeHtml(row.approval_id) : ""}</td>
+            <td class="blocked">${row.paid_action_allowed ? "allowed" : "blocked"}</td>
           </tr>
         `).join("")}
       </tbody>

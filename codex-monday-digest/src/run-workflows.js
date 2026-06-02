@@ -9,6 +9,7 @@ const { buildApprovalEvents, buildAuditEvents, buildQueueDecisions, buildComment
 const { exportWorkbook, updateManifestWithWorkbook } = require("./export-workbook");
 const { verifyRun } = require("./verify-run");
 const { buildBatchArtifacts, writeBatchRun } = require("./batch-owner-clusters");
+const { buildTitleProApprovalQueue } = require("./titlepro-approval-queue");
 const { FORBIDDEN_ZERO, ensureDir, writeJson, appendJsonl, nowIso, readJson } = require("./runtime");
 
 const WORKSPACE_ROOT = path.resolve(__dirname, "..", "..");
@@ -81,11 +82,12 @@ function writeDigestRun({ inputPath, outDir, mode }) {
   };
   const lookup = leads.map(lookupPlaceholderForLead);
   const mutations = leads.map((lead) => mutationPreviewForLead(lead, mode));
-  const subitems = buildSubitems(leads);
+  const titleproQueue = buildTitleProApprovalQueue(leads, id);
+  const subitems = buildSubitems(leads, { titleproQueue });
   const packets = buildBrokerPackets(leads);
   const approvals = buildApprovalEvents(leads, id, at);
   const comments = buildComments(leads);
-  const queue = buildQueueDecisions(leads);
+  const queue = buildQueueDecisions(leads, { titleproQueue });
   const audit = buildAuditEvents(id, parsed.parsedRows, leads, deduped.auditEvents, at);
   const manifest = {
     run_id: id,
@@ -110,6 +112,7 @@ function writeDigestRun({ inputPath, outDir, mode }) {
     "monday_mutations_preview.json": mutations,
     "monday_subitems_preview.json": subitems,
     "monday_comments_preview.json": comments,
+    "titlepro_approval_queue_preview.json": titleproQueue,
     "broker_packets_preview.json": packets,
     "approval_events_preview.json": approvals,
     "queue_decisions_preview.json": queue,
@@ -237,6 +240,7 @@ function readRunDetails(id) {
     leads: readIfExists(path.join(folder, "deduped_leads.json"), []),
     mutations: readIfExists(path.join(folder, "monday_mutations_preview.json"), []),
     subitems: readIfExists(path.join(folder, "monday_subitems_preview.json"), []),
+    titlepro_approval_queue: readIfExists(path.join(folder, "titlepro_approval_queue_preview.json"), []),
     packets: readIfExists(path.join(folder, "broker_packets_preview.json"), []),
     needs_review: readIfExists(path.join(folder, "needs_review.json"), []),
     report: readReport(folder).text
@@ -259,6 +263,7 @@ function downloadableFile(id, fileName) {
     "deduped_leads.json",
     "monday_mutations_preview.json",
     "monday_subitems_preview.json",
+    "titlepro_approval_queue_preview.json",
     "broker_packets_preview.json",
     "candidate_properties.json",
     "owner_cluster_candidates.json",
