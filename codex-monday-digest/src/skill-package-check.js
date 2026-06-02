@@ -1,11 +1,26 @@
 const fs = require("fs");
 const path = require("path");
-const { FORBIDDEN_ZERO, ensureDir, writeJson, sha256File, nowIso } = require("./runtime");
+const { FORBIDDEN_ZERO, ensureDir, writeJson, sha256File, nowIso, manifestPathList } = require("./runtime");
 
 const REQUIRED_REFERENCES = [
   "references/runbook.md",
   "references/sullilink-reuse.md",
   "references/source-reuse-contract.json"
+];
+
+const REQUIRED_SYSTEM_SKILL_FILES = [
+  "skills/daily-intake/SKILL.md",
+  "skills/batch-owner-cluster-intake/SKILL.md",
+  "skills/monday-workflow-map/SKILL.md",
+  "skills/monday-live-gates/SKILL.md",
+  "skills/titlepro-evidence/SKILL.md",
+  "skills/owner-disambiguation/SKILL.md",
+  "skills/sos-entity-trace/SKILL.md",
+  "skills/current-status/SKILL.md",
+  "skills/contact-enrichment/SKILL.md",
+  "skills/broker-packet/SKILL.md",
+  "skills/subagent-orchestration/SKILL.md",
+  "skills/safety-proof-gates/SKILL.md"
 ];
 
 const REQUIRED_CONTRACT_LANES = [
@@ -115,6 +130,8 @@ function buildSkillPackageCheck({ skillDir, packageJson, goalMd }) {
   const reuse = readText("references/sullilink-reuse.md");
   const sourceContractText = readText("references/source-reuse-contract.json");
   const sourceContract = parseJson(sourceContractText);
+  const systemSkillFiles = collectSystemSkillFiles(skillPath);
+  const systemSkillTexts = systemSkillFiles.map((file) => fs.readFileSync(file.fullPath, "utf8"));
   const openaiYaml = fs.existsSync(agentsPath) ? fs.readFileSync(agentsPath, "utf8") : "";
   const packageJsonText = fs.existsSync(packagePath) ? fs.readFileSync(packagePath, "utf8") : "";
   const packageData = packageJsonText ? JSON.parse(packageJsonText) : {};
@@ -134,6 +151,12 @@ function buildSkillPackageCheck({ skillDir, packageJson, goalMd }) {
     addCheck(checks, `reference_exists:${relativePath}`, fs.existsSync(path.join(skillPath, relativePath)), `${relativePath} exists`);
   }
 
+  for (const relativePath of REQUIRED_SYSTEM_SKILL_FILES) {
+    addCheck(checks, `system_skill_exists:${relativePath}`, fs.existsSync(path.join(skillPath, relativePath)), `${relativePath} exists`);
+  }
+  addCheck(checks, "system_skill_files_have_frontmatter", systemSkillFiles.every((file) => hasSkillFrontmatter(fs.readFileSync(file.fullPath, "utf8"))), "bundled lane skill files have skill frontmatter");
+  addCheck(checks, "skill_references_system_skills", REQUIRED_SYSTEM_SKILL_FILES.every((relativePath) => skillMd.includes(relativePath)), "SKILL.md points to each bundled lane skill");
+
   addCheck(checks, "agents_openai_yaml_exists", fs.existsSync(agentsPath), "agents/openai.yaml exists for skill UI metadata");
   addCheck(checks, "agents_default_prompt_mentions_skill", /\$monday-cre-workflow/.test(openaiYaml), "agents/openai.yaml default prompt explicitly mentions $monday-cre-workflow");
   addCheck(checks, "agents_short_description_length", validShortDescription(openaiYaml), "agents/openai.yaml has a 25-64 character short_description");
@@ -146,7 +169,7 @@ function buildSkillPackageCheck({ skillDir, packageJson, goalMd }) {
     addCheck(checks, `proof_script:${scriptName}`, typeof scripts[scriptName] === "string" && scripts[scriptName].length > 0, `${scriptName} exists in package scripts`);
   }
 
-  const combinedDocs = [skillMd, runbook, reuse, sourceContractText, goalText].join("\n");
+  const combinedDocs = [skillMd, runbook, reuse, sourceContractText, ...systemSkillTexts, goalText].join("\n");
   for (const phrase of REQUIRED_SAFETY_PHRASES) {
     addCheck(checks, `safety_phrase:${phrase}`, combinedDocs.includes(phrase), `docs preserve safety phrase: ${phrase}`);
   }
@@ -155,8 +178,8 @@ function buildSkillPackageCheck({ skillDir, packageJson, goalMd }) {
 
   addCheck(checks, "goal_mentions_skill", goalText.includes("Codex skill") && goalText.includes("monday-cre-workflow"), "goal markdown keeps skill objective explicit");
   addCheck(checks, "goal_mentions_source_audit", goalText.includes("source-audit") && goalText.includes("SullyLink"), "goal markdown ties SullyLink reuse to source-audit");
-  addCheck(checks, "no_absolute_local_paths", !hasAbsoluteLocalPath([skillMd, runbook, reuse, sourceContractText, openaiYaml].join("\n")), "skill package text contains no absolute local paths");
-  addCheck(checks, "no_secret_values", !hasSecretPattern([skillMd, runbook, reuse, sourceContractText, openaiYaml].join("\n")), "skill package text contains no credential-like values");
+  addCheck(checks, "no_absolute_local_paths", !hasAbsoluteLocalPath([skillMd, runbook, reuse, sourceContractText, openaiYaml, ...systemSkillTexts].join("\n")), "skill package text contains no absolute local paths");
+  addCheck(checks, "no_secret_values", !hasSecretPattern([skillMd, runbook, reuse, sourceContractText, openaiYaml, ...systemSkillTexts].join("\n")), "skill package text contains no credential-like values");
   addCheck(checks, "references_one_level_deep", oneLevelReferences(skillPath), "skill bundled references are one level deep");
 
   const passed = checks.every((check) => check.status === "pass");
@@ -181,6 +204,7 @@ function buildSkillPackageCheck({ skillDir, packageJson, goalMd }) {
       source_sha256: fs.existsSync(goalPath) ? sha256File(goalPath) : null
     } : null,
     required_references: REQUIRED_REFERENCES,
+    required_system_skill_files: REQUIRED_SYSTEM_SKILL_FILES,
     required_command_snippets: REQUIRED_COMMAND_SNIPPETS,
     required_proof_scripts: REQUIRED_PROOF_SCRIPTS,
     source_reuse_contract: sourceContract ? {
@@ -208,7 +232,8 @@ function writeSkillPackageCheckRun(outDir, report) {
     run_id: path.basename(path.resolve(outDir)).replace(/[^a-zA-Z0-9_-]+/g, "_"),
     started_at: at,
     mode: "skill_package_check",
-    output_paths: [reportPath, summaryPath],
+    output_path_scope: "run_folder_relative",
+    output_paths: manifestPathList(outDir, [reportPath, summaryPath]),
     forbidden_actions: { ...FORBIDDEN_ZERO },
     counts: {
       checks: report.checks.length,
@@ -281,7 +306,7 @@ function writeSkillPackageBundleRun(outDir, bundle, skillDir) {
 
 function collectSkillFiles(skillPath) {
   const files = [];
-  const allowedRoots = new Set(["agents", "references", "scripts", "assets"]);
+  const allowedRoots = new Set(["agents", "references", "scripts", "assets", "skills"]);
   function walk(current) {
     const relativePath = normalizeRelativePath(path.relative(skillPath, current));
     const stat = fs.statSync(current);
@@ -302,6 +327,25 @@ function collectSkillFiles(skillPath) {
   return files;
 }
 
+function collectSystemSkillFiles(skillPath) {
+  const skillsDir = path.join(skillPath, "skills");
+  if (!fs.existsSync(skillsDir)) return [];
+  const files = [];
+  function walk(current) {
+    const stat = fs.statSync(current);
+    if (stat.isDirectory()) {
+      for (const child of fs.readdirSync(current).sort()) walk(path.join(current, child));
+      return;
+    }
+    const relativePath = normalizeRelativePath(path.relative(skillPath, current));
+    if (relativePath.startsWith("skills/") && path.basename(relativePath) === "SKILL.md") {
+      files.push({ relativePath, fullPath: current });
+    }
+  }
+  walk(skillsDir);
+  return files;
+}
+
 function parseFrontmatter(text) {
   const match = String(text || "").match(/^---\n([\s\S]*?)\n---/);
   if (!match) return {};
@@ -312,6 +356,11 @@ function parseFrontmatter(text) {
     result[parts[1]] = parts[2].replace(/^"|"$/g, "").trim();
   }
   return result;
+}
+
+function hasSkillFrontmatter(text) {
+  const frontmatter = parseFrontmatter(text);
+  return Boolean(frontmatter.name && frontmatter.description);
 }
 
 function addCheck(checks, id, pass, message) {

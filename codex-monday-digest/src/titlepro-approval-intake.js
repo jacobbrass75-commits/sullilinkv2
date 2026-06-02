@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { parseCsv } = require("./csv-utils");
-const { sha256File, nowIso } = require("./runtime");
+const { sha256File, nowIso, sourcePathProfile } = require("./runtime");
 
 const APPROVAL_ID_HEADERS = ["approval_id", "Approval ID", "TitlePro Approval ID"];
 const LEAD_KEY_HEADERS = ["lead_key", "Lead Key"];
@@ -63,7 +63,7 @@ function readApprovalFile(filePath) {
   }
   const approvals = rows.map(normalizeApprovalRow);
   return {
-    source_path: filePath,
+    ...sourcePathProfile(filePath),
     source_sha256: sha256File(filePath),
     source_format: extension.replace(/^\./, "") || "csv",
     approvals

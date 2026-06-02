@@ -3,7 +3,7 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 const { parseCsv } = require("./batch-owner-clusters");
 const { extractRadar } = require("./normalize-row");
-const { sha256File } = require("./runtime");
+const { sha256File, sourcePathProfile } = require("./runtime");
 
 const RADAR_HEADERS = ["Radar ID", "RadarID", "PropertyRadar ID", "Property Radar ID", "radar_id"];
 const ITEM_ID_HEADERS = ["Item ID", "Item Id", "ID", "Id", "item_id", "monday_item_id"];
@@ -229,7 +229,7 @@ function uniqueValues(values) {
 function readLookupFile(filePath) {
   const records = readTabularRows(filePath);
   return {
-    source_path: filePath,
+    ...sourcePathProfile(filePath),
     source_sha256: sha256File(filePath),
     source_format: path.extname(filePath).toLowerCase().replace(/^\./, "") || "csv",
     records

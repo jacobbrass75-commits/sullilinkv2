@@ -28,6 +28,10 @@ test("skill package check validates the Monday CRE skill against repo proofs", (
   assert.ok(report.required_references.includes("references/runbook.md"));
   assert.ok(report.required_references.includes("references/sullilink-reuse.md"));
   assert.ok(report.required_references.includes("references/source-reuse-contract.json"));
+  assert.ok(report.required_system_skill_files.includes("skills/daily-intake/SKILL.md"));
+  assert.ok(report.required_system_skill_files.includes("skills/batch-owner-cluster-intake/SKILL.md"));
+  assert.ok(report.required_system_skill_files.includes("skills/owner-disambiguation/SKILL.md"));
+  assert.ok(report.required_system_skill_files.includes("skills/subagent-orchestration/SKILL.md"));
   assert.equal(report.source_reuse_contract.lane_count, 7);
   assert.ok(report.source_reuse_contract.required_lane_ids.includes("titlepro_serial_worker"));
   assert.ok(report.required_proof_scripts.includes("proof:workflow-map"));
@@ -80,6 +84,10 @@ test("skill package bundle is installable from copied skill files", () => {
   assert.ok(bundle.files.some((file) => file.relative_path === "references/runbook.md"));
   assert.ok(bundle.files.some((file) => file.relative_path === "references/sullilink-reuse.md"));
   assert.ok(bundle.files.some((file) => file.relative_path === "references/source-reuse-contract.json"));
+  assert.ok(bundle.files.some((file) => file.relative_path === "skills/daily-intake/SKILL.md"));
+  assert.ok(bundle.files.some((file) => file.relative_path === "skills/batch-owner-cluster-intake/SKILL.md"));
+  assert.ok(bundle.files.some((file) => file.relative_path === "skills/owner-disambiguation/SKILL.md"));
+  assert.ok(bundle.files.some((file) => file.relative_path === "skills/subagent-orchestration/SKILL.md"));
   assert.equal(bundle.forbidden_actions.monday_live_writes, 0);
 });
 
@@ -103,6 +111,8 @@ test("skill-pack command writes a verified installable package run", () => {
   assert.ok(fs.existsSync(path.join(out, "skill_package", "monday-cre-workflow", "SKILL.md")));
   assert.ok(fs.existsSync(path.join(out, "skill_package", "monday-cre-workflow", "agents", "openai.yaml")));
   assert.ok(fs.existsSync(path.join(out, "skill_package", "monday-cre-workflow", "references", "source-reuse-contract.json")));
+  assert.ok(fs.existsSync(path.join(out, "skill_package", "monday-cre-workflow", "skills", "daily-intake", "SKILL.md")));
+  assert.ok(fs.existsSync(path.join(out, "skill_package", "monday-cre-workflow", "skills", "owner-disambiguation", "SKILL.md")));
 });
 
 test("skill-pack clears stale package files before copying", () => {

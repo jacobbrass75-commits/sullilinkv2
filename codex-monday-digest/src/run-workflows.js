@@ -11,7 +11,7 @@ const { verifyRun } = require("./verify-run");
 const { buildBatchArtifacts, writeBatchRun } = require("./batch-owner-clusters");
 const { buildTitleProApprovalQueue } = require("./titlepro-approval-queue");
 const { buildDigestActionQueue, readActionQueueCsv, writeActionQueueCsv } = require("./monday-action-queue");
-const { FORBIDDEN_ZERO, ensureDir, writeJson, appendJsonl, nowIso, readJson } = require("./runtime");
+const { FORBIDDEN_ZERO, ensureDir, writeJson, appendJsonl, nowIso, readJson, manifestPathList } = require("./runtime");
 
 const WORKSPACE_ROOT = path.resolve(__dirname, "..", "..");
 const DEFAULT_RUNS_ROOT = path.join(WORKSPACE_ROOT, "outputs", "monday_digest_runs");
@@ -95,7 +95,7 @@ function writeDigestRun({ inputPath, outDir, mode }) {
     run_id: id,
     started_at: at,
     mode,
-    input_paths: [inputPath],
+    input_paths: manifestPathList(outDir, [inputPath]),
     output_paths: [],
     forbidden_actions: { ...FORBIDDEN_ZERO },
     app_created: true,
@@ -133,7 +133,7 @@ function writeDigestRun({ inputPath, outDir, mode }) {
   outputPaths.push(path.join(outDir, "monday_action_queue.csv"));
   appendJsonl(path.join(outDir, "audit_events_preview.jsonl"), audit);
   outputPaths.push(path.join(outDir, "audit_events_preview.jsonl"));
-  manifest.output_paths = outputPaths;
+  manifest.output_paths = manifestPathList(outDir, outputPaths);
   writeJson(path.join(outDir, "run_manifest.json"), manifest);
   for (const lead of leads) {
     ensureDir(path.join(outDir, "evidence", lead.radar_id || lead.dedupe_key.replace(/[^a-z0-9]+/gi, "-"), "titlepro"));

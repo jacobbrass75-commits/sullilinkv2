@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const { manifestPath: manifestArtifactPath } = require("./runtime");
 
 function pythonBin() {
   return process.env.CODEX_PYTHON_BIN || "python3";
@@ -100,7 +101,7 @@ function updateManifestWithWorkbook(runFolder, xlsxPath) {
   const manifestPath = path.join(runFolder, "run_manifest.json");
   if (!fs.existsSync(manifestPath)) return;
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), xlsxPath]));
+  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), manifestArtifactPath(runFolder, xlsxPath)]));
   fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 

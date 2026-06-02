@@ -20,9 +20,28 @@ Use these patterns when adapting the user's older foreclosure app code into the 
 - **Dedupe:** normalize APNs when present and collapse duplicate APN rows into one candidate while preserving source row indexes. Otherwise use Radar ID first, then address/city/owner only as weaker candidate keys.
 - **Worker shape:** queue one expensive/authenticated TitlePro action at a time. Public-source enrichment can run in parallel.
 - **Status vocabulary:** queued/processing/success/date mismatch/search failed/skipped maps well to TitlePro and document-extraction subitems.
-- **Document extraction schema:** retain fields for doc type, recording number/date, auction date/time/location, opening bid, unpaid balance, grantor, grantee, trustee, beneficiary, loan number, APN, property address, county, and raw text.
+- **Document extraction schema:** retain fields for doc type, recording number/date, auction date/time/location, opening bid, unpaid balance, grantor, grantee, trustee, beneficiary, loan number, APN, property address, county, estimated value, attorney/agent, phone numbers, original loan amount/date, default date/amount, interest rate, legal description, city/state/zip, consideration amount, and raw text.
 - **Priority workers:** current status and recording-doc extraction come before AI summaries, building research, contact enrichment, and outreach.
 - **Evidence-first output:** save raw source files locally, then generate compact broker-facing summaries with source dates and confidence.
+
+## Recording Document Extraction
+
+Use the old document-reader pattern as a schema guide only:
+
+- Render/check the first 1-2 PDF pages before extraction so the document type and property identity are visible.
+- Require structured JSON from extraction; free-text summaries are secondary.
+- Store extracted facts as `recording_doc_data` or the current runner's `titlepro_evidence_intake.json` shape.
+- Regenerate role assertions and summaries only after structured document data exists.
+- Treat trustees, attorneys, agents, lenders, title companies, and recording-service contacts as service actors unless independent evidence ties them to control.
+
+Key fields to preserve when present: `document_type`, `recording_number`, `recording_date`, `auction_date`, `auction_time`, `auction_location`, `opening_bid`, `unpaid_balance`, `grantor`, `grantee`, `trustor`, `borrower`, `trustee`, `beneficiary`, `loan_number`, `apn`, `property_address`, `county`, `city`, `state`, `zip_code`, `estimated_value`, `attorney_or_agent`, `phone_numbers`, `original_loan_amount`, `original_loan_date`, `default_date`, `default_amount`, `interest_rate`, `legal_description`, `consideration_amount`, and `raw_text`.
+
+## Status Vocabulary
+
+- **Intake:** `preview`, `recorded`, `duplicate`, `skipped`, `needs_review`.
+- **TitlePro/document worker:** `queued`, `pending_scrape`, `processing`, `success`, `duplicate_order_reuse`, `date_mismatch_review`, `no_recording_date`, `search_failed`, `upload_failed`, `skipped`.
+- **Review decisions:** `like`, `dislike`, `skip`, `hold`, `needs_info`.
+- **Seller/foreclosure stage:** `monitoring`, `pursuing_foreclosure`, `notice_of_default`, `notice_of_sale`, `auction_pending`, `postponed`, `reo`, `bankruptcy_or_stay_review`.
 
 ## Runner Contract
 

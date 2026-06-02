@@ -60,7 +60,10 @@ test("gmail_preview parses a saved PropertyRadar HTML digest and verifies", () =
 
   const manifest = JSON.parse(fs.readFileSync(path.join(out, "run_manifest.json"), "utf8"));
   assert.equal(manifest.mode, "gmail_preview");
-  assert.ok(manifest.input_paths.includes(input));
+  assert.equal(manifest.input_paths.includes(input), false);
+  assert.ok(manifest.input_paths.includes(path.basename(input)));
+  assert.equal(JSON.stringify(manifest).includes("/Users/"), false);
+  assert.equal(JSON.stringify(manifest).includes("/var/folders/"), false);
   assert.ok(manifest.input_paths.some((inputPath) => {
     return inputPath.startsWith("gmail")
       && inputPath.includes("CRE/PropertyRadar Alerts")

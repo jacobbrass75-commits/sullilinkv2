@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
-const { FORBIDDEN_ZERO, ensureDir, nowIso, sha256File, slugify, writeJson } = require("./runtime");
+const { FORBIDDEN_ZERO, ensureDir, nowIso, sha256File, slugify, writeJson, manifestPathList } = require("./runtime");
 
 function pythonBin() {
   return process.env.CODEX_PYTHON_BIN || "python3";
@@ -461,13 +461,14 @@ function writeWorkflowMapRun(outDir, workflowMap) {
   writeJson(path.join(outDir, "monday_workflow_source_profile.json"), workflowMap.source_profile);
   writeJson(path.join(outDir, "needs_review.json"), workflowMap.needs_review);
   fs.writeFileSync(path.join(outDir, "monday_workflow_summary.md"), workflowMap.summary_markdown);
-  manifest.output_paths = [
+  manifest.output_path_scope = "run_folder_relative";
+  manifest.output_paths = manifestPathList(outDir, [
     path.join(outDir, "monday_workflow_map.json"),
     path.join(outDir, "monday_workflow_stage_map.json"),
     path.join(outDir, "monday_workflow_source_profile.json"),
     path.join(outDir, "monday_workflow_summary.md"),
     path.join(outDir, "needs_review.json")
-  ];
+  ]);
   writeJson(path.join(outDir, "run_manifest.json"), manifest);
 }
 

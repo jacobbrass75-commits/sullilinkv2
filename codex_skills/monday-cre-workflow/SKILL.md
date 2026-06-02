@@ -13,6 +13,23 @@ This skill coordinates the Monday-first distressed CRE workflow. It does not rep
 - Use `titlepro247` for TitlePro browser/report/PDF handling and paid-action guardrails.
 - Use this skill to connect intake, dedupe, verification tasks, evidence status, broker packet output, and Monday-ready artifacts.
 
+## Bundled Lane Skills
+
+Use the lane files in `skills/` when that part of the workflow is active:
+
+- `skills/daily-intake/SKILL.md` for PropertyRadar/Gmail/CSV dry-run intake.
+- `skills/batch-owner-cluster-intake/SKILL.md` for full-export APN/source-row clustering.
+- `skills/monday-workflow-map/SKILL.md` for downloaded Monday checklist/workflow exports.
+- `skills/monday-live-gates/SKILL.md` before any live Monday mutation.
+- `skills/titlepro-evidence/SKILL.md` for TitlePro approval, confirmation, and saved evidence import.
+- `skills/owner-disambiguation/SKILL.md` for LLC/control role separation and promotion rules.
+- `skills/sos-entity-trace/SKILL.md` for CA SOS/entity evidence pasteback.
+- `skills/current-status/SKILL.md` for trustee/provider/current-status evidence.
+- `skills/contact-enrichment/SKILL.md` for manual RocketReach/contact pasteback.
+- `skills/broker-packet/SKILL.md` for broker-facing packet standards.
+- `skills/subagent-orchestration/SKILL.md` for safe parallel work splitting.
+- `skills/safety-proof-gates/SKILL.md` for proof scripts, forbidden-action counters, and package audits.
+
 ## Core Loop
 
 1. Inspect current repo state and prior outputs first. Prefer existing run manifests, packet JSON, and evidence summaries over rerunning paid/authenticated work.

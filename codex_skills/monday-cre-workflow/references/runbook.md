@@ -44,7 +44,7 @@ Treat a missing `CRE/PropertyRadar Alerts` Gmail label as a setup gap; do not br
 Required evidence for a digest run:
 
 - raw/pasted email text or HTML saved under run input
-- Gmail preview provenance when applicable: label/window plus saved input file path
+- Gmail preview provenance when applicable: label/window plus saved input basename/hash-style source reference, not a machine-local absolute path
 - Gmail connector provenance when applicable: message IDs, thread IDs, connector source profile, and zero Gmail mutations/sends
 - `source_emails.json`
 - `parsed_rows.json`
@@ -55,6 +55,15 @@ Required evidence for a digest run:
 - `titlepro_approval_queue_preview.json` and workbook `TitlePro Approval` sheet with approval IDs linked to blocked TitlePro subitems and `paid_action_allowed: false`
 - verification report
 
+Digest parser contract:
+
+- Parse HTML tables first, then text fallback.
+- Preserve subject, alert name, received timestamp, source/message ID, Gmail message ID, and Gmail thread ID when available.
+- Preserve duplicate source events separately from deduped leads; dedupe by Radar ID first.
+- Normalize `What Changed` into source-event text and priority/hard-hold hints, but do not promote current-status urgency without a separate status check.
+- Flag malformed/short HTML table rows in `needs_review.json`; do not silently drop them.
+- Keep source provenance basename-only or tokenized; shareable JSON/CSV/MD artifacts must not contain machine-local absolute paths, temp-folder paths, cookies, or credential values.
+
 ### CSV/XLSX Batch Export
 
 Use `batch-owner-clusters`. Treat exact owner-string clusters as candidate groups only.
@@ -62,6 +71,14 @@ Use `batch-owner-clusters`. Treat exact owner-string clusters as candidate group
 If the export has an APN column, normalize APNs for candidate identity and collapse duplicate target rows with the same APN. Preserve every original source row index on the candidate and add duplicate-APN review notes. If the export has no APN column, keep row/address/owner identity provisional.
 
 Batch runs should also write `monday_action_queue.csv` with current-status, document-decision, and owner-control rows. The queue must preserve APN/county and source row indexes when present, and keep `broker_ready=false` and `control_claim_allowed=false`.
+
+APN/source-row dedupe contract:
+
+- Durable identity is `normalized_apn + county/region` when present.
+- Preserve all original source row indexes after APN collapse; do not lose row-level provenance.
+- Flag same-address/multi-APN and same-APN/conflicting-owner rows for review instead of merging control claims.
+- When no APN is present, keep Radar ID as the strongest key, then address/city, then owner string as a weak grouping hint only.
+- Batch dedupe is a preview task generator, not a broker-ready ownership/control assertion.
 
 Required gates before promotion:
 
@@ -160,6 +177,14 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 Evidence import should produce `titlepro_evidence_intake.json`, `titlepro_role_assertions_preview.json`, and `titlepro_evidence_source_profile.json`. It must leave paid/browser/write action counts at zero, keep service actors out of control-lead claims, and keep `beneficial_owner_claim_allowed=false` until independent ownership proof exists.
 
+TitlePro queue state machine:
+
+- Start only from screened rows with usable address/city and a linked `titlepro_approval_id`.
+- Approval intake states are `not_requested_screening_required`, `approved_pending_manual_titlepro_pull`, and invalid/hold/rejected decision rows.
+- Action-time confirmation moves one approved request to `action_time_confirmed_pending_serial_titlepro_pull`; it still executes no browser or paid action.
+- The later serial TitlePro worker may use `pending_scrape`, `processing`, `success`, `duplicate_order_reuse`, `wrong_property_excluded`, `date_mismatch_review`, `no_recording_date`, `search_failed`, `upload_failed`, or `skipped`.
+- Process one property/request per worker execution; after terminal state, trigger document extraction/AI summary tasks, never before.
+
 ### Manual Contact Enrichment
 
 For RocketReach/public/contact enrichment that was gathered manually outside the runner, import pasteback rows:
@@ -242,6 +267,32 @@ node src/cli.js safety-audit --proof-root ../outputs/monday_digest_runs --goal-m
 
 The audit proves aggregate forbidden action counts are zero and keeps Monday live writes blocked unless explicit board/column/rollback/broker gates are satisfied.
 
+### Live Monday Write Gates
+
+Live Monday writes remain blocked unless all of these are true in addition to zero failed verification:
+
+- `CRE_GLOBAL_DRY_RUN=false`
+- `ALLOW_EXTERNAL_WRITES=true`
+- `ALLOW_MONDAY_WRITES=true`
+- `MONDAY_DRY_RUN=false`
+- `MONDAY_LEAD_BOARD_ID` and `MONDAY_GROUP_NEW_LEAD_RESEARCH_ID` are set
+- `MONDAY_COLUMN_MAP_JSON` contains the required gate columns
+- `MONDAY_ROLLBACK_PLAN` or `MONDAY_ROLLBACK_PLAN_PATH` is set
+- `MONDAY_BROKER_APPROVAL=true`
+
+Until those gates are intentionally satisfied, `sync --mode live_write` must fail closed.
+
+## Status Vocabulary
+
+Use a compact status vocabulary so Monday labels stay stable:
+
+| Lane | Statuses |
+| --- | --- |
+| Intake | `preview`, `recorded`, `duplicate`, `skipped`, `needs_review` |
+| TitlePro | `not_requested_screening_required`, `approved_pending_manual_titlepro_pull`, `action_time_confirmed_pending_serial_titlepro_pull`, `pending_scrape`, `processing`, `success`, `duplicate_order_reuse`, `wrong_property_excluded`, `date_mismatch_review`, `no_recording_date`, `search_failed`, `upload_failed`, `skipped` |
+| Review | `like`, `dislike`, `skip`, `hold`, `needs_info` |
+| Foreclosure stage | `monitoring`, `pursuing_foreclosure`, `notice_of_default`, `notice_of_sale`, `auction_pending`, `postponed`, `reo`, `bankruptcy_or_stay_review` |
+
 ## Packet Build
 
 For broker-facing output:
@@ -272,7 +323,7 @@ For share packets:
 ```bash
 for f in broker_packet/**/*.xlsx broker_packet/*.xlsx; do unzip -t "$f" >/dev/null || exit 1; done
 for f in broker_packet/supporting/*.json; do node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$f" || exit 1; done
-rg -n "file:///Users/|/Users/|BEGIN PRIVATE KEY|Authorization:|Password\\s*[:=]" broker_packet README.md || true
+rg -n "BEGIN PRIVATE KEY|Authorization:|Password\\s*[:=]|file://|/private/var|/var/folders" broker_packet README.md || true
 ```
 
 If a scan hit is a variable name or documentation caveat, note it. If it is a value, sanitize before sharing.

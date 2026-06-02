@@ -35,7 +35,12 @@ function liveWriteGates() {
     CRE_GLOBAL_DRY_RUN: safeFlag("CRE_GLOBAL_DRY_RUN") === "false",
     ALLOW_EXTERNAL_WRITES: safeFlag("ALLOW_EXTERNAL_WRITES") === "true",
     ALLOW_MONDAY_WRITES: safeFlag("ALLOW_MONDAY_WRITES") === "true",
-    MONDAY_DRY_RUN: safeFlag("MONDAY_DRY_RUN") === "false"
+    MONDAY_DRY_RUN: safeFlag("MONDAY_DRY_RUN") === "false",
+    MONDAY_LEAD_BOARD_ID: Boolean(process.env.MONDAY_LEAD_BOARD_ID),
+    MONDAY_GROUP_NEW_LEAD_RESEARCH_ID: Boolean(process.env.MONDAY_GROUP_NEW_LEAD_RESEARCH_ID),
+    MONDAY_COLUMN_MAP_JSON: hasRequiredMondayColumnMap(),
+    MONDAY_ROLLBACK_PLAN: Boolean(process.env.MONDAY_ROLLBACK_PLAN || process.env.MONDAY_ROLLBACK_PLAN_PATH),
+    MONDAY_BROKER_APPROVAL: safeFlag("MONDAY_BROKER_APPROVAL") === "true"
   };
 }
 
@@ -47,6 +52,26 @@ function liveWriteGateFailures() {
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
+}
+
+function hasRequiredMondayColumnMap() {
+  let map;
+  try {
+    map = process.env.MONDAY_COLUMN_MAP_JSON ? JSON.parse(process.env.MONDAY_COLUMN_MAP_JSON) : {};
+  } catch {
+    return false;
+  }
+  return [
+    "radar_id",
+    "stage",
+    "current_status",
+    "owner_confidence",
+    "llc_disambiguation",
+    "outreach_readiness",
+    "broker_packet_status",
+    "allowed_action",
+    "blocked_action"
+  ].every((key) => Object.prototype.hasOwnProperty.call(map, key));
 }
 
 function readJson(file) {
@@ -94,6 +119,34 @@ function nextBusinessDayIso(start = new Date()) {
   return date.toISOString().slice(0, 10);
 }
 
+function manifestPath(runFolder, filePath) {
+  if (!filePath) return filePath;
+  const text = String(filePath);
+  if (!path.isAbsolute(text)) return text.replaceAll(path.sep, "/");
+  const root = path.resolve(runFolder);
+  const resolved = path.resolve(text);
+  const relative = path.relative(root, resolved);
+  if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {
+    return relative.replaceAll(path.sep, "/");
+  }
+  return path.basename(text);
+}
+
+function manifestPathList(runFolder, values) {
+  return (values || []).map((value) => manifestPath(runFolder, value));
+}
+
+function sourcePathProfile(filePath) {
+  return {
+    source_path: filePath ? path.basename(String(filePath)) : null,
+    source_path_scope: "basename_only"
+  };
+}
+
+function hasAbsoluteLocalPath(value) {
+  return /\/Users\/[A-Za-z0-9._-]+|file:\/\/\/Users\/[A-Za-z0-9._-]+|(^|[\s"'])\/(var\/folders|private\/var|tmp|Volumes)\b|file:\/\/[A-Za-z]:[\\/][^\s|"']+|(^|[\s"'])[A-Za-z]:[\\/][^\s"']*/.test(String(value || ""));
+}
+
 module.exports = {
   SAFE_DEFAULTS,
   FORBIDDEN_ZERO,
@@ -107,5 +160,9 @@ module.exports = {
   hash16,
   nowIso,
   slugify,
-  nextBusinessDayIso
+  nextBusinessDayIso,
+  manifestPath,
+  manifestPathList,
+  sourcePathProfile,
+  hasAbsoluteLocalPath
 };

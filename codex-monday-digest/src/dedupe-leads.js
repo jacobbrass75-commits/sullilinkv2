@@ -16,7 +16,6 @@ function eventFingerprint(row) {
 }
 
 function dedupeLeads(parsedRows, options = {}) {
-  const runFolder = options.runFolder || ".";
   const groups = new Map();
   for (const row of parsedRows) {
     const key = row.radar_id ? `radar_id:${row.radar_id}` : `address:${row.street}:${row.city}:${row.zip}`.toLowerCase();
@@ -72,7 +71,7 @@ function dedupeLeads(parsedRows, options = {}) {
       suppression_status: "Not checked",
       outreach_readiness: "Blocked",
       broker_packet_status: "Not started",
-      evidence_link: `${runFolder}/source_emails.json`,
+      evidence_link: "source_emails.json",
       allowed_action: "Research approval only",
       blocked_action: "No outreach; No paid pull; No owner/control claim; No current-status urgency claim",
       blocked_action_detail: "Digest rows are intake evidence only; verify current status and ownership/control before outreach or paid pulls.",

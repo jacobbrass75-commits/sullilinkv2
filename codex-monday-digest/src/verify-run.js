@@ -200,6 +200,7 @@ function verifyDigestRun(runFolder) {
   checks.push({ pass: totalExactDuplicates(leads) === Math.max(0, parsedRows.length - totalDistinctEvents(leads)), message: "exact duplicate count is recorded separately from distinct events" });
   checks.push({ pass: lookupResults.length >= leads.length && lookupResults.every(hasLookupFields), message: "Monday lookup results exist with required read-only fields" });
   checks.push({ pass: lookupResults.every((row) => row.lookup_mode !== "live_write"), message: "Monday lookup results are read-only, not live writes" });
+  checks.push({ pass: noAbsoluteLocalPathsInTopLevelText(runFolder), message: "digest outputs contain no absolute local paths" });
   checks.push({ pass: noDuplicateRadarMutation(mutations), message: "no duplicate Monday mutation targets the same Radar ID" });
   checks.push({ pass: mutations.every((mutation) => REQUIRED_GATE_COLUMNS.every((column) => Object.prototype.hasOwnProperty.call(mutation.columns || {}, column))), message: "mutation previews include default gate columns" });
   checks.push({ pass: leads.every((lead) => hasRequiredSubitems(lead, subitems)), message: "every lead has current-status, owner/control, provider, and relationship subitems" });
@@ -776,6 +777,14 @@ function noCredentialLeaks(runFolder) {
   return true;
 }
 
+function noAbsoluteLocalPathsInTopLevelText(runFolder) {
+  const files = fs.readdirSync(runFolder).filter((file) => /\.(json|jsonl|md|txt|csv)$/i.test(file));
+  return files.every((file) => {
+    const text = fs.readFileSync(path.join(runFolder, file), "utf8");
+    return !hasAbsoluteLocalPath(text);
+  });
+}
+
 function verifyBatchRun(runFolder) {
   const checks = [];
   checkFiles(runFolder, BATCH_FILES, checks);
@@ -820,6 +829,7 @@ function verifyBatchRun(runFolder) {
   }
   checks.push({ pass: manifest.mode === "local_dry_run", message: "batch run mode is local_dry_run" });
   checks.push({ pass: forbiddenZero(manifest), message: "forbidden action counts are zero" });
+  checks.push({ pass: noAbsoluteLocalPathsInTopLevelText(runFolder), message: "batch outputs contain no absolute local paths" });
   checks.push({ pass: profile.control_claims_allowed_from_owner_string === 0, message: "control_claims_allowed_from_owner_string = 0" });
   checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
 
@@ -1577,7 +1587,7 @@ function noAbsoluteLocalPathsInSourceAudit(runFolder) {
 }
 
 function hasAbsoluteLocalPath(text) {
-  return /\/Users\/[A-Za-z0-9._-]+|file:\/\/\/Users\/[A-Za-z0-9._-]+|file:\/\/[A-Za-z]:[\\/][^\s|"']+|(^|[\s"'])[A-Za-z]:[\\/][^\s"']*/.test(text);
+  return /\/Users\/[A-Za-z0-9._-]+|file:\/\/\/Users\/[A-Za-z0-9._-]+|(^|[\s"'])\/(var\/folders|private\/var|tmp|Volumes)\b|file:\/\/[A-Za-z]:[\\/][^\s|"']+|(^|[\s"'])[A-Za-z]:[\\/][^\s"']*/.test(text);
 }
 
 function isSortedBySourceRow(candidates) {

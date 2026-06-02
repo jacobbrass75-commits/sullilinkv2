@@ -27,7 +27,7 @@ const { buildSkillPackageCheck, writeSkillPackageCheckRun, buildSkillPackageBund
 const { buildDigestActionQueue, writeActionQueueCsv } = require("./monday-action-queue");
 const { lookupLeads, readLookupFile, readMondayConnectorLookupFile } = require("./monday-lookup");
 const { assertLiveWriteAllowed, redactedBoardShapeFromEnv } = require("./monday-graphql");
-const { FORBIDDEN_ZERO, ensureDir, writeJson, appendJsonl, nowIso } = require("./runtime");
+const { FORBIDDEN_ZERO, ensureDir, writeJson, appendJsonl, nowIso, manifestPathList, sourcePathProfile } = require("./runtime");
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
@@ -129,7 +129,7 @@ function writeDigestRunFromParsed({ parsedRows, needsReview = [], sourceEmails =
     run_id: runId,
     started_at: at,
     mode,
-    input_paths: inputPaths,
+    input_paths: manifestPathList(outDir, inputPaths),
     output_paths: [],
     forbidden_actions: { ...FORBIDDEN_ZERO },
     counts: {
@@ -167,7 +167,7 @@ function writeDigestRunFromParsed({ parsedRows, needsReview = [], sourceEmails =
   outputPaths.push(path.join(outDir, "monday_action_queue.csv"));
   appendJsonl(path.join(outDir, "audit_events_preview.jsonl"), audit);
   outputPaths.push(path.join(outDir, "audit_events_preview.jsonl"));
-  manifest.output_paths = outputPaths;
+  manifest.output_paths = manifestPathList(outDir, outputPaths);
   writeJson(path.join(outDir, "run_manifest.json"), manifest);
 
   for (const lead of leads) {
@@ -385,7 +385,7 @@ function updateManifestAfterSync(runFolder, outputPaths, lookupMode = "monday_lo
   const manifestPath = path.join(runFolder, "run_manifest.json");
   if (!fs.existsSync(manifestPath)) return;
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...outputPaths]));
+  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...manifestPathList(runFolder, outputPaths)]));
   manifest.last_lookup_sync_at = nowIso();
   manifest.last_lookup_mode = lookupMode;
   manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
@@ -418,7 +418,7 @@ function titleProApproveCommand(args) {
   writeActionQueueCsv(path.join(args.run, "monday_action_queue.csv"), actionQueue);
   const invalidDecisionCount = decisions.filter((decision) => decision.validation_errors.length > 0).length;
   writeJson(path.join(args.run, "titlepro_approval_source_profile.json"), {
-    source_path: approvalSource.source_path,
+    ...sourcePathProfile(approvalSource.source_path),
     source_sha256: approvalSource.source_sha256,
     source_format: approvalSource.source_format,
     approval_record_count: approvalSource.approvals.length,
@@ -621,7 +621,7 @@ function updateManifestAfterTitleProConfirmation(runFolder, outputPaths) {
   const manifestPath = path.join(runFolder, "run_manifest.json");
   if (!fs.existsSync(manifestPath)) return;
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...outputPaths]));
+  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...manifestPathList(runFolder, outputPaths)]));
   manifest.last_titlepro_action_confirmation_at = nowIso();
   manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
   manifest.forbidden_actions.titlepro_pulls = manifest.forbidden_actions.titlepro_pulls || 0;
@@ -632,7 +632,7 @@ function updateManifestAfterCurrentStatusImport(runFolder, outputPaths) {
   const manifestPath = path.join(runFolder, "run_manifest.json");
   if (!fs.existsSync(manifestPath)) return;
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...outputPaths]));
+  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...manifestPathList(runFolder, outputPaths)]));
   manifest.last_current_status_import_at = nowIso();
   manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
   manifest.forbidden_actions.provider_backfills = manifest.forbidden_actions.provider_backfills || 0;
@@ -644,7 +644,7 @@ function updateManifestAfterContactImport(runFolder, outputPaths) {
   const manifestPath = path.join(runFolder, "run_manifest.json");
   if (!fs.existsSync(manifestPath)) return;
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...outputPaths]));
+  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...manifestPathList(runFolder, outputPaths)]));
   manifest.last_contact_enrichment_import_at = nowIso();
   manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
   manifest.forbidden_actions.realnex_writes = manifest.forbidden_actions.realnex_writes || 0;
@@ -656,7 +656,7 @@ function updateManifestAfterTitleProEvidenceImport(runFolder, outputPaths) {
   const manifestPath = path.join(runFolder, "run_manifest.json");
   if (!fs.existsSync(manifestPath)) return;
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...outputPaths]));
+  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...manifestPathList(runFolder, outputPaths)]));
   manifest.last_titlepro_evidence_import_at = nowIso();
   manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
   manifest.forbidden_actions.titlepro_pulls = manifest.forbidden_actions.titlepro_pulls || 0;
@@ -667,7 +667,7 @@ function updateManifestAfterTitleProApproval(runFolder, outputPaths) {
   const manifestPath = path.join(runFolder, "run_manifest.json");
   if (!fs.existsSync(manifestPath)) return;
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...outputPaths]));
+  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...manifestPathList(runFolder, outputPaths)]));
   manifest.last_titlepro_approval_intake_at = nowIso();
   manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
   manifest.forbidden_actions.titlepro_pulls = manifest.forbidden_actions.titlepro_pulls || 0;

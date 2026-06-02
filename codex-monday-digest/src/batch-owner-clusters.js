@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { FORBIDDEN_ZERO, hash16, sha256File, slugify } = require("./runtime");
+const { FORBIDDEN_ZERO, hash16, sha256File, slugify, manifestPathList, sourcePathProfile } = require("./runtime");
 const { parseMoneyOrNumber } = require("./normalize-row");
 const { parseCsv } = require("./csv-utils");
 const { buildBatchActionQueue, writeActionQueueCsv } = require("./monday-action-queue");
@@ -345,7 +345,7 @@ function buildBatchArtifacts(inputPath, mode, runId) {
 
   const batchSourceProfile = {
     fixture_name: "propertyradar_export_20260526_091844",
-    source_path: inputPath,
+    ...sourcePathProfile(inputPath),
     source_sha256: sourceSha,
     headers,
     apn_column: apnHeader,
@@ -380,7 +380,7 @@ function buildBatchArtifacts(inputPath, mode, runId) {
     run_id: runId,
     mode,
     source_sha256: sourceSha,
-    input_paths: [inputPath],
+    input_paths: [`csv:${path.basename(inputPath)}:${sourceSha.slice(0, 16)}`],
     output_paths: [],
     forbidden_actions: { ...FORBIDDEN_ZERO },
     counts: {
@@ -429,7 +429,7 @@ function writeBatchRun(outDir, artifacts) {
   }
   writeActionQueueCsv(path.join(outDir, "monday_action_queue.csv"), artifacts.monday_action_queue);
   outputPaths.push(path.join(outDir, "monday_action_queue.csv"));
-  artifacts.run_manifest.output_paths = outputPaths;
+  artifacts.run_manifest.output_paths = manifestPathList(outDir, outputPaths);
   fs.writeFileSync(path.join(outDir, "run_manifest.json"), `${JSON.stringify(artifacts.run_manifest, null, 2)}\n`);
 }
 

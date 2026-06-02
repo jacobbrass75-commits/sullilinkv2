@@ -21,7 +21,8 @@ function findMetadata(lines, inputPath) {
     original_sender: originalSender || null,
     received_at: receivedAt,
     alert_name: alertName.trim(),
-    source_path: inputPath || null
+    source_path: inputPath ? path.basename(inputPath) : null,
+    source_path_scope: inputPath ? "basename_only" : null
   };
 }
 
@@ -69,10 +70,11 @@ function extractRadarFromHtmlCell(cellHtml, fallbackText) {
   };
 }
 
-function parseDigestHtmlRows(html, source) {
+function parseDigestHtmlRows(html, source, needsReview = []) {
   const rows = String(html || "").match(/<tr[\s\S]*?<\/tr>/gi) || [];
   const parsedRows = [];
   let inTable = false;
+  let htmlTableRowIndex = 0;
 
   for (const rowHtml of rows) {
     const cells = Array.from(rowHtml.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi));
@@ -84,7 +86,17 @@ function parseDigestHtmlRows(html, source) {
       continue;
     }
 
-    if (values.length < 11) continue;
+    htmlTableRowIndex += 1;
+    if (values.length < 11) {
+      needsReview.push({
+        source_id: source.source_id,
+        reason: "malformed_html_table_row",
+        severity: "warning",
+        html_table_row_index: htmlTableRowIndex,
+        summary: `Expected at least 11 PropertyRadar table cells, found ${values.length}.`
+      });
+      continue;
+    }
     const radar = extractRadarFromHtmlCell(cells[0][1], values[0]);
     const raw = {
       source_row_index: parsedRows.length + 1,
@@ -110,18 +122,18 @@ function parseDigestHtmlRows(html, source) {
 function parseDigestText(text, inputPath = null) {
   const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
   const source = findMetadata(lines, inputPath);
-  const htmlRows = parseDigestHtmlRows(text, source);
+  const needsReview = [];
+  const htmlRows = parseDigestHtmlRows(text, source, needsReview);
   if (htmlRows.length) {
-    return { source, parsedRows: htmlRows, needsReview: [] };
+    return { source, parsedRows: htmlRows, needsReview };
   }
 
   const whatChangedIndex = lines.findIndex((line, idx) => line.trim() === "What Changed" && idx > 0);
   if (whatChangedIndex === -1) {
-    return { source, parsedRows: [], needsReview: [{ source_id: source.source_id, reason: "no_table_found", severity: "blocker" }] };
+    return { source, parsedRows: [], needsReview: [...needsReview, { source_id: source.source_id, reason: "no_table_found", severity: "blocker" }] };
   }
 
   const parsedRows = [];
-  const needsReview = [];
   let i = whatChangedIndex + 1;
   while (i < lines.length && !isRadarLine(lines[i])) i += 1;
 

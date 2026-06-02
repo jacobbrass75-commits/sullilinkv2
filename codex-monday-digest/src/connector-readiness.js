@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { readGmailConnectorPreviewFile } = require("./gmail-connector-preview");
 const { readMondayConnectorLookupFile } = require("./monday-lookup");
-const { FORBIDDEN_ZERO, ensureDir, nowIso, writeJson } = require("./runtime");
+const { FORBIDDEN_ZERO, ensureDir, nowIso, writeJson, manifestPathList } = require("./runtime");
 
 function buildConnectorReadiness({ gmailJson, mondayJson, label = "CRE/PropertyRadar Alerts", since = "2d", query }) {
   if (!gmailJson || !mondayJson) {
@@ -208,7 +208,8 @@ function writeConnectorReadinessRun(outDir, readiness) {
       `gmail_connector_json:${readiness.report.gmail_source_profile.source_path}:${readiness.report.gmail_source_profile.source_sha256.slice(0, 16)}`,
       `monday_connector_json:${readiness.report.monday_source_profile.source_path}:${readiness.report.monday_source_profile.source_sha256.slice(0, 16)}`
     ],
-    output_paths: [...outputPaths, path.join(outDir, "run_manifest.json")],
+    output_path_scope: "run_folder_relative",
+    output_paths: manifestPathList(outDir, [...outputPaths, path.join(outDir, "run_manifest.json")]),
     forbidden_actions: { ...FORBIDDEN_ZERO },
     counts: {
       gmail_parsed_rows: readiness.report.gmail_source_profile.parsed_row_count,
