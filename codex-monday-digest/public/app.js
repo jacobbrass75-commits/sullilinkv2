@@ -240,7 +240,7 @@ function renderBatchDetail(detail) {
     </table>
     <h3>Candidate Properties</h3>
     <table>
-      <thead><tr><th>Row</th><th>Type</th><th>Address</th><th>City</th><th>Owner String</th><th>Value</th><th>Equity</th><th>Cluster</th></tr></thead>
+      <thead><tr><th>Row</th><th>Type</th><th>Address</th><th>City</th><th>APN</th><th>Owner String</th><th>Value</th><th>Equity</th><th>Cluster</th></tr></thead>
       <tbody>
         ${candidates.slice(0, 242).map((row) => `
           <tr>
@@ -248,6 +248,7 @@ function renderBatchDetail(detail) {
             <td>${escapeHtml(row.type)}</td>
             <td class="wrap">${escapeHtml(row.address)}</td>
             <td>${escapeHtml(row.city)}</td>
+            <td>${escapeHtml(row.apn || "")}</td>
             <td class="wrap">${escapeHtml(row.owner_string)}</td>
             <td>${money(row.est_value)}</td>
             <td>${money(row.est_equity)}</td>

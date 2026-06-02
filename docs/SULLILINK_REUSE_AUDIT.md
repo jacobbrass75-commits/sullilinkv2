@@ -12,7 +12,7 @@
 | File | Useful Pattern | Treatment |
 | --- | --- | --- |
 | `daily_update.py` | Daily scrape/import loop, skip existing APNs, import count logging | Reuse concept only |
-| `dedupe_spreadsheet.py` | APN-based spreadsheet dedupe and preview mode | Reuse concept; add when APN columns are present |
+| `dedupe_spreadsheet.py` | APN-based spreadsheet dedupe and preview mode | APN-aware batch dedupe added when APN columns are present |
 | `retran_scraper.py` | Explicit source scrape command with typed search modes | Later, only after source rights/credentials handling |
 | `recDocReader/reader.py` | Recording document extraction fields for auction and loan facts | Reuse schema fields for TitlePro/NOD/NTS extraction |
 | `CODEBASE_GUIDE.md` | TitlePro worker queue, email importer, AI summary worker, status vocabulary | Reuse queue/status design |
@@ -49,4 +49,7 @@ Never commit or publish:
 
 - Created Codex skill `monday-cre-workflow`.
 - Added HTML PropertyRadar digest table parsing to `codex-monday-digest`.
+- Added saved-email `gmail_preview --input` provenance.
+- Added preview-only TitlePro approval queue and workbook tab.
+- Added APN-aware batch dedupe for CSV exports with APN columns while keeping owner-string clusters provisional.
 - Added this reuse audit and tonight build goal docs.

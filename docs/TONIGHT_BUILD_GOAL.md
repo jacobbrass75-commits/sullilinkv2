@@ -62,6 +62,7 @@ CRE Brain / SullyLink database
 - `npm test` passes in `codex-monday-digest`.
 - Digest parser handles both saved text and HTML PropertyRadar tables.
 - Batch owner-cluster preview remains local-only and provisional.
+- Batch CSV preview normalizes APNs when present, collapses duplicate APN rows, and preserves source row indexes.
 - Digest preview writes `titlepro_approval_queue_preview.json`, plus a workbook `TitlePro Approval` sheet, with approval IDs linked to blocked TitlePro subitems and queue decisions.
 - Shareable packet files have no credentials, cookies, local absolute paths, or paid raw docs.
 - Every broker-facing owner/control claim has evidence and confidence language.
@@ -88,5 +89,4 @@ http://localhost:8787
 - Add live Gmail connector read preview after the saved-email `gmail_preview --input` lane is used successfully.
 - Add Monday read-only lookup for existing items by Radar ID.
 - Add approval intake for TitlePro decisions after a broker/admin supplies property, APN/county when known, doc/profile type, reason, and cost ceiling.
-- Add APN-aware batch dedupe when the source CSV includes APN columns.
 - Add official-provider status checks only after source rights and API shape are confirmed.

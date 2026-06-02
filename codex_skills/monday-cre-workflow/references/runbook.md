@@ -48,6 +48,8 @@ Required evidence for a digest run:
 
 Use `batch-owner-clusters`. Treat exact owner-string clusters as candidate groups only.
 
+If the export has an APN column, normalize APNs for candidate identity and collapse duplicate target rows with the same APN. Preserve every original source row index on the candidate and add duplicate-APN review notes. If the export has no APN column, keep row/address/owner identity provisional.
+
 Required gates before promotion:
 
 - APN/county/address identity

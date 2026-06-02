@@ -4,6 +4,8 @@ const { FORBIDDEN_ZERO, hash16, sha256File, slugify } = require("./runtime");
 const { parseMoneyOrNumber } = require("./normalize-row");
 
 const REQUIRED_HEADERS = ["Type", "Address", "City", "Sq Ft", "Beds", "Baths", "Est Value", "Est Equity $", "Owner", "Owner Occ?", "Listed for Sale?"];
+const APN_HEADER_ALIASES = ["APN", "Assessor Parcel Number", "Assessor's Parcel Number", "Parcel Number", "Parcel #", "Property APN", "AIN", "PIN"];
+const COUNTY_HEADER_ALIASES = ["County", "Property County", "Situs County"];
 const RECOGNIZED_TYPES = new Set(["AGR", "APT", "COM", "IND", "LND", "MFR", "OTH", "REC", "RES", "UNK", "UTL"]);
 const INCLUDED_TYPES = new Set(["COM", "IND", "APT", "LND"]);
 const KNOWN_CLUSTER_ORDER = [
@@ -62,6 +64,36 @@ function toRecord(headers, row, sourceRowIndex) {
   return record;
 }
 
+function normalizedHeader(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function findHeader(headers, aliases) {
+  const wanted = new Set(aliases.map(normalizedHeader));
+  return headers.find((header) => wanted.has(normalizedHeader(header))) || null;
+}
+
+function normalizeApn(apn) {
+  const trimmed = String(apn ?? "").trim();
+  if (!trimmed || /^(?:nan|none|null|n\/a|unknown)$/i.test(trimmed)) return "";
+  return trimmed.toUpperCase().replace(/[^A-Z0-9]+/g, "");
+}
+
+function normalizeCounty(county) {
+  const trimmed = String(county ?? "").trim();
+  if (!trimmed || /^(?:nan|none|null|n\/a|unknown)$/i.test(trimmed)) return null;
+  return trimmed.toUpperCase();
+}
+
+function addIdentityFields(record, { apnHeader, countyHeader }) {
+  const rawApn = apnHeader ? String(record[apnHeader] ?? "").trim() : "";
+  const normalizedApn = normalizeApn(rawApn);
+  record._apn = normalizedApn ? rawApn : null;
+  record._normalized_apn = normalizedApn || null;
+  record._county = countyHeader ? normalizeCounty(record[countyHeader]) : null;
+  return record;
+}
+
 function hasKnownAddressAndCity(record) {
   const address = String(record.Address || "").trim();
   const city = String(record.City || "").trim();
@@ -79,6 +111,13 @@ function isTarget(record) {
 }
 
 function propertyKeyFor(record, sourceSha) {
+  if (record._normalized_apn) {
+    const countySegment = record._county ? `${slugify(record._county)}:` : "";
+    return {
+      short: `apn:${countySegment}${record._normalized_apn}`,
+      full: `apn:${countySegment}${record._normalized_apn}`
+    };
+  }
   const addressCityOwnerHash = hash16([
     sourceSha,
     record.source_row_index,
@@ -92,7 +131,7 @@ function propertyKeyFor(record, sourceSha) {
   };
 }
 
-function buildCandidate(record, sourceSha, clusterId = null) {
+function buildCandidate(record, sourceSha, clusterId = null, sourceRows = [record]) {
   const estValue = parseMoneyOrNumber(record["Est Value"]);
   const estEquity = parseMoneyOrNumber(record["Est Equity $"]);
   const sqFt = parseMoneyOrNumber(record["Sq Ft"]);
@@ -102,9 +141,13 @@ function buildCandidate(record, sourceSha, clusterId = null) {
   if (clusterId) requiredTasks.push("role_assertion_task");
   return {
     source_row_index: record.source_row_index,
+    source_row_indexes: sourceRows.map((row) => row.source_row_index),
     property_key: key.short,
     dedupe_key: key.full,
     cluster_id: clusterId,
+    apn: record._apn,
+    normalized_apn: record._normalized_apn,
+    county: record._county,
     type: record.Type,
     address: record.Address,
     city: record.City,
@@ -116,11 +159,43 @@ function buildCandidate(record, sourceSha, clusterId = null) {
     owner_string: record.Owner || "",
     owner_occ: record["Owner Occ?"] ?? null,
     listed_for_sale: record["Listed for Sale?"] ?? null,
-    identity_status: "provisional_missing_apn_county_radar_id",
+    identity_status: record._normalized_apn && record._county
+      ? "apn_county_present_pending_title_verification"
+      : record._normalized_apn
+        ? "apn_present_missing_county_pending_title_verification"
+        : "provisional_missing_apn_county_radar_id",
+    duplicate_identity_count: sourceRows.length - 1,
     control_claim_allowed: false,
     broker_ready: false,
     required_tasks: requiredTasks
   };
+}
+
+function groupTargetRowsByIdentity(targetRows) {
+  const groups = new Map();
+  for (const record of targetRows) {
+    const key = record._normalized_apn ? `apn:${record._county || ""}:${record._normalized_apn}` : `row:${record.source_row_index}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(record);
+  }
+  return Array.from(groups.entries()).map(([identityKey, rows]) => ({
+    identity_key: identityKey,
+    primary: rows[0],
+    rows
+  }));
+}
+
+function duplicateApnGroups(targetRows) {
+  const groups = new Map();
+  for (const record of targetRows) {
+    if (!record._normalized_apn) continue;
+    const key = `${record._county || ""}:${record._normalized_apn}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(record);
+  }
+  return Array.from(groups.entries())
+    .filter(([, rows]) => rows.length >= 2)
+    .map(([key, rows]) => ({ key, rows }));
 }
 
 function orderCluster(owner) {
@@ -138,33 +213,40 @@ function buildBatchArtifacts(inputPath, mode, runId) {
   for (const required of REQUIRED_HEADERS) {
     if (!headers.includes(required)) throw new Error(`Missing CSV header: ${required}`);
   }
-  const records = rawRows.slice(1).filter((row) => row.length > 1 || row[0]).map((row, index) => toRecord(headers, row, index + 1));
+  const apnHeader = findHeader(headers, APN_HEADER_ALIASES);
+  const countyHeader = findHeader(headers, COUNTY_HEADER_ALIASES);
+  const records = rawRows.slice(1)
+    .filter((row) => row.length > 1 || row[0])
+    .map((row, index) => addIdentityFields(toRecord(headers, row, index + 1), { apnHeader, countyHeader }));
   const usableRows = records.filter((record) => RECOGNIZED_TYPES.has(record.Type));
   const footerRows = records.filter((record) => !RECOGNIZED_TYPES.has(record.Type));
   const targetRows = usableRows.filter(isTarget);
+  const targetIdentityGroups = groupTargetRowsByIdentity(targetRows);
+  const targetDuplicateApnGroups = duplicateApnGroups(targetRows);
   const targetGroups = new Map();
-  for (const record of targetRows) {
-    const owner = String(record.Owner || "").trim();
+  for (const group of targetIdentityGroups) {
+    const owner = String(group.primary.Owner || "").trim();
     if (!targetGroups.has(owner)) targetGroups.set(owner, []);
-    targetGroups.get(owner).push(record);
+    targetGroups.get(owner).push(group);
   }
 
   const clusterRows = Array.from(targetGroups.entries())
-    .filter(([owner, rows]) => owner && rows.length >= 2)
+    .filter(([owner, groups]) => owner && groups.length >= 2)
     .sort(([ownerA], [ownerB]) => orderCluster(ownerA) - orderCluster(ownerB) || ownerA.localeCompare(ownerB));
 
   const clusterIdByOwner = new Map(clusterRows.map(([owner]) => [owner, `exact-owner-${slugify(owner)}`]));
-  const candidateProperties = targetRows
-    .map((record) => buildCandidate(record, sourceSha, clusterIdByOwner.get(String(record.Owner || "").trim()) || null))
+  const candidateProperties = targetIdentityGroups
+    .map((group) => buildCandidate(group.primary, sourceSha, clusterIdByOwner.get(String(group.primary.Owner || "").trim()) || null, group.rows))
     .sort((a, b) => a.source_row_index - b.source_row_index);
 
-  const ownerClusterCandidates = clusterRows.map(([owner, rows]) => {
-    const candidates = rows.map((record) => buildCandidate(record, sourceSha, clusterIdByOwner.get(owner)));
+  const ownerClusterCandidates = clusterRows.map(([owner, groups]) => {
+    const candidates = groups.map((group) => buildCandidate(group.primary, sourceSha, clusterIdByOwner.get(owner), group.rows));
     return {
       cluster_id: clusterIdByOwner.get(owner),
       owner_string: owner,
       match_method: "exact_owner_string_after_target_filter",
-      target_row_count: rows.length,
+      target_row_count: groups.length,
+      source_row_count: groups.reduce((sum, group) => sum + group.rows.length, 0),
       negative_equity_count: candidates.filter((candidate) => candidate.negative_equity).length,
       low_equity_count: candidates.filter((candidate) => candidate.low_equity).length,
       total_est_value: candidates.reduce((sum, candidate) => sum + (candidate.est_value || 0), 0),
@@ -176,7 +258,10 @@ function buildBatchArtifacts(inputPath, mode, runId) {
       stop_reason_if_promoted: "owner_string_without_apn_title_sos_document_current_status_evidence",
       properties: candidates.map((candidate) => ({
         source_row_index: candidate.source_row_index,
+        source_row_indexes: candidate.source_row_indexes,
         property_key: `address:${slugify(candidate.address)}:${slugify(candidate.city)}`,
+        apn: candidate.apn,
+        county: candidate.county,
         type: candidate.type,
         address: candidate.address,
         city: candidate.city,
@@ -263,6 +348,19 @@ function buildBatchArtifacts(inputPath, mode, runId) {
       cluster_id: cluster.cluster_id,
       summary: `${cluster.owner_string} has ${cluster.target_row_count} target rows by exact owner string only.`
     })),
+    ...targetDuplicateApnGroups.map(({ key, rows }) => {
+      const ownerSet = new Set(rows.map((record) => String(record.Owner || "").trim()).filter(Boolean));
+      const addressSet = new Set(rows.map((record) => `${record.Address || ""}, ${record.City || ""}`.trim()).filter(Boolean));
+      return {
+        reason: ownerSet.size > 1 || addressSet.size > 1 ? "duplicate_apn_conflict_collapsed" : "duplicate_apn_collapsed",
+        severity: ownerSet.size > 1 || addressSet.size > 1 ? "warning" : "info",
+        source_row_index: null,
+        source_row_indexes: rows.map((record) => record.source_row_index),
+        cluster_id: null,
+        apn_key: key,
+        summary: `Collapsed ${rows.length} target rows with the same normalized APN into one candidate property.`
+      };
+    }),
     {
       reason: "estimate_only",
       severity: "info",
@@ -277,6 +375,8 @@ function buildBatchArtifacts(inputPath, mode, runId) {
     source_path: inputPath,
     source_sha256: sourceSha,
     headers,
+    apn_column: apnHeader,
+    county_column: countyHeader,
     parser_records_after_header: records.length,
     usable_property_rows: usableRows.length,
     excluded_footer_rows: footerRows.length,
@@ -285,6 +385,12 @@ function buildBatchArtifacts(inputPath, mode, runId) {
     listed_for_sale_rows: usableRows.filter((record) => String(record["Listed for Sale?"] ?? "") === "1").length,
     negative_equity_rows: usableRows.filter((record) => (parseMoneyOrNumber(record["Est Equity $"]) || 0) < 0).length,
     target_filter_rows: targetRows.length,
+    target_identity_rows_after_apn_dedupe: candidateProperties.length,
+    rows_with_apn: usableRows.filter((record) => record._normalized_apn).length,
+    target_rows_with_apn: targetRows.filter((record) => record._normalized_apn).length,
+    unique_target_apn_count: new Set(targetRows.map((record) => record._normalized_apn).filter(Boolean)).size,
+    duplicate_target_apn_groups: targetDuplicateApnGroups.length,
+    duplicate_target_apn_rows: targetDuplicateApnGroups.reduce((sum, group) => sum + group.rows.length - 1, 0),
     target_negative_equity_rows: candidateProperties.filter((candidate) => candidate.negative_equity).length,
     target_low_equity_rows_le_15pct_value: candidateProperties.filter((candidate) => candidate.low_equity).length,
     exact_owner_groups_ge_2_target_properties: ownerClusterCandidates.length,
@@ -354,5 +460,6 @@ module.exports = {
   buildBatchArtifacts,
   writeBatchRun,
   parseCsv,
-  isTarget
+  isTarget,
+  normalizeApn
 };

@@ -17,7 +17,7 @@ Use these patterns when adapting the user's older foreclosure app code into the 
 
 - **Digest parsing:** support both HTML tables and text rows. Preserve duplicates as source events; dedupe by stable Radar ID.
 - **Idempotency:** track processed source/message/run identifiers; never create duplicate Monday items for one Radar ID.
-- **Dedupe:** normalize APNs when present; otherwise use Radar ID first, then address/city/owner only as weaker candidate keys.
+- **Dedupe:** normalize APNs when present and collapse duplicate APN rows into one candidate while preserving source row indexes. Otherwise use Radar ID first, then address/city/owner only as weaker candidate keys.
 - **Worker shape:** queue one expensive/authenticated TitlePro action at a time. Public-source enrichment can run in parallel.
 - **Status vocabulary:** queued/processing/success/date mismatch/search failed/skipped maps well to TitlePro and document-extraction subitems.
 - **Document extraction schema:** retain fields for doc type, recording number/date, auction date/time/location, opening bid, unpaid balance, grantor, grantee, trustee, beneficiary, loan number, APN, property address, county, and raw text.

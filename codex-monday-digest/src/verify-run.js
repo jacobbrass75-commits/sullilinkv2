@@ -259,14 +259,15 @@ function verifyBatchRun(runFolder) {
   const manifest = readJson(path.join(runFolder, "run_manifest.json"));
 
   checks.push({ pass: profile.source_sha256 === manifest.source_sha256, message: "source SHA matches manifest" });
-  checks.push({ pass: profile.parser_records_after_header === 608, message: "parser records after header = 608" });
-  checks.push({ pass: profile.usable_property_rows === 607, message: "usable property rows = 607" });
-  checks.push({ pass: profile.excluded_footer_rows === 1, message: "excluded footer rows = 1" });
-  checks.push({ pass: profile.target_filter_rows === 242 && candidates.length === 242, message: "target filter and candidate_properties rows = 242" });
-  checks.push({ pass: profile.target_negative_equity_rows === 102, message: "target negative-equity rows = 102" });
-  checks.push({ pass: profile.target_low_equity_rows_le_15pct_value === 123, message: "target low-equity rows <= 15 percent value = 123" });
-  checks.push({ pass: profile.exact_owner_groups_ge_2_target_properties === 8 && clusters.length === 8, message: "exact owner groups with 2+ target properties = 8" });
-  checks.push({ pass: profile.rows_in_exact_owner_groups_ge_2 === 21, message: "rows in exact owner groups = 21" });
+  checks.push({ pass: profile.parser_records_after_header >= profile.usable_property_rows, message: "parser row count covers usable property rows" });
+  checks.push({ pass: profile.excluded_footer_rows >= 0, message: "excluded footer row count is recorded" });
+  checks.push({ pass: profile.target_filter_rows >= candidates.length, message: "target rows are greater than or equal to APN-deduped candidates" });
+  checks.push({ pass: profile.target_negative_equity_rows === candidates.filter((candidate) => candidate.negative_equity).length, message: "target negative-equity count matches candidates" });
+  checks.push({ pass: profile.target_low_equity_rows_le_15pct_value === candidates.filter((candidate) => candidate.low_equity).length, message: "target low-equity count matches candidates" });
+  checks.push({ pass: profile.exact_owner_groups_ge_2_target_properties === clusters.length, message: "exact owner group count matches cluster rows" });
+  checks.push({ pass: profile.rows_in_exact_owner_groups_ge_2 >= clusters.length, message: "rows in exact owner groups covers cluster rows" });
+  checks.push({ pass: manifest.counts?.candidate_properties === candidates.length, message: "manifest candidate count matches output" });
+  checks.push({ pass: manifest.counts?.owner_cluster_candidates === clusters.length, message: "manifest owner-cluster count matches output" });
   checks.push({ pass: isSortedBySourceRow(candidates), message: "candidate_properties sorted by source row" });
   checks.push({ pass: candidates.every((candidate) => candidate.control_claim_allowed === false && candidate.broker_ready === false), message: "candidate properties are not broker-ready and allow no control claims" });
   checks.push({ pass: clusters.every((cluster) => cluster.control_claim_allowed === false && cluster.verification_status === "candidate_only"), message: "owner clusters are candidate_only with no control claims" });
@@ -274,12 +275,27 @@ function verifyBatchRun(runFolder) {
   checks.push({ pass: statusTasks.length >= candidates.length, message: "current-status tasks exist for every candidate property" });
   checks.push({ pass: docTasks.length >= candidates.length, message: "document/identity decision tasks exist for every candidate property" });
   checks.push({ pass: mondayPreview.length === candidates.length && mondayPreview.every((row) => row.operation === "preview_only" && row.broker_ready === false && row.control_claim_allowed === false), message: "Monday batch preview is one preview-only row per candidate" });
+  checks.push({ pass: typeof profile.target_identity_rows_after_apn_dedupe === "number" && profile.target_identity_rows_after_apn_dedupe === candidates.length, message: "APN-aware identity count matches candidate properties" });
+  checks.push({ pass: typeof profile.duplicate_target_apn_groups === "number" && typeof profile.duplicate_target_apn_rows === "number", message: "APN duplicate counters are present" });
+  checks.push({ pass: candidates.every(hasCandidateIdentityFields), message: "candidate properties include APN/county identity fields" });
+  if (profile.apn_column) {
+    checks.push({ pass: candidates.filter((candidate) => candidate.normalized_apn).every((candidate) => candidate.dedupe_key.startsWith("apn:")), message: "candidates with APN use APN-based dedupe keys" });
+    checks.push({ pass: candidates.every((candidate) => Array.isArray(candidate.source_row_indexes) && candidate.source_row_indexes.length >= 1), message: "APN-aware candidates preserve source row indexes" });
+  }
   checks.push({ pass: manifest.mode === "local_dry_run", message: "batch run mode is local_dry_run" });
   checks.push({ pass: forbiddenZero(manifest), message: "forbidden action counts are zero" });
   checks.push({ pass: profile.control_claims_allowed_from_owner_string === 0, message: "control_claims_allowed_from_owner_string = 0" });
   checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
 
   if (profile.source_sha256 === "604fcf4e09602a1bec0740a727ffa68716ccb19259a1d7ff18446c3412a64f11") {
+    checks.push({ pass: profile.parser_records_after_header === 608, message: "fixture parser records after header = 608" });
+    checks.push({ pass: profile.usable_property_rows === 607, message: "fixture usable property rows = 607" });
+    checks.push({ pass: profile.excluded_footer_rows === 1, message: "fixture excluded footer rows = 1" });
+    checks.push({ pass: profile.target_filter_rows === 242 && candidates.length === 242, message: "fixture target filter and candidate_properties rows = 242" });
+    checks.push({ pass: profile.target_negative_equity_rows === 102, message: "fixture target negative-equity rows = 102" });
+    checks.push({ pass: profile.target_low_equity_rows_le_15pct_value === 123, message: "fixture target low-equity rows <= 15 percent value = 123" });
+    checks.push({ pass: profile.exact_owner_groups_ge_2_target_properties === 8 && clusters.length === 8, message: "fixture exact owner groups with 2+ target properties = 8" });
+    checks.push({ pass: profile.rows_in_exact_owner_groups_ge_2 === 21, message: "fixture rows in exact owner groups = 21" });
     const expectedOwners = new Set([
       "CONEJO RIVERSIDE GROUP LLC",
       "ALESSANDRO GROUP",
@@ -304,6 +320,17 @@ function isSortedBySourceRow(candidates) {
     if (candidates[i - 1].source_row_index > candidates[i].source_row_index) return false;
   }
   return true;
+}
+
+function hasCandidateIdentityFields(candidate) {
+  return [
+    "source_row_indexes",
+    "apn",
+    "normalized_apn",
+    "county",
+    "identity_status",
+    "duplicate_identity_count"
+  ].every((field) => Object.prototype.hasOwnProperty.call(candidate, field));
 }
 
 function findFixtureFile(relativePath) {

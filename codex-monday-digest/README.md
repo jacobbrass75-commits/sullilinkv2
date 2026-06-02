@@ -84,6 +84,6 @@ npm run proof:edge
 npm run proof:batch
 ```
 
-The batch owner-cluster lane treats CSV owner strings as candidate grouping clues only. Every output remains provisional until APN/county/Radar ID, title evidence, SOS role evidence, current-status evidence, and approval gates are added.
+The batch owner-cluster lane treats CSV owner strings as candidate grouping clues only. If a CSV includes an APN column, rows with the same normalized APN collapse into one candidate and retain all source row indexes; if APN is missing, row/address keys remain provisional. Every output stays blocked until APN/county/Radar ID, title evidence, SOS role evidence, current-status evidence, and approval gates are added.
 
 Digest and `gmail_preview` runs also write `titlepro_approval_queue_preview.json` and include the same rows in the workbook's `TitlePro Approval` sheet. This is an operations queue for deciding whether TitlePro evidence is needed; every row is approval-required and has `paid_action_allowed: false`.
