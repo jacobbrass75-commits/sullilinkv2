@@ -41,9 +41,80 @@ function isRadarLine(line) {
   return Boolean(extractRadar(line));
 }
 
+function decodeHtmlEntities(value) {
+  return String(value || "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, "\"")
+    .replace(/&#39;/gi, "'")
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)));
+}
+
+function stripHtml(value) {
+  return decodeHtmlEntities(String(value || "").replace(/<[^>]+>/g, " "))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractRadarFromHtmlCell(cellHtml, fallbackText) {
+  const href = String(cellHtml || "").match(/href=["']([^"']+)["']/i);
+  const radar = extractRadar(fallbackText);
+  if (!radar) return null;
+  return {
+    radar_id: radar.radar_id,
+    propertyradar_url: href ? decodeHtmlEntities(href[1]) : radar.propertyradar_url
+  };
+}
+
+function parseDigestHtmlRows(html, source) {
+  const rows = String(html || "").match(/<tr[\s\S]*?<\/tr>/gi) || [];
+  const parsedRows = [];
+  let inTable = false;
+
+  for (const rowHtml of rows) {
+    const cells = Array.from(rowHtml.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi));
+    const values = cells.map((match) => stripHtml(match[1]));
+    if (!values.some(Boolean)) continue;
+
+    if (!inTable) {
+      inTable = values.some((cell) => /^radar id$/i.test(cell)) && values.some((cell) => /^street$/i.test(cell));
+      continue;
+    }
+
+    if (values.length < 11) continue;
+    const radar = extractRadarFromHtmlCell(cells[0][1], values[0]);
+    const raw = {
+      source_row_index: parsedRows.length + 1,
+      radar_id: radar?.radar_id || values[0],
+      propertyradar_url: radar?.propertyradar_url,
+      street: values[1],
+      city: values[2],
+      zip: values[3],
+      state: values[4],
+      property_type: values[5],
+      sq_ft: values[6],
+      beds: values[7],
+      baths: values[8],
+      est_value: values[9],
+      change_lines: values.slice(10)
+    };
+    parsedRows.push(normalizeParsedRow(raw, source));
+  }
+
+  return parsedRows;
+}
+
 function parseDigestText(text, inputPath = null) {
   const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
   const source = findMetadata(lines, inputPath);
+  const htmlRows = parseDigestHtmlRows(text, source);
+  if (htmlRows.length) {
+    return { source, parsedRows: htmlRows, needsReview: [] };
+  }
+
   const whatChangedIndex = lines.findIndex((line, idx) => line.trim() === "What Changed" && idx > 0);
   if (whatChangedIndex === -1) {
     return { source, parsedRows: [], needsReview: [{ source_id: source.source_id, reason: "no_table_found", severity: "blocker" }] };
@@ -119,5 +190,6 @@ function parseDigestFile(inputPath) {
 
 module.exports = {
   parseDigestText,
-  parseDigestFile
+  parseDigestFile,
+  parseDigestHtmlRows
 };

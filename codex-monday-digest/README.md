@@ -4,6 +4,8 @@ Focused local runner for the Monday.com distressed-CRE workflow.
 
 This tool turns saved PropertyRadar digest text into Monday-ready preview artifacts. It now also includes a browser dashboard so the team does not need to work inside Monday.com or run daily terminal commands.
 
+The digest parser supports saved plain text and the HTML table shape commonly preserved by Gmail/PropertyRadar exports.
+
 It does not write to Monday, send Gmail, pull TitlePro, write RealNex, backfill providers, or promote owner/control claims in the default path.
 
 ## Team Dashboard

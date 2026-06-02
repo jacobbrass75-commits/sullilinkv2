@@ -1,0 +1,81 @@
+---
+name: monday-cre-workflow
+description: Repeatable Monday.com distressed-CRE workflow for PropertyRadar daily digests, batch owner clusters, TitlePro evidence requests, LLC/control disambiguation, broker packets, and Monday action queues. Use when Codex is asked to run, build, improve, or explain the Monday-first CRE process, especially when converting PropertyRadar/Gmail/CSV/TitlePro evidence into broker-ready workflow artifacts.
+---
+
+# Monday CRE Workflow
+
+## Scope
+
+This skill coordinates the Monday-first distressed CRE workflow. It does not replace the lower-level source skills:
+
+- Use `distressed-cre-research` for property research, current-status checks, ownership/control evidence, bankruptcy/stay checks, and broker packet standards.
+- Use `titlepro247` for TitlePro browser/report/PDF handling and paid-action guardrails.
+- Use this skill to connect intake, dedupe, verification tasks, evidence status, broker packet output, and Monday-ready artifacts.
+
+## Core Loop
+
+1. Inspect current repo state and prior outputs first. Prefer existing run manifests, packet JSON, and evidence summaries over rerunning paid/authenticated work.
+2. Identify the intake mode:
+   - PropertyRadar daily digest text/HTML.
+   - PropertyRadar CSV/XLSX batch export.
+   - Existing TitlePro/report evidence.
+   - Human/manual RocketReach or contact enrichment pasteback.
+3. Run local previews before external writes. Default to `local_dry_run`; do not write Monday, send Gmail, sync RealNex, or order TitlePro docs unless the user explicitly approves that exact action.
+4. Preserve role separation in every output: title owner, borrower/trustor, beneficiary/lender, trustee, registered agent, manager/member, signer, likely control lead, and broker-confirmed contact.
+5. Treat owner strings and CSV clustering as triage hints only. They cannot create broker-ready control claims without APN/title/SOS/document/current-status evidence.
+6. Produce artifacts that fit the Monday workflow: preview workbook/JSON, current-status tasks, role-assertion tasks, TitlePro approval tasks, broker packet, and `monday_action_queue.csv`.
+7. Verify before delivery: tests, JSON parse, workbook zip integrity, no local paths/secrets in shareable artifacts, no unsupported control claims.
+
+## Repo Commands
+
+For the current repo shape, the runner lives in `codex-monday-digest/`.
+
+```bash
+cd /path/to/repo/codex-monday-digest
+npm test
+npm run app
+```
+
+Manual digest preview:
+
+```bash
+node src/cli.js parse --input fixtures/ken_kahan_digest_2026-05-30.txt --mode local_dry_run --out ../outputs/monday_digest_runs/dev
+node src/cli.js export --run ../outputs/monday_digest_runs/dev --xlsx ../outputs/monday_digest_runs/dev/monday_import_preview.xlsx
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+Batch owner-cluster preview:
+
+```bash
+PROPERTYRADAR_BATCH_CSV=/path/to/propertyradar_export.csv npm run proof:batch
+```
+
+If Python workbook export fails because `openpyxl` is missing, set `CODEX_PYTHON_BIN` to a Python that has the workspace spreadsheet dependencies.
+
+## TitlePro Lane
+
+TitlePro is an evidence layer after screening, not a broad lead source.
+
+- Set/keep `TitlePro Status = Not needed until screened` for low-context leads.
+- Move to `Needs approval` only for a scoped missing proof: profile, deed, DOT, NOD, NTS, assignment, SOS, trustee status, or signature page.
+- Paid/order actions require explicit approval for property, APN/county when known, doc/profile type, reason, and cost ceiling.
+- Prefer existing TitlePro orders/reports over duplicate pulls.
+- Mark wrong-property or duplicate evidence as excluded; do not delete it.
+
+## Outputs
+
+Shareable packet output should normally include:
+
+- `broker_owner_control_report.html`
+- `owner_disambiguation_packet.xlsx`
+- `monday_action_queue.csv`
+- `owner_disambiguation_report.md`
+- compact supporting JSON/manifests
+
+Raw paid docs, browser sessions, `.env`, cookies, and bulky evidence folders stay local unless the user explicitly asks for a private archive.
+
+## References
+
+- Read `references/runbook.md` when executing the workflow end to end.
+- Read `references/sullilink-reuse.md` when importing or adapting logic from SullyLink/retranToReel code.

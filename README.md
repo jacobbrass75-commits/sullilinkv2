@@ -13,6 +13,9 @@ Workflow context:
 
 - `broker_packet/workflows/` contains the exported Monday.com workflow boards and combined workflow workbook.
 - `codex-monday-digest/` contains the lightweight local runner/prototype for parsing PropertyRadar digest inputs and producing Monday-ready preview outputs.
+- `docs/TONIGHT_BUILD_GOAL.md` describes the current repeatable-workflow build target.
+- `docs/SULLILINK_REUSE_AUDIT.md` records which SullyLink/retranToReel patterns are being reused and which are intentionally excluded.
+- `codex_skills/monday-cre-workflow/` is a shareable copy of the local Codex skill installed at `~/.codex/skills/monday-cre-workflow/`.
 
 Not included:
 
