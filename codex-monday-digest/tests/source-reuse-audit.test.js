@@ -34,6 +34,7 @@ test("source-audit maps SullyLink references without exposing old secrets or loc
 
   const recommendations = JSON.parse(fs.readFileSync(path.join(out, "source_reuse_recommendations.json"), "utf8"));
   const contract = JSON.parse(fs.readFileSync(path.join(out, "source_reuse_contract.json"), "utf8"));
+  const baselineContract = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "..", "codex_skills", "monday-cre-workflow", "references", "source-reuse-contract.json"), "utf8"));
   const risks = JSON.parse(fs.readFileSync(path.join(out, "source_risk_scan.json"), "utf8"));
   const manifest = JSON.parse(fs.readFileSync(path.join(out, "run_manifest.json"), "utf8"));
   const auditText = fs.readFileSync(path.join(out, "source_reuse_audit.json"), "utf8");
@@ -45,6 +46,7 @@ test("source-audit maps SullyLink references without exposing old secrets or loc
   assert.equal(byId.recording_document_schema.matched, true);
   assert.equal(byId.titlepro_serial_worker.copy_strategy, "copy_pattern_not_source");
   assert.equal(contract.mode, "sullilink_pattern_contract");
+  assert.deepEqual(contract.lanes.map((row) => row.pattern_id).sort(), baselineContract.lanes.map((row) => row.pattern_id).sort());
   assert.ok(lanesById.propertyradar_digest_parser.current_runner_surface.includes("preview --gmail-json"));
   assert.ok(lanesById.propertyradar_digest_parser.proof_scripts.includes("proof:gmail-connector"));
   assert.ok(lanesById.apn_dedupe.current_runner_surface.includes("batch-owner-clusters"));

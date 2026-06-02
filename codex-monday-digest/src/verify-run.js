@@ -47,6 +47,16 @@ const SOURCE_AUDIT_FILES = [
   "run_manifest.json"
 ];
 
+const BUNDLED_SOURCE_REUSE_CONTRACT = path.resolve(
+  __dirname,
+  "..",
+  "..",
+  "codex_skills",
+  "monday-cre-workflow",
+  "references",
+  "source-reuse-contract.json"
+);
+
 const CONNECTOR_READINESS_FILES = [
   "connector_readiness_report.json",
   "gmail_connector_contract.json",
@@ -841,6 +851,7 @@ function verifySourceAuditRun(runFolder) {
   const audit = readJson(path.join(runFolder, "source_reuse_audit.json"));
   const recommendations = readJson(path.join(runFolder, "source_reuse_recommendations.json"));
   const reuseContract = readJson(path.join(runFolder, "source_reuse_contract.json"));
+  const bundledSourceContract = readBundledSourceReuseContract();
   const riskScan = readJson(path.join(runFolder, "source_risk_scan.json"));
   const manifest = readJson(path.join(runFolder, "run_manifest.json"));
   const plan = fs.readFileSync(path.join(runFolder, "source_reuse_plan.md"), "utf8");
@@ -860,6 +871,8 @@ function verifySourceAuditRun(runFolder) {
   checks.push({ pass: sourceReuseContractHasLane(reuseContract, "apn_dedupe", "batch-owner-clusters", "proof:batch"), message: "source reuse contract maps APN dedupe to batch proof" });
   checks.push({ pass: sourceReuseContractHasLane(reuseContract, "titlepro_serial_worker", "titlepro-confirm", "proof:titlepro-confirm"), message: "source reuse contract maps TitlePro worker shape to confirmation proof" });
   checks.push({ pass: reuseContract.lanes.every((lane) => Array.isArray(lane.blocked_actions) && lane.blocked_actions.length > 0), message: "every source reuse contract lane records blocked actions" });
+  checks.push({ pass: Boolean(bundledSourceContract), message: "bundled source-reuse contract reference is available" });
+  checks.push({ pass: Boolean(bundledSourceContract) && sourceReuseContractsAligned(reuseContract, bundledSourceContract), message: "generated source reuse contract matches bundled skill baseline" });
   checks.push({ pass: riskScan.secret_values_exposed === false && riskScan.secret_hits.every((hit) => hit.value_exposed === false), message: "secret scan exposes no secret values" });
   checks.push({ pass: Array.isArray(riskScan.risk_categories) && riskScan.risk_categories.every(hasRiskCategoryFields), message: "risk scan categories are structured" });
   checks.push({ pass: noAbsoluteLocalPathsInSourceAudit(runFolder), message: "source audit outputs contain no absolute local paths" });
@@ -1377,6 +1390,36 @@ function sourceReuseContractHasLane(contract, patternId, runnerSurface, proofScr
     && lane.current_runner_surface.includes(runnerSurface)
     && lane.proof_scripts.includes(proofScript)
     && lane.copy_strategy === "copy_pattern_not_source");
+}
+
+function readBundledSourceReuseContract() {
+  if (!fs.existsSync(BUNDLED_SOURCE_REUSE_CONTRACT)) return null;
+  const contract = readJson(BUNDLED_SOURCE_REUSE_CONTRACT);
+  return contract?.schema_version === 1 && Array.isArray(contract.lanes) ? contract : null;
+}
+
+function sourceReuseContractsAligned(generated, bundled) {
+  const generatedLanes = generated?.lanes || [];
+  const bundledLanes = bundled?.lanes || [];
+  const generatedIds = generatedLanes.map((lane) => lane.pattern_id).sort();
+  const bundledIds = bundledLanes.map((lane) => lane.pattern_id).sort();
+  if (!sameStringSet(generatedIds, bundledIds)) return false;
+  return bundledLanes.every((baselineLane) => {
+    const generatedLane = generatedLanes.find((lane) => lane.pattern_id === baselineLane.pattern_id);
+    return Boolean(generatedLane)
+      && generatedLane.implementation_status === baselineLane.implementation_status
+      && sameStringSet(generatedLane.current_runner_surface, baselineLane.current_runner_surface)
+      && sameStringSet(generatedLane.proof_scripts, baselineLane.proof_scripts)
+      && sameStringSet(generatedLane.blocked_actions, baselineLane.blocked_actions)
+      && generatedLane.copy_strategy === "copy_pattern_not_source";
+  });
+}
+
+function sameStringSet(left, right) {
+  const normalize = (values) => (values || []).map((value) => String(value)).sort();
+  const a = normalize(left);
+  const b = normalize(right);
+  return a.length === b.length && a.every((value, index) => value === b[index]);
 }
 
 function hasRiskCategoryFields(row) {

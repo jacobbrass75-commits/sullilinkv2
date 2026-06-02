@@ -179,6 +179,8 @@ This defaults to `$HOME/Downloads/retranToReel_codebase 2.zip` and `../external_
 
 The bundled `references/source-reuse-contract.json` is the compact skill contract for old-app pattern reuse. Load it before adapting SullyLink logic when you need exact lane IDs, identity keys, TitlePro serial-worker rules, connector readiness requirements, owner/control promotion limits, or contact enrichment guardrails.
 
+`npm run proof:source-audit-real` must also prove the generated `source_reuse_contract.json` still matches this bundled baseline for lane IDs, runner surfaces, proof scripts, implementation statuses, and blocked actions.
+
 Skill package validation:
 
 ```bash
