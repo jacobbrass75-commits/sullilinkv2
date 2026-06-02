@@ -231,6 +231,17 @@ Use the bundled `references/source-reuse-contract.json` as the installed-skill b
 
 Generated `source_reuse_contract.json` should include the same identity ledger keys, connector readiness guardrails, TitlePro serial-worker rules, owner/control promotion matrix, and contact enrichment guardrails as the bundled baseline. Verification should fail if the generated contract drifts from the bundled baseline on those guardrail sections, lane IDs, runner surfaces, proof scripts, implementation statuses, or blocked actions.
 
+### Aggregate Safety Audit
+
+After local proof runs, aggregate the safety evidence:
+
+```bash
+npm run proof:safety-audit
+node src/cli.js safety-audit --proof-root ../outputs/monday_digest_runs --goal-md ../docs/TONIGHT_BUILD_GOAL.md --out ../outputs/monday_digest_runs/safety-audit
+```
+
+The audit proves aggregate forbidden action counts are zero and keeps Monday live writes blocked unless explicit board/column/rollback/broker gates are satisfied.
+
 ## Packet Build
 
 For broker-facing output:
@@ -250,6 +261,7 @@ cd codex-monday-digest
 CODEX_PYTHON_BIN=/path/to/python-with-openpyxl PROPERTYRADAR_BATCH_CSV=/path/to/export.csv npm test
 npm run proof:skill
 npm run proof:skill-pack
+npm run proof:safety-audit
 npm run proof:goal-audit
 npm run proof:packet-audit
 npm run proof:source-audit-real

@@ -18,6 +18,7 @@ const PROOF_RUN_FOLDERS = {
   "proof:skill-pack": "skill-package-bundle",
   "proof:goal-audit": "goal-audit",
   "proof:packet-audit": "packet-audit",
+  "proof:safety-audit": "safety-audit",
   "proof:source-audit": "source-audit",
   "proof:source-audit-real": "source-audit-real",
   "proof:workflow-map": "workflow-map",
@@ -46,6 +47,7 @@ const GATE_CATALOG = [
   gate("skill_pack", /skill-pack/i, ["proof:skill-pack"], "covered_by_local_proof", "Installable skill package export."),
   gate("goal_audit", /goal-audit/i, ["proof:goal-audit"], "covered_by_local_proof", "Repeatable goal completion audit surface."),
   gate("packet_audit", /packet-audit --packet-dir/i, ["proof:packet-audit"], "covered_by_local_proof", "Shareable packet and broker claim audit surface."),
+  gate("safety_audit", /safety-audit --proof-root --goal-md/i, ["proof:safety-audit"], "covered_by_local_proof", "Aggregate zero-action safety audit for canonical proof runs and live-write blocking language."),
   gate("source_audit", /source-audit --zip/i, ["proof:source-audit"], "covered_by_local_proof", "Fixture/source reference reuse audit."),
   gate("source_audit_contract_guardrails", /Generated `source_reuse_contract\.json` includes identity ledger keys/i, ["proof:source-audit-real"], "covered_by_local_proof", "Generated SullyLink pattern contract includes reusable guardrails."),
   gate("source_audit_real_contract_drift", /proof:source-audit-real[\s\S]*generated `source_reuse_contract\.json` matches/i, ["proof:source-audit-real"], "covered_by_local_proof", "Generated SullyLink pattern contract matches bundled skill baseline."),
@@ -53,7 +55,7 @@ const GATE_CATALOG = [
   gate("shareable_packet_safety", /Shareable packet files/i, ["proof:packet-audit"], "covered_by_local_proof", "Shareable packet safety, no raw docs, no secrets, and no local paths."),
   gate("broker_control_claims", /broker-facing owner\/control claim/i, ["proof:packet-audit"], "covered_by_local_proof", "Broker-facing control claims include evidence, confidence, and beneficial-owner caveats."),
   gate("titlepro_serialized", /TitlePro actions remain serialized/i, ["proof:titlepro-confirm"], "covered_by_local_proof", "TitlePro execution stays serialized and approval-gated."),
-  gate("monday_live_write_gate", /Monday live write remains blocked/i, [], "deferred_external_gate", "Live Monday writes require explicit board, column, rollback, and broker gates.")
+  gate("monday_live_write_gate", /Monday live write remains blocked/i, ["proof:safety-audit"], "covered_by_local_proof", "Aggregate safety audit proves live writes remain blocked unless explicit board, column, rollback, and broker gates are satisfied.")
 ];
 
 function gate(id, pattern, proofCommands, classification, evidence_basis) {
@@ -105,9 +107,11 @@ function buildGoalAudit({ goalMd, packageJson, proofRoot }) {
     proof_command_present_count: commandCoverage.filter((row) => row.script_present).length,
     proof_artifact_pass_count: commandCoverage.filter((row) => row.artifact_status === "pass").length
   };
+  const priorProofCommands = commandCoverage.filter((row) => row.command !== "proof:goal-audit");
   const goalComplete = counts.missing_or_uncategorized_count === 0
     && counts.documented_manual_gate_count === 0
-    && counts.deferred_external_gate_count === 0;
+    && counts.deferred_external_gate_count === 0
+    && priorProofCommands.every((row) => row.artifact_status === "pass");
 
   return {
     schema_version: 1,
@@ -117,7 +121,7 @@ function buildGoalAudit({ goalMd, packageJson, proofRoot }) {
     completion_claimed: false,
     completion_reason: goalComplete
       ? "All acceptance gates have direct proof; caller may perform a final completion audit."
-      : "Goal remains active because some gates are documented/manual or deferred external gates.",
+      : "Goal remains active because some gates are documented/manual, deferred external gates, missing proof scripts, or missing passing proof artifacts.",
     goal_source: sourceDescriptor(goalPath, "goal_markdown"),
     package_source: sourceDescriptor(packagePath, "package_json"),
     proof_root: proofPath ? {
@@ -231,6 +235,7 @@ function renderGoalAuditSummary(audit) {
 }
 
 module.exports = {
+  PROOF_RUN_FOLDERS,
   GATE_CATALOG,
   buildGoalAudit,
   extractAcceptanceGates,

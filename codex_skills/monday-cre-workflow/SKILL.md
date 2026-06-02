@@ -37,6 +37,7 @@ cd /path/to/repo/codex-monday-digest
 npm test
 npm run proof:skill
 npm run proof:skill-pack
+npm run proof:safety-audit
 npm run proof:goal-audit
 npm run proof:packet-audit
 npm run proof:source-audit-real
@@ -180,6 +181,15 @@ This defaults to `$HOME/Downloads/retranToReel_codebase 2.zip` and `../external_
 The bundled `references/source-reuse-contract.json` is the compact skill contract for old-app pattern reuse. Load it before adapting SullyLink logic when you need exact lane IDs, identity keys, TitlePro serial-worker rules, connector readiness requirements, owner/control promotion limits, or contact enrichment guardrails.
 
 `npm run proof:source-audit-real` must also prove the generated `source_reuse_contract.json` includes the reusable guardrails and still matches this bundled baseline for lane IDs, runner surfaces, proof scripts, implementation statuses, and blocked actions.
+
+Aggregate safety audit:
+
+```bash
+npm run proof:safety-audit
+node src/cli.js safety-audit --proof-root ../outputs/monday_digest_runs --goal-md ../docs/TONIGHT_BUILD_GOAL.md --out ../outputs/monday_digest_runs/safety-audit
+```
+
+Use this after local proof runs to verify aggregate safety across `../outputs/monday_digest_runs`. It proves aggregate forbidden action counts are zero and keeps Monday live writes blocked unless explicit board/column/rollback/broker gates are satisfied.
 
 Skill package validation:
 

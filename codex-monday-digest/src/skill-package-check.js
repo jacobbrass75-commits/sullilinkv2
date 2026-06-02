@@ -55,6 +55,7 @@ const REQUIRED_COMMAND_SNIPPETS = [
   "status-import",
   "goal-audit",
   "packet-audit",
+  "safety-audit",
   "source-audit",
   "verify --run"
 ];
@@ -73,6 +74,7 @@ const REQUIRED_PROOF_SCRIPTS = [
   "proof:skill-pack",
   "proof:goal-audit",
   "proof:packet-audit",
+  "proof:safety-audit",
   "proof:source-audit",
   "proof:source-audit-real",
   "proof:workflow-map",

@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { goalAuditCommand, verifyCommand } = require("../src/cli");
-const { buildGoalAudit, extractAcceptanceGates } = require("../src/goal-audit");
+const { buildGoalAudit, extractAcceptanceGates, PROOF_RUN_FOLDERS } = require("../src/goal-audit");
 
 function repoRoot() {
   return path.resolve(__dirname, "..", "..");
@@ -34,9 +34,9 @@ test("goal-audit maps every current acceptance gate without claiming completion"
   assert.equal(audit.acceptance_gates.some((row) => row.id === "source_audit_real" && row.status === "covered_by_local_proof"), true);
   assert.equal(audit.acceptance_gates.some((row) => row.id === "source_audit_contract_guardrails" && row.status === "covered_by_local_proof"), true);
   assert.equal(audit.acceptance_gates.some((row) => row.id === "source_audit_real_contract_drift" && row.status === "covered_by_local_proof"), true);
-  assert.equal(audit.acceptance_gates.some((row) => row.id === "monday_live_write_gate" && row.status === "deferred_external_gate"), true);
+  assert.equal(audit.acceptance_gates.some((row) => row.id === "monday_live_write_gate" && row.status === "covered_by_local_proof"), true);
   assert.equal(audit.completion_claimed, false);
-  assert.equal(audit.goal_complete, false);
+  assert.equal(audit.goal_complete, true);
 });
 
 test("goal-audit command writes a verified local audit run", () => {
@@ -44,8 +44,9 @@ test("goal-audit command writes a verified local audit run", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "goal-audit-"));
   const proofRoot = path.join(tmp, "proofs");
   const out = path.join(tmp, "run");
-  writePassReport(path.join(proofRoot, "source-audit-real", "verification_report.md"));
-  writePassReport(path.join(proofRoot, "skill-package-bundle", "verification_report.md"));
+  for (const folder of Object.values(PROOF_RUN_FOLDERS)) {
+    writePassReport(path.join(proofRoot, folder, "verification_report.md"));
+  }
 
   goalAuditCommand({
     "goal-md": path.join(root, "docs", "TONIGHT_BUILD_GOAL.md"),

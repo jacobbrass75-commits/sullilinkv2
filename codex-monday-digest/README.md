@@ -86,6 +86,7 @@ codex-monday-digest skill-pack --skill-dir SKILL_DIR --package-json PACKAGE.json
 codex-monday-digest goal-audit --goal-md GOAL.md --package-json PACKAGE.json --proof-root OUTPUT_ROOT --out RUN_FOLDER
 codex-monday-digest packet-audit --packet-dir PACKET_DIR --out RUN_FOLDER
 codex-monday-digest source-audit --zip SOURCE.zip --source-dir EXTERNAL_REFERENCE_DIR --goal-md GOAL.md --out RUN_FOLDER
+codex-monday-digest safety-audit --proof-root OUTPUT_ROOT --goal-md GOAL.md --out RUN_FOLDER
 codex-monday-digest sync --run RUN_FOLDER --mode live_write
 ```
 
@@ -115,6 +116,14 @@ codex-monday-digest sync --run RUN_FOLDER --mode live_write
 
 `npm run proof:source-audit-real` runs the same audit against local ignored references. It defaults to `$HOME/Downloads/retranToReel_codebase 2.zip` and `../external_references`; override with `SULLILINK_ZIP` and `SULLILINK_SOURCE_DIR` when those files live elsewhere.
 
+`safety-audit` reads prior proof run folders and the current goal markdown, then writes aggregate safety proof artifacts. It proves aggregate forbidden action counts are zero and keeps Monday live writes blocked unless explicit board/column/rollback/broker gates are satisfied.
+
+Direct CLI form:
+
+```text
+node src/cli.js safety-audit --proof-root ../outputs/monday_digest_runs --goal-md ../docs/TONIGHT_BUILD_GOAL.md --out ../outputs/monday_digest_runs/safety-audit
+```
+
 `workflow-map` reads the downloaded Monday workflow export workbooks and writes `monday_workflow_map.json`, `monday_workflow_stage_map.json`, `monday_workflow_source_profile.json`, and `monday_workflow_summary.md`. It is local-only: it extracts the board/checklist template shape for future runs and records zero Monday writes or external actions.
 
 ## Local Proofs
@@ -136,6 +145,7 @@ npm run proof:contact
 npm run proof:status
 npm run proof:skill
 npm run proof:skill-pack
+npm run proof:safety-audit
 npm run proof:goal-audit
 npm run proof:packet-audit
 npm run proof:source-audit
@@ -168,6 +178,8 @@ Every digest and batch run writes `monday_action_queue.csv` and a workbook `Mond
 `sync --connector-json ... --mode monday_lookup_dry_run` writes `monday_connector_source_profile.json` with board/item counts, matched/duplicate/not-found counts, basename-only source provenance, and zero Monday/external writes. Use this for saved read-only connector results; use `--lookup-file` for CSV/XLSX board exports.
 
 `source-audit` writes `source_reuse_audit.json`, `source_reuse_recommendations.json`, `source_reuse_contract.json`, `source_risk_scan.json`, and `source_reuse_plan.md`. Use it before importing more SullyLink code so the next change is tied to the Monday workflow and does not accidentally promote old credentials, raw evidence, or broad app rewrites.
+
+`proof:safety-audit` runs the aggregate safety audit across `../outputs/monday_digest_runs` and `../docs/TONIGHT_BUILD_GOAL.md`. It proves aggregate forbidden action counts are zero and keeps Monday live writes blocked unless explicit board/column/rollback/broker gates are satisfied.
 
 `workflow-map` writes a reusable local contract from the exported Monday workflow workbooks. Use it when the Monday board/checklist shape needs to be reloaded or compared without opening Monday.com.
 

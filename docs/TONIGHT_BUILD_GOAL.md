@@ -87,6 +87,7 @@ CRE Brain / SullyLink database
 - `goal-audit --goal-md --package-json --proof-root` maps every acceptance gate in this file to local proof coverage, documented/manual gates, or deferred external gates without claiming completion.
 - `packet-audit --packet-dir` verifies the broker packet has required shareable files, no raw paid docs or local paths/secrets, and owner/control claims with evidence, confidence, and beneficial-owner caveats.
 - `source-audit --zip/--source-dir --goal-md` turns SullyLink/retranToReel reference material and the current goal markdown into a compact reuse plan and runner contract without copying old source, credentials, cookies, dependency trees, or raw paid docs.
+- `safety-audit --proof-root --goal-md` proves aggregate forbidden action counts are zero and keeps Monday live writes blocked unless explicit board/column/rollback/broker gates are satisfied.
 - Generated `source_reuse_contract.json` includes identity ledger keys, connector readiness guardrails, TitlePro serial-worker rules, owner/control promotion limits, and contact enrichment guardrails.
 - `proof:source-audit-real` reruns that audit against the local ignored SullyLink/retranToReel zip and extracted references when those inputs are available.
 - `proof:source-audit-real` verifies the generated `source_reuse_contract.json` matches the bundled skill baseline `references/source-reuse-contract.json` for lane IDs, runner surfaces, proof scripts, implementation statuses, and blocked actions.
@@ -112,12 +113,19 @@ npm run proof:contact
 npm run proof:status
 npm run proof:skill
 npm run proof:skill-pack
+npm run proof:safety-audit
 npm run proof:goal-audit
 npm run proof:packet-audit
 npm run proof:source-audit
 npm run proof:source-audit-real
 npm run proof:workflow-map
 npm run app
+```
+
+Aggregate safety proof:
+
+```bash
+node src/cli.js safety-audit --proof-root ../outputs/monday_digest_runs --goal-md ../docs/TONIGHT_BUILD_GOAL.md --out ../outputs/monday_digest_runs/safety-audit
 ```
 
 Open the dashboard:

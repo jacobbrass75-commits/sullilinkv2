@@ -100,11 +100,18 @@ const PACKET_AUDIT_FILES = [
   "run_manifest.json"
 ];
 
+const SAFETY_AUDIT_FILES = [
+  "safety_audit_report.json",
+  "safety_audit_summary.md",
+  "run_manifest.json"
+];
+
 function verifyRun(runFolder) {
   const isSkillBundle = fs.existsSync(path.join(runFolder, "skill_package_bundle_manifest.json"));
   const isSkillPackage = fs.existsSync(path.join(runFolder, "skill_package_report.json"));
   const isGoalAudit = fs.existsSync(path.join(runFolder, "goal_audit_report.json"));
   const isPacketAudit = fs.existsSync(path.join(runFolder, "packet_audit_report.json"));
+  const isSafetyAudit = fs.existsSync(path.join(runFolder, "safety_audit_report.json"));
   const isConnectorReadiness = fs.existsSync(path.join(runFolder, "connector_readiness_report.json"));
   const isWorkflowMap = fs.existsSync(path.join(runFolder, "monday_workflow_map.json"));
   const isSourceAudit = fs.existsSync(path.join(runFolder, "source_reuse_audit.json"));
@@ -113,6 +120,7 @@ function verifyRun(runFolder) {
   if (isSkillPackage) return verifySkillPackageRun(runFolder);
   if (isGoalAudit) return verifyGoalAuditRun(runFolder);
   if (isPacketAudit) return verifyPacketAuditRun(runFolder);
+  if (isSafetyAudit) return verifySafetyAuditRun(runFolder);
   if (isConnectorReadiness) return verifyConnectorReadinessRun(runFolder);
   if (isWorkflowMap) return verifyWorkflowMapRun(runFolder);
   if (isSourceAudit) return verifySourceAuditRun(runFolder);
@@ -1043,10 +1051,11 @@ function verifyGoalAuditRun(runFolder) {
   checks.push({ pass: Array.isArray(gates) && gates.length >= 20 && gates.every(hasGoalAuditGateFields), message: "goal audit covers acceptance gates with structured rows" });
   checks.push({ pass: gates.every((row) => row.status !== "uncategorized" && row.status !== "missing_proof"), message: "goal audit has no uncategorized or missing local-proof gates" });
   checks.push({ pass: gates.some((row) => row.id === "source_audit_real" && row.status === "covered_by_local_proof"), message: "goal audit covers real SullyLink source audit proof" });
-  checks.push({ pass: gates.some((row) => row.id === "monday_live_write_gate" && row.status === "deferred_external_gate"), message: "goal audit keeps Monday live write as deferred gated work" });
+  checks.push({ pass: gates.some((row) => row.id === "monday_live_write_gate" && row.status === "covered_by_local_proof"), message: "goal audit covers Monday live-write blocking through safety proof" });
   checks.push({ pass: gates.some((row) => row.id === "shareable_packet_safety" && row.status === "covered_by_local_proof"), message: "goal audit covers shareable packet safety proof" });
   checks.push({ pass: proofCommands.every(hasGoalAuditProofFields), message: "goal audit proof command rows are structured" });
   checks.push({ pass: proofCommands.filter((row) => row.script_present).length >= 15, message: "goal audit records proof script coverage" });
+  checks.push({ pass: proofCommands.every((row) => row.command === "proof:goal-audit" || row.artifact_status === "pass"), message: "all prior goal-audit proof artifacts have PASS verification reports" });
   checks.push({ pass: summary.includes("Status: REVIEW_READY"), message: "goal audit summary is review-ready" });
   checks.push({ pass: noAbsoluteLocalPathsInGoalAudit(runFolder), message: "goal audit outputs contain no absolute local paths" });
   checks.push({ pass: !summary.includes("Authorization:") && !summary.includes("PASSWORD="), message: "goal audit summary contains no credential values" });
@@ -1090,8 +1099,89 @@ function verifyPacketAuditRun(runFolder) {
   return makeReport(runFolder, "codex-monday-digest Packet Audit Verification", checks);
 }
 
+function verifySafetyAuditRun(runFolder) {
+  const checks = [];
+  checkFiles(runFolder, SAFETY_AUDIT_FILES, checks);
+  if (checks.some((check) => !check.pass)) return makeReport(runFolder, "codex-monday-digest Safety Audit Verification", checks);
+
+  const audit = readJson(path.join(runFolder, "safety_audit_report.json"));
+  const manifest = readJson(path.join(runFolder, "run_manifest.json"));
+  const summary = fs.readFileSync(path.join(runFolder, "safety_audit_summary.md"), "utf8");
+  const proofRuns = audit.proof_runs || [];
+  const artifactScans = audit.artifact_scans || [];
+  const auditChecks = audit.checks || [];
+  const goalSafetyChecks = audit.goal_safety_checks || [];
+
+  checks.push({ pass: manifest.mode === "safety_audit", message: "manifest records safety_audit mode" });
+  checks.push({ pass: forbiddenZero(manifest), message: "forbidden action counts are zero" });
+  checks.push({ pass: manifest.output_path_scope === "run_folder_relative", message: "safety audit output paths are run-folder-relative" });
+  checks.push({ pass: audit.mode === "safety_audit" && audit.passed === true, message: "safety audit report passed" });
+  checks.push({ pass: audit.forbidden_actions && forbiddenZero(audit), message: "safety audit report forbidden action counts are zero" });
+  checks.push({ pass: audit.proof_root?.source_path_scope === "basename_only" && !String(audit.proof_root?.source_path || "").includes("/"), message: "proof root source path is basename-only" });
+  checks.push({ pass: audit.goal_source?.source_path_scope === "basename_only" && !String(audit.goal_source?.source_path || "").includes("/"), message: "goal source path is basename-only" });
+  checks.push({ pass: Array.isArray(proofRuns) && proofRuns.length >= 18 && proofRuns.every(hasSafetyProofRunFields), message: "safety audit covers canonical proof runs with structured rows" });
+  checks.push({ pass: proofRuns.every((run) => run.verification_status === "pass"), message: "all required proof runs have PASS verification reports" });
+  checks.push({ pass: Array.isArray(artifactScans) && artifactScans.length >= proofRuns.length && artifactScans.every(hasSafetyArtifactScanFields), message: "safety audit scans proof JSON artifacts with structured rows" });
+  checks.push({ pass: artifactScans.every((scan) => scan.valid_json === true), message: "all scanned safety JSON artifacts are valid JSON" });
+  checks.push({ pass: aggregateForbiddenZero(audit.aggregate_forbidden_actions), message: "aggregate forbidden action counts are zero" });
+  checks.push({ pass: audit.direct_external_action_hit_count === 0 && Array.isArray(audit.direct_external_action_hits) && audit.direct_external_action_hits.length === 0, message: "safety audit found no positive external-action execution fields" });
+  checks.push({ pass: Array.isArray(goalSafetyChecks) && goalSafetyChecks.length >= 2 && goalSafetyChecks.every((row) => row.status === "pass"), message: "goal markdown keeps required safety phrases" });
+  checks.push({ pass: Array.isArray(auditChecks) && auditChecks.length >= 6 && auditChecks.every(hasSafetyCheckFields), message: "safety audit checks are structured" });
+  checks.push({ pass: auditChecks.every((row) => row.status === "pass"), message: "all safety audit checks passed" });
+  checks.push({ pass: summary.includes("Status: PASS"), message: "safety audit summary records pass status" });
+  checks.push({ pass: noAbsoluteLocalPathsInSafetyAudit(runFolder), message: "safety audit outputs contain no absolute local paths" });
+  checks.push({ pass: !summary.includes("Authorization:") && !summary.includes("PASSWORD="), message: "safety audit summary contains no credential values" });
+  checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
+
+  return makeReport(runFolder, "codex-monday-digest Safety Audit Verification", checks);
+}
+
 function hasSkillPackageCheckFields(row) {
   return ["id", "status", "message"].every((field) => Object.prototype.hasOwnProperty.call(row, field));
+}
+
+function hasSafetyProofRunFields(row) {
+  return [
+    "command",
+    "run_folder",
+    "run_folder_scope",
+    "exists",
+    "verification_status",
+    "verification_source_path",
+    "verification_sha256",
+    "manifest_mode",
+    "json_artifact_count"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && row.run_folder_scope === "basename_only"
+    && !String(row.run_folder || "").includes("/")
+    && (!row.verification_source_path || !String(row.verification_source_path).includes("/"));
+}
+
+function hasSafetyArtifactScanFields(row) {
+  return [
+    "command",
+    "run_folder",
+    "artifact",
+    "artifact_scope",
+    "valid_json",
+    "forbidden_actions",
+    "direct_external_action_hits"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && row.artifact_scope === "run_folder_relative"
+    && !String(row.run_folder || "").includes("/")
+    && !String(row.artifact || "").includes("/")
+    && row.forbidden_actions
+    && aggregateForbiddenZero(row.forbidden_actions)
+    && Array.isArray(row.direct_external_action_hits)
+    && row.direct_external_action_hits.length === 0;
+}
+
+function hasSafetyCheckFields(row) {
+  return ["id", "status", "message"].every((field) => Object.prototype.hasOwnProperty.call(row, field));
+}
+
+function aggregateForbiddenZero(counts) {
+  return Object.keys(FORBIDDEN_ZERO).every((key) => counts?.[key] === 0);
 }
 
 function hasPacketScanFields(row) {
@@ -1323,6 +1413,13 @@ function noAbsoluteLocalPathsInGoalAudit(runFolder) {
 
 function noAbsoluteLocalPathsInPacketAudit(runFolder) {
   return PACKET_AUDIT_FILES.every((file) => {
+    const text = fs.readFileSync(path.join(runFolder, file), "utf8");
+    return !hasAbsoluteLocalPath(text);
+  });
+}
+
+function noAbsoluteLocalPathsInSafetyAudit(runFolder) {
+  return SAFETY_AUDIT_FILES.every((file) => {
     const text = fs.readFileSync(path.join(runFolder, file), "utf8");
     return !hasAbsoluteLocalPath(text);
   });
@@ -1589,5 +1686,6 @@ module.exports = {
   verifySkillPackageRun,
   verifySkillBundleRun,
   verifyGoalAuditRun,
-  verifyPacketAuditRun
+  verifyPacketAuditRun,
+  verifySafetyAuditRun
 };
