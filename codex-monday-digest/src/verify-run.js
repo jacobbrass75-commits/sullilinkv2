@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { FORBIDDEN_ZERO, readJson } = require("./runtime");
+const { FORBIDDEN_ZERO, readJson, sha256File } = require("./runtime");
 const { REQUIRED_GATE_COLUMNS } = require("./monday-field-map");
 const { DEFAULT_SUBITEMS } = require("./subitems");
 const { ACTION_QUEUE_HEADERS, readActionQueueCsv } = require("./monday-action-queue");
@@ -70,12 +70,22 @@ const SKILL_PACKAGE_FILES = [
   "run_manifest.json"
 ];
 
+const SKILL_BUNDLE_FILES = [
+  "skill_package_bundle_manifest.json",
+  "skill_package_install.md",
+  "skill_package_report.json",
+  "skill_package_summary.md",
+  "run_manifest.json"
+];
+
 function verifyRun(runFolder) {
+  const isSkillBundle = fs.existsSync(path.join(runFolder, "skill_package_bundle_manifest.json"));
   const isSkillPackage = fs.existsSync(path.join(runFolder, "skill_package_report.json"));
   const isConnectorReadiness = fs.existsSync(path.join(runFolder, "connector_readiness_report.json"));
   const isWorkflowMap = fs.existsSync(path.join(runFolder, "monday_workflow_map.json"));
   const isSourceAudit = fs.existsSync(path.join(runFolder, "source_reuse_audit.json"));
   const isBatch = fs.existsSync(path.join(runFolder, "batch_source_profile.json"));
+  if (isSkillBundle) return verifySkillBundleRun(runFolder);
   if (isSkillPackage) return verifySkillPackageRun(runFolder);
   if (isConnectorReadiness) return verifyConnectorReadinessRun(runFolder);
   if (isWorkflowMap) return verifyWorkflowMapRun(runFolder);
@@ -946,8 +956,85 @@ function verifySkillPackageRun(runFolder) {
   return makeReport(runFolder, "codex-monday-digest Skill Package Verification", checks);
 }
 
+function verifySkillBundleRun(runFolder) {
+  const checks = [];
+  checkFiles(runFolder, SKILL_BUNDLE_FILES, checks);
+  if (checks.some((check) => !check.pass)) return makeReport(runFolder, "codex-monday-digest Skill Bundle Verification", checks);
+
+  const bundle = readJson(path.join(runFolder, "skill_package_bundle_manifest.json"));
+  const report = readJson(path.join(runFolder, "skill_package_report.json"));
+  const manifest = readJson(path.join(runFolder, "run_manifest.json"));
+  const install = fs.readFileSync(path.join(runFolder, "skill_package_install.md"), "utf8");
+  const summary = fs.readFileSync(path.join(runFolder, "skill_package_summary.md"), "utf8");
+  const packageDir = path.join(runFolder, "skill_package", bundle.skill_name || "");
+
+  checks.push({ pass: manifest.mode === "skill_package_bundle", message: "manifest records skill_package_bundle mode" });
+  checks.push({ pass: forbiddenZero(manifest), message: "forbidden action counts are zero" });
+  checks.push({ pass: bundle.mode === "skill_package_bundle" && bundle.package_ready === true, message: "skill package bundle is ready" });
+  checks.push({ pass: bundle.forbidden_actions && forbiddenZero(bundle), message: "skill package bundle forbidden action counts are zero" });
+  checks.push({ pass: report.mode === "skill_package_check" && report.passed === true, message: "embedded skill package check passed" });
+  checks.push({ pass: Array.isArray(bundle.files) && bundle.files.length >= 4 && bundle.files.every(hasSkillBundleFileFields), message: "skill package bundle files are structured" });
+  checks.push({ pass: fs.existsSync(path.join(packageDir, "SKILL.md")), message: "packaged skill includes SKILL.md" });
+  checks.push({ pass: fs.existsSync(path.join(packageDir, "agents", "openai.yaml")), message: "packaged skill includes agents/openai.yaml" });
+  checks.push({ pass: fs.existsSync(path.join(packageDir, "references", "runbook.md")), message: "packaged skill includes runbook reference" });
+  checks.push({ pass: fs.existsSync(path.join(packageDir, "references", "sullilink-reuse.md")), message: "packaged skill includes SullyLink reuse reference" });
+  checks.push({ pass: bundle.files.every((file) => packagedFileMatchesHash(packageDir, file)), message: "packaged skill files match manifest hashes" });
+  checks.push({ pass: packagedFileSetMatchesManifest(packageDir, bundle.files), message: "packaged skill contains only manifest-listed files" });
+  checks.push({ pass: install.includes("cp -R") && install.includes("${CODEX_HOME:-$HOME/.codex}/skills"), message: "install guide includes local Codex skill install command" });
+  checks.push({ pass: summary.includes("Status: PASS"), message: "skill package summary records pass status" });
+  checks.push({ pass: noAbsoluteLocalPathsInSkillBundle(runFolder, bundle), message: "skill bundle outputs contain no absolute local paths" });
+  checks.push({ pass: !install.includes("Authorization:") && !install.includes("PASSWORD="), message: "skill package install guide contains no credential values" });
+  checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
+
+  return makeReport(runFolder, "codex-monday-digest Skill Bundle Verification", checks);
+}
+
 function hasSkillPackageCheckFields(row) {
   return ["id", "status", "message"].every((field) => Object.prototype.hasOwnProperty.call(row, field));
+}
+
+function hasSkillBundleFileFields(row) {
+  return ["relative_path", "size_bytes", "sha256"].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && !String(row.relative_path || "").includes("..")
+    && !path.isAbsolute(String(row.relative_path || ""))
+    && typeof row.sha256 === "string"
+    && row.sha256.length === 64;
+}
+
+function packagedFileMatchesHash(packageDir, file) {
+  const fullPath = path.join(packageDir, file.relative_path || "");
+  return fs.existsSync(fullPath)
+    && fs.statSync(fullPath).isFile()
+    && fs.statSync(fullPath).size === file.size_bytes
+    && sha256File(fullPath) === file.sha256;
+}
+
+function packagedFileSetMatchesManifest(packageDir, files) {
+  if (!fs.existsSync(packageDir) || !fs.statSync(packageDir).isDirectory()) return false;
+  const expected = new Set((files || []).map((file) => normalizeRelativePath(file.relative_path)));
+  const actual = listRelativeFiles(packageDir).map(normalizeRelativePath);
+  return actual.length === expected.size && actual.every((relativePath) => expected.has(relativePath));
+}
+
+function listRelativeFiles(root) {
+  const files = [];
+  function walk(current) {
+    for (const child of fs.readdirSync(current).sort()) {
+      const fullPath = path.join(current, child);
+      const stat = fs.statSync(fullPath);
+      if (stat.isDirectory()) {
+        walk(fullPath);
+      } else if (stat.isFile()) {
+        files.push(path.relative(root, fullPath));
+      }
+    }
+  }
+  walk(root);
+  return files;
+}
+
+function normalizeRelativePath(value) {
+  return String(value || "").replace(/\\/g, "/");
 }
 
 function hasWorkflowMapFields(workflow) {
@@ -1068,6 +1155,22 @@ function noAbsoluteLocalPathsInSkillPackage(runFolder) {
   });
 }
 
+function noAbsoluteLocalPathsInSkillBundle(runFolder, bundle) {
+  const textFiles = SKILL_BUNDLE_FILES;
+  const topLevelClean = textFiles.every((file) => {
+    const text = fs.readFileSync(path.join(runFolder, file), "utf8");
+    return !hasAbsoluteLocalPath(text);
+  });
+  if (!topLevelClean) return false;
+  const packageDir = path.join(runFolder, "skill_package", bundle.skill_name || "");
+  return (bundle.files || []).every((file) => {
+    const fullPath = path.join(packageDir, file.relative_path || "");
+    if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) return false;
+    const text = fs.readFileSync(fullPath, "utf8");
+    return !hasAbsoluteLocalPath(text);
+  });
+}
+
 function noAbsoluteLocalPathsInCurrentStatus(runFolder) {
   const files = [
     "current_status_intake.json",
@@ -1153,7 +1256,7 @@ function noAbsoluteLocalPathsInSourceAudit(runFolder) {
 }
 
 function hasAbsoluteLocalPath(text) {
-  return /\/Users\/|file:\/\/|(^|[\s"'])[A-Za-z]:[\\/][^\s"']*/.test(text);
+  return /\/Users\/[A-Za-z0-9._-]+|file:\/\/\/Users\/[A-Za-z0-9._-]+|file:\/\/[A-Za-z]:[\\/][^\s|"']+|(^|[\s"'])[A-Za-z]:[\\/][^\s"']*/.test(text);
 }
 
 function isSortedBySourceRow(candidates) {
@@ -1259,5 +1362,6 @@ module.exports = {
   verifyBatchRun,
   verifySourceAuditRun,
   verifyConnectorReadinessRun,
-  verifySkillPackageRun
+  verifySkillPackageRun,
+  verifySkillBundleRun
 };

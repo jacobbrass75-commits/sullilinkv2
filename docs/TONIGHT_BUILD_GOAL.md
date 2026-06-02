@@ -24,7 +24,7 @@ The workflow should take PropertyRadar daily digest rows or batch CSV exports, d
    - no owner/control claims from CSV owner strings alone
 10. Keep shareable packet output separate from raw evidence, credentials, cookies, PDFs, and old app dumps.
 11. Convert downloaded Monday workflow exports into a reusable local workflow map so future runs can align tasks/subitems to the actual Monday checklist shape.
-12. Validate the skill package itself so future Codex runs can prove `SKILL.md`, `agents/openai.yaml`, references, proof scripts, and safety language stayed aligned.
+12. Validate and package the skill itself so future Codex runs can prove `SKILL.md`, `agents/openai.yaml`, references, proof scripts, and safety language stayed aligned, then export an installable local skill package.
 
 ## Reused SullyLink / retranToReel Patterns
 
@@ -81,6 +81,7 @@ CRE Brain / SullyLink database
 - `contact-import --contacts` consumes manual contact enrichment pasteback, writes contact assertions, and records zero RocketReach reveals, outreach actions, RealNex writes, or control/beneficial-owner promotions.
 - `status-import --status` consumes saved current-status/provider evidence, writes status assertions, records zero provider lookups/backfills/outreach/external writes, and keeps broker action blocked until day-of-action official recheck.
 - `skill-check --skill-dir --package-json --goal-md` validates the Codex skill package, required references, UI metadata, proof-script alignment, and safety language without executing external actions.
+- `skill-pack --skill-dir --package-json --goal-md` creates an installable local skill package folder with file hashes and install instructions without executing external actions.
 - `source-audit --zip/--source-dir --goal-md` turns SullyLink/retranToReel reference material and the current goal markdown into a compact reuse plan and runner contract without copying old source, credentials, cookies, dependency trees, or raw paid docs.
 - Shareable packet files have no credentials, cookies, local absolute paths, or paid raw docs.
 - Every broker-facing owner/control claim has evidence and confidence language.
@@ -103,6 +104,7 @@ npm run proof:titlepro-evidence
 npm run proof:contact
 npm run proof:status
 npm run proof:skill
+npm run proof:skill-pack
 npm run proof:source-audit
 npm run proof:workflow-map
 npm run app

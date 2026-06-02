@@ -82,6 +82,7 @@ codex-monday-digest titlepro-import --run RUN_FOLDER --evidence TITLEPRO_EVIDENC
 codex-monday-digest contact-import --run RUN_FOLDER --contacts CONTACTS.csv|json
 codex-monday-digest status-import --run RUN_FOLDER --status CURRENT_STATUS.csv|json
 codex-monday-digest skill-check --skill-dir SKILL_DIR --package-json PACKAGE.json --goal-md GOAL.md --out RUN_FOLDER
+codex-monday-digest skill-pack --skill-dir SKILL_DIR --package-json PACKAGE.json --goal-md GOAL.md --out RUN_FOLDER
 codex-monday-digest source-audit --zip SOURCE.zip --source-dir EXTERNAL_REFERENCE_DIR --goal-md GOAL.md --out RUN_FOLDER
 codex-monday-digest sync --run RUN_FOLDER --mode live_write
 ```
@@ -101,6 +102,8 @@ codex-monday-digest sync --run RUN_FOLDER --mode live_write
 `status-import` reads saved current-status/provider evidence CSV/JSON supplied outside the runner. It writes `current_status_intake.json`, `current_status_assertions_preview.json`, and `current_status_source_profile.json`, then appends `needs_review.json`. It does not call trustee/provider sites, backfill providers, send outreach, or write external systems; imported status facts stay blocked until an official day-of-action recheck.
 
 `skill-check` validates the repo skill package against the current runner and goal markdown. It writes `skill_package_report.json` and `skill_package_summary.md`, checking `SKILL.md`, `agents/openai.yaml`, required references, proof-script alignment, safety language, and basename-only provenance.
+
+`skill-pack` creates a local installable copy of the validated skill under `skill_package/monday-cre-workflow`, plus `skill_package_bundle_manifest.json` and `skill_package_install.md`. It hashes every packaged file and records zero external actions.
 
 `source-audit` reads a SullyLink/retranToReel source zip and/or ignored extracted reference directory, plus the current goal markdown, and writes a compact reuse plan and `source_reuse_contract.json`. It reports which old patterns should be copied conceptually, maps digest parsing/APN dedupe/TitlePro worker/contact/status patterns to current runner commands and proof scripts, records excluded risk paths, and records zero external actions. It never copies old source files, credentials, cookies, raw paid docs, or dependency trees into the shareable repo.
 
@@ -124,6 +127,7 @@ npm run proof:titlepro-evidence
 npm run proof:contact
 npm run proof:status
 npm run proof:skill
+npm run proof:skill-pack
 npm run proof:source-audit
 npm run proof:workflow-map
 npm run proof:edge
@@ -157,3 +161,5 @@ Every digest and batch run writes `monday_action_queue.csv` and a workbook `Mond
 `workflow-map` writes a reusable local contract from the exported Monday workflow workbooks. Use it when the Monday board/checklist shape needs to be reloaded or compared without opening Monday.com.
 
 `skill-check` writes a local proof that `codex_skills/monday-cre-workflow` is still a replicable Codex skill package. Use it after changing `SKILL.md`, bundled references, proof scripts, or the build goal.
+
+`skill-pack` writes the installable package folder and manifest for sharing or reinstalling the skill. Use it after `proof:skill` when the skill package needs to move to another Codex setup.

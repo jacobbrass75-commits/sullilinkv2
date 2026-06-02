@@ -34,6 +34,7 @@ const REQUIRED_PROOF_SCRIPTS = [
   "proof:titlepro-evidence",
   "proof:contact",
   "proof:status",
+  "proof:skill-pack",
   "proof:source-audit",
   "proof:workflow-map",
   "proof:batch"
@@ -163,6 +164,91 @@ function writeSkillPackageCheckRun(outDir, report) {
   });
 }
 
+function buildSkillPackageBundle({ skillDir, packageJson, goalMd }) {
+  const check = buildSkillPackageCheck({ skillDir, packageJson, goalMd });
+  const skillPath = path.resolve(skillDir);
+  const files = collectSkillFiles(skillPath);
+  return {
+    schema_version: 1,
+    mode: "skill_package_bundle",
+    skill_name: check.skill_name,
+    package_ready: check.passed,
+    package_root: `${check.skill_name}/`,
+    source_check: check,
+    files: files.map((file) => ({
+      relative_path: file.relativePath,
+      size_bytes: fs.statSync(file.fullPath).size,
+      sha256: sha256File(file.fullPath)
+    })),
+    install_target: "${CODEX_HOME:-$HOME/.codex}/skills",
+    forbidden_actions: { ...FORBIDDEN_ZERO }
+  };
+}
+
+function writeSkillPackageBundleRun(outDir, bundle, skillDir) {
+  ensureDir(outDir);
+  const at = nowIso();
+  const packageRootDir = path.join(outDir, "skill_package");
+  const packageDir = path.join(packageRootDir, bundle.skill_name);
+  fs.rmSync(packageRootDir, { recursive: true, force: true });
+  const files = collectSkillFiles(path.resolve(skillDir));
+  for (const file of files) {
+    const destination = path.join(packageDir, file.relativePath);
+    ensureDir(path.dirname(destination));
+    fs.copyFileSync(file.fullPath, destination);
+  }
+  const manifestPath = path.join(outDir, "skill_package_bundle_manifest.json");
+  const installPath = path.join(outDir, "skill_package_install.md");
+  const reportPath = path.join(outDir, "skill_package_report.json");
+  const summaryPath = path.join(outDir, "skill_package_summary.md");
+  writeJson(manifestPath, bundle);
+  fs.writeFileSync(installPath, renderInstallGuide(bundle));
+  writeJson(reportPath, bundle.source_check);
+  fs.writeFileSync(summaryPath, renderSummary(bundle.source_check));
+  writeJson(path.join(outDir, "run_manifest.json"), {
+    run_id: path.basename(path.resolve(outDir)).replace(/[^a-zA-Z0-9_-]+/g, "_"),
+    started_at: at,
+    mode: "skill_package_bundle",
+    output_path_scope: "run_folder_relative",
+    output_paths: [
+      path.basename(manifestPath),
+      path.basename(installPath),
+      path.basename(reportPath),
+      path.basename(summaryPath),
+      "skill_package"
+    ],
+    forbidden_actions: { ...FORBIDDEN_ZERO },
+    counts: {
+      package_files: bundle.files.length,
+      skill_checks: bundle.source_check.checks.length,
+      failed_checks: bundle.source_check.checks.filter((check) => check.status !== "pass").length
+    }
+  });
+}
+
+function collectSkillFiles(skillPath) {
+  const files = [];
+  const allowedRoots = new Set(["agents", "references", "scripts", "assets"]);
+  function walk(current) {
+    const relativePath = normalizeRelativePath(path.relative(skillPath, current));
+    const stat = fs.statSync(current);
+    if (stat.isDirectory()) {
+      if (relativePath) {
+        const [root] = relativePath.split("/");
+        if (!allowedRoots.has(root)) return;
+      }
+      for (const child of fs.readdirSync(current).sort()) walk(path.join(current, child));
+      return;
+    }
+    if (!relativePath) return;
+    if (relativePath === "SKILL.md" || allowedRoots.has(relativePath.split("/")[0])) {
+      files.push({ relativePath, fullPath: current });
+    }
+  }
+  walk(skillPath);
+  return files;
+}
+
 function parseFrontmatter(text) {
   const match = String(text || "").match(/^---\n([\s\S]*?)\n---/);
   if (!match) return {};
@@ -220,7 +306,43 @@ function renderSummary(report) {
   ].join("\n") + "\n";
 }
 
+function renderInstallGuide(bundle) {
+  return [
+    "# Install Monday CRE Workflow Skill",
+    "",
+    "This package is local-only. It contains the Codex skill files, references, UI metadata, and validation report.",
+    "",
+    "## Install",
+    "",
+    "From this package run folder:",
+    "",
+    "```bash",
+    "mkdir -p \"${CODEX_HOME:-$HOME/.codex}/skills\"",
+    `cp -R skill_package/${bundle.skill_name} \"\${CODEX_HOME:-$HOME/.codex}/skills/${bundle.skill_name}\"`,
+    "```",
+    "",
+    "## Verify",
+    "",
+    "After install, run from the repo:",
+    "",
+    "```bash",
+    "cd codex-monday-digest",
+    "npm run proof:skill",
+    "```",
+    "",
+    "## Package Contents",
+    "",
+    ...bundle.files.map((file) => `- ${file.relative_path} (${file.sha256.slice(0, 12)})`)
+  ].join("\n") + "\n";
+}
+
+function normalizeRelativePath(value) {
+  return String(value || "").replace(/\\/g, "/");
+}
+
 module.exports = {
   buildSkillPackageCheck,
-  writeSkillPackageCheckRun
+  writeSkillPackageCheckRun,
+  buildSkillPackageBundle,
+  writeSkillPackageBundleRun
 };

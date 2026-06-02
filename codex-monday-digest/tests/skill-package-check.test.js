@@ -3,8 +3,9 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { skillCheckCommand, verifyCommand } = require("../src/cli");
-const { buildSkillPackageCheck } = require("../src/skill-package-check");
+const { skillCheckCommand, skillPackCommand, verifyCommand } = require("../src/cli");
+const { buildSkillPackageCheck, buildSkillPackageBundle } = require("../src/skill-package-check");
+const { verifyRun } = require("../src/verify-run");
 
 function repoRoot() {
   return path.resolve(__dirname, "..", "..");
@@ -55,4 +56,81 @@ test("skill-check command writes a verified local run", () => {
   assert.equal(manifest.forbidden_actions.monday_live_writes, 0);
   assert.match(summary, /Status: PASS/);
   assert.doesNotMatch(summary, /\/Users\//);
+});
+
+test("skill package bundle is installable from copied skill files", () => {
+  const root = repoRoot();
+  const bundle = buildSkillPackageBundle({
+    skillDir: path.join(root, "codex_skills", "monday-cre-workflow"),
+    packageJson: path.join(root, "codex-monday-digest", "package.json"),
+    goalMd: path.join(root, "docs", "TONIGHT_BUILD_GOAL.md")
+  });
+
+  assert.equal(bundle.package_ready, true);
+  assert.equal(bundle.skill_name, "monday-cre-workflow");
+  assert.ok(bundle.files.some((file) => file.relative_path === "SKILL.md"));
+  assert.ok(bundle.files.some((file) => file.relative_path === "agents/openai.yaml"));
+  assert.ok(bundle.files.some((file) => file.relative_path === "references/runbook.md"));
+  assert.ok(bundle.files.some((file) => file.relative_path === "references/sullilink-reuse.md"));
+  assert.equal(bundle.forbidden_actions.monday_live_writes, 0);
+});
+
+test("skill-pack command writes a verified installable package run", () => {
+  const root = repoRoot();
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "codex-skill-pack-"));
+  const out = path.join(tmp, "run");
+
+  skillPackCommand({
+    "skill-dir": path.join(root, "codex_skills", "monday-cre-workflow"),
+    "package-json": path.join(root, "codex-monday-digest", "package.json"),
+    "goal-md": path.join(root, "docs", "TONIGHT_BUILD_GOAL.md"),
+    out
+  });
+  verifyCommand({ run: out });
+
+  const manifest = readJson(path.join(out, "skill_package_bundle_manifest.json"));
+  const install = fs.readFileSync(path.join(out, "skill_package_install.md"), "utf8");
+  assert.equal(manifest.package_ready, true);
+  assert.match(install, /cp -R/);
+  assert.ok(fs.existsSync(path.join(out, "skill_package", "monday-cre-workflow", "SKILL.md")));
+  assert.ok(fs.existsSync(path.join(out, "skill_package", "monday-cre-workflow", "agents", "openai.yaml")));
+});
+
+test("skill-pack clears stale package files before copying", () => {
+  const root = repoRoot();
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "codex-skill-pack-stale-"));
+  const out = path.join(tmp, "run");
+  const stale = path.join(out, "skill_package", "monday-cre-workflow", "references", "stale.txt");
+
+  fs.mkdirSync(path.dirname(stale), { recursive: true });
+  fs.writeFileSync(stale, "old unmanifested file /Users/example\n");
+
+  skillPackCommand({
+    "skill-dir": path.join(root, "codex_skills", "monday-cre-workflow"),
+    "package-json": path.join(root, "codex-monday-digest", "package.json"),
+    "goal-md": path.join(root, "docs", "TONIGHT_BUILD_GOAL.md"),
+    out
+  });
+
+  assert.equal(fs.existsSync(stale), false);
+  verifyCommand({ run: out });
+});
+
+test("skill bundle verification fails on unmanifested package files", () => {
+  const root = repoRoot();
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "codex-skill-pack-extra-"));
+  const out = path.join(tmp, "run");
+  const extra = path.join(out, "skill_package", "monday-cre-workflow", "references", "extra.txt");
+
+  skillPackCommand({
+    "skill-dir": path.join(root, "codex_skills", "monday-cre-workflow"),
+    "package-json": path.join(root, "codex-monday-digest", "package.json"),
+    "goal-md": path.join(root, "docs", "TONIGHT_BUILD_GOAL.md"),
+    out
+  });
+  fs.writeFileSync(extra, "unmanifested package file\n");
+
+  const result = verifyRun(out);
+  assert.equal(result.passed, false);
+  assert.match(result.report, /packaged skill contains only manifest-listed files/);
 });
