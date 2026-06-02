@@ -118,6 +118,9 @@ function verifyDigestRun(runFolder) {
   const titleproEvidencePath = path.join(runFolder, "titlepro_evidence_intake.json");
   const titleproRoleAssertionsPath = path.join(runFolder, "titlepro_role_assertions_preview.json");
   const titleproEvidenceProfilePath = path.join(runFolder, "titlepro_evidence_source_profile.json");
+  const titleproActionConfirmationsPath = path.join(runFolder, "titlepro_action_confirmations.json");
+  const titleproConfirmedManualActionsPath = path.join(runFolder, "titlepro_confirmed_manual_actions.json");
+  const titleproActionConfirmationProfilePath = path.join(runFolder, "titlepro_action_confirmation_source_profile.json");
   const auditEvents = parseJsonl(path.join(runFolder, "audit_events_preview.jsonl"));
 
   checks.push({ pass: Array.isArray(sourceEmails) && sourceEmails.length >= 1, message: "source_emails has at least one source" });
@@ -141,6 +144,24 @@ function verifyDigestRun(runFolder) {
   checks.push({ pass: Array.isArray(approvedTitleproPulls) && approvedTitleproPulls.every(hasApprovedTitleProPullFields), message: "approved TitlePro pull requests are structured pending requests" });
   checks.push({ pass: approvedTitleproPulls.every((row) => row.pull_executed === false && row.external_write_executed === false), message: "approved TitlePro pull requests have not executed paid/browser/write actions" });
   checks.push({ pass: approvedTitleproPulls.every((row) => hasMatchingRecordedTitleProDecision(row, titleproDecisions)), message: "approved TitlePro pull requests match recorded valid approvals" });
+  if (manifest.last_titlepro_action_confirmation_at || fs.existsSync(titleproActionConfirmationsPath) || fs.existsSync(titleproConfirmedManualActionsPath)) {
+    checks.push({ pass: fs.existsSync(titleproActionConfirmationsPath), message: "TitlePro action confirmations exist after action-time confirmation" });
+    checks.push({ pass: fs.existsSync(titleproConfirmedManualActionsPath), message: "TitlePro confirmed manual actions exist after action-time confirmation" });
+    checks.push({ pass: fs.existsSync(titleproActionConfirmationProfilePath), message: "TitlePro action confirmation source profile exists" });
+    if (fs.existsSync(titleproActionConfirmationsPath) && fs.existsSync(titleproConfirmedManualActionsPath) && fs.existsSync(titleproActionConfirmationProfilePath)) {
+      const confirmations = readJson(titleproActionConfirmationsPath);
+      const confirmedActions = readJson(titleproConfirmedManualActionsPath);
+      const confirmationProfile = readJson(titleproActionConfirmationProfilePath);
+      checks.push({ pass: Array.isArray(confirmations) && confirmations.length > 0 && confirmations.every(hasTitleProActionConfirmationFields), message: "TitlePro action confirmations are structured audit rows" });
+      checks.push({ pass: Array.isArray(confirmedActions) && confirmedActions.every(hasConfirmedTitleProManualActionFields), message: "TitlePro confirmed manual actions are structured" });
+      checks.push({ pass: confirmations.every((row) => row.titlepro_pulls_executed === false && row.browser_action_executed === false && row.external_write_executed === false), message: "TitlePro action confirmations executed no paid/browser/write actions" });
+      checks.push({ pass: confirmedActions.every((row) => row.titlepro_pulls_executed === false && row.pull_executed === false && row.browser_action_executed === false && row.external_write_executed === false), message: "confirmed TitlePro manual actions have not executed browser/order/write actions" });
+      checks.push({ pass: confirmedActions.every((row) => hasMatchingTitleProConfirmation(row, confirmations, approvedTitleproPulls)), message: "confirmed TitlePro manual actions match approved pulls and valid confirmations" });
+      checks.push({ pass: confirmationProfile.titlepro_pulls_executed === 0 && confirmationProfile.browser_actions_executed === 0 && confirmationProfile.paid_actions_executed === 0 && confirmationProfile.external_writes_executed === 0, message: "TitlePro action confirmation profile records zero paid/browser/write actions" });
+      checks.push({ pass: confirmationProfile.source_path_scope === "basename_only" && !String(confirmationProfile.source_path || "").includes("/"), message: "TitlePro action confirmation source profile stores basename-only source path" });
+      checks.push({ pass: confirmationProfile.confirmation_record_count === confirmations.length && confirmationProfile.action_time_confirmed_count === confirmedActions.length, message: "TitlePro action confirmation profile counts match artifacts" });
+    }
+  }
   if (manifest.last_titlepro_evidence_import_at || fs.existsSync(titleproEvidencePath) || fs.existsSync(titleproRoleAssertionsPath)) {
     checks.push({ pass: fs.existsSync(titleproEvidencePath), message: "TitlePro evidence intake exists after evidence import" });
     checks.push({ pass: fs.existsSync(titleproRoleAssertionsPath), message: "TitlePro role assertions exist after evidence import" });
@@ -387,6 +408,56 @@ function hasApprovedTitleProPullFields(row) {
     && row.paid_action_allowed === true;
 }
 
+function hasTitleProActionConfirmationFields(row) {
+  return [
+    "source_row_index",
+    "confirm_action",
+    "confirmed_by",
+    "requested_doc_type",
+    "reason",
+    "cost_ceiling",
+    "validation_errors",
+    "action_time_confirmed",
+    "paid_action_allowed",
+    "titlepro_pulls_executed",
+    "browser_action_executed",
+    "external_write_executed",
+    "recorded_at"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && Array.isArray(row.validation_errors)
+    && row.titlepro_pulls_executed === false
+    && row.browser_action_executed === false
+    && row.external_write_executed === false;
+}
+
+function hasConfirmedTitleProManualActionFields(row) {
+  return [
+    "confirmation_id",
+    "request_id",
+    "approval_id",
+    "lead_key",
+    "radar_id",
+    "requested_doc_type",
+    "reason",
+    "cost_ceiling",
+    "approved_cost_ceiling",
+    "confirmed_by",
+    "confirmed_at",
+    "status",
+    "paid_action_allowed",
+    "titlepro_pulls_executed",
+    "pull_executed",
+    "browser_action_executed",
+    "external_write_executed",
+    "serial_execution_required",
+    "duplicate_order_check_required",
+    "evidence_destination",
+    "next_action"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && row.status === "action_time_confirmed_pending_serial_titlepro_pull"
+    && row.paid_action_allowed === true;
+}
+
 function hasTitleProEvidenceFields(row) {
   return [
     "evidence_id",
@@ -431,6 +502,27 @@ function hasMatchingRecordedTitleProDecision(pullRequest, decisions) {
       && decision.reason === pullRequest.reason
       && decision.approved_by === pullRequest.approved_by;
   });
+}
+
+function hasMatchingTitleProConfirmation(action, confirmations, approvedPulls) {
+  const approved = approvedPulls.some((pullRequest) => {
+    return pullRequest.request_id === action.request_id
+      && pullRequest.approval_id === action.approval_id
+      && pullRequest.lead_key === action.lead_key
+      && pullRequest.radar_id === action.radar_id
+      && pullRequest.requested_doc_type === action.requested_doc_type
+      && pullRequest.reason === action.reason;
+  });
+  const confirmed = confirmations.some((confirmation) => {
+    return confirmation.action_time_confirmed === true
+      && confirmation.matched_request_id === action.request_id
+      && confirmation.matched_approval_id === action.approval_id
+      && confirmation.matched_lead_key === action.lead_key
+      && confirmation.matched_radar_id === action.radar_id
+      && confirmation.confirmed_by === action.confirmed_by
+      && confirmation.validation_errors.length === 0;
+  });
+  return approved && confirmed;
 }
 
 function noCredentialLeaks(runFolder) {

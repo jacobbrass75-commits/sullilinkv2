@@ -52,7 +52,7 @@ test("digest runs write a preview-only Monday action queue and refresh it after 
   actionQueue = readActionQueueCsv(path.join(out, "monday_action_queue.csv"));
   const approvedPullRow = actionQueue.find((row) => row.approval_id === titleproQueue[0].approval_id && row.task === "Pull/save approved TitlePro docs");
   assert.equal(approvedPullRow.status, "approved_pending_manual_titlepro_pull");
-  assert.equal(approvedPullRow.paid_action_allowed, "true");
+  assert.equal(approvedPullRow.paid_action_allowed, "false");
   assert.equal(approvedPullRow.monday_write_executed, "false");
   assert.equal(approvedPullRow.external_write_executed, "false");
   assert.equal(approvedPullRow.control_claim_allowed, "false");

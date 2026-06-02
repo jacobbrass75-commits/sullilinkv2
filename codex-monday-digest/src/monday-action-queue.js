@@ -40,17 +40,22 @@ const ACTION_QUEUE_HEADERS = [
   "caveat"
 ];
 
-function buildDigestActionQueue({ runId, leads, subitems, titleproQueue = [], approvedTitleproPulls = [] }) {
+function buildDigestActionQueue({ runId, leads, subitems, titleproQueue = [], approvedTitleproPulls = [], confirmedTitleproActions = [] }) {
   const leadByKey = new Map((leads || []).map((lead) => [lead.dedupe_key, lead]));
   const titleproByApprovalId = new Map(titleproQueue.map((row) => [row.approval_id, row]));
   const approvedByApprovalId = new Map(approvedTitleproPulls.map((row) => [row.approval_id, row]));
+  const confirmedByApprovalId = new Map(confirmedTitleproActions.map((row) => [row.approval_id, row]));
   return (subitems || []).map((subitem, index) => {
     const lead = leadByKey.get(subitem.lead_key) || {};
     const titleproRow = subitem.approval_id ? titleproByApprovalId.get(subitem.approval_id) : null;
     const approvedPull = subitem.approval_id ? approvedByApprovalId.get(subitem.approval_id) : null;
-    const status = approvedPull && subitem.task === "Pull/save approved TitlePro docs"
-      ? approvedPull.status
-      : subitem.status;
+    const confirmedAction = subitem.approval_id ? confirmedByApprovalId.get(subitem.approval_id) : null;
+    const isTitleProPullTask = subitem.task === "Pull/save approved TitlePro docs";
+    const status = confirmedAction && isTitleProPullTask
+      ? confirmedAction.status
+      : approvedPull && isTitleProPullTask
+        ? approvedPull.status
+        : subitem.status;
     return normalizeActionQueueRow({
       queue_row_id: `digest_${lead.radar_id || index + 1}_${String(index + 1).padStart(3, "0")}`,
       run_id: runId,
@@ -76,12 +81,14 @@ function buildDigestActionQueue({ runId, leads, subitems, titleproQueue = [], ap
       due_offset: subitem.due_offset || null,
       approval_required: subitem.approval_required,
       approval_id: subitem.approval_id,
-      paid_action_allowed: approvedPull ? true : false,
+      paid_action_allowed: Boolean(confirmedAction && isTitleProPullTask),
       source_ref: `deduped_leads:${lead.radar_id || subitem.lead_key}`,
-      evidence_link: lead.evidence_link || approvedPull?.evidence_destination || null,
+      evidence_link: lead.evidence_link || confirmedAction?.evidence_destination || approvedPull?.evidence_destination || null,
       blocked_reason: lead.blocked_action || null,
-      next_action: approvedPull?.next_action || lead.next_action || null,
-      caveat: approvedPull
+      next_action: confirmedAction?.next_action || approvedPull?.next_action || lead.next_action || null,
+      caveat: confirmedAction
+        ? "Action-time TitlePro confirmation recorded; serial browser/order step is still not executed by this local runner."
+        : approvedPull
         ? "Approved intake recorded; TitlePro browser/order step still needs action-time confirmation."
         : lead.blocked_action_detail || "Preview-only Monday action queue row."
     });

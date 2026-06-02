@@ -13,6 +13,7 @@ const { verifyRun } = require("./verify-run");
 const { buildBatchArtifacts, writeBatchRun } = require("./batch-owner-clusters");
 const { buildTitleProApprovalQueue } = require("./titlepro-approval-queue");
 const { applyTitleProApprovals, readApprovalFile } = require("./titlepro-approval-intake");
+const { applyTitleProActionConfirmations, readTitleProConfirmationFile } = require("./titlepro-action-confirmation");
 const { readTitleProEvidenceFile, matchTitleProEvidenceToLeads, buildTitleProRoleAssertions, buildTitleProNeedsReview } = require("./titlepro-evidence-intake");
 const { buildSourceReuseAudit, writeSourceAuditRun } = require("./source-reuse-audit");
 const { buildConnectorReadiness, writeConnectorReadinessRun } = require("./connector-readiness");
@@ -52,6 +53,7 @@ function usage() {
     "  codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --lookup-file MONDAY_EXPORT.csv|json|xlsx",
     "  codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --connector-json MONDAY_CONNECTOR_READ.json",
     "  codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|json",
+    "  codex-monday-digest titlepro-confirm --run RUN_FOLDER --confirmations CONFIRMATIONS.csv|json",
     "  codex-monday-digest titlepro-import --run RUN_FOLDER --evidence TITLEPRO_EVIDENCE.json",
     "  codex-monday-digest source-audit --zip SOURCE.zip --source-dir EXTERNAL_REFERENCE_DIR --goal-md GOAL.md --out RUN_FOLDER",
     "  codex-monday-digest connector-readiness --gmail-json GMAIL_CONNECTOR_READ.json --monday-json MONDAY_CONNECTOR_READ.json --label LABEL --since WINDOW --out RUN_FOLDER",
@@ -422,6 +424,55 @@ function titleProApproveCommand(args) {
   console.log(`titlepro_approval_decisions=${decisions.length} approved_pull_requests=${approvedPullRequests.length} invalid_decisions=${invalidDecisionCount} titlepro_pulls_executed=0`);
 }
 
+function titleProConfirmCommand(args) {
+  const confirmationsPath = args.confirmations || args.confirmation || args["confirmation-file"] || args.confirmation_file || args.confirmationFile;
+  if (!args.run || !confirmationsPath) {
+    throw new Error("titlepro-confirm requires --run RUN_FOLDER --confirmations CONFIRMATIONS.csv|json");
+  }
+  const approvedPath = path.join(args.run, "titlepro_pull_requests_approved.json");
+  if (!fs.existsSync(approvedPath)) throw new Error("Run has no titlepro_pull_requests_approved.json");
+  const approvedPullRequests = JSON.parse(fs.readFileSync(approvedPath, "utf8"));
+  const confirmationSource = readTitleProConfirmationFile(confirmationsPath);
+  const { confirmationRows, confirmedActions } = applyTitleProActionConfirmations(approvedPullRequests, confirmationSource.confirmations);
+  writeJson(path.join(args.run, "titlepro_action_confirmations.json"), confirmationRows);
+  writeJson(path.join(args.run, "titlepro_confirmed_manual_actions.json"), confirmedActions);
+  const leads = JSON.parse(fs.readFileSync(path.join(args.run, "deduped_leads.json"), "utf8"));
+  const subitems = JSON.parse(fs.readFileSync(path.join(args.run, "monday_subitems_preview.json"), "utf8"));
+  const titleproQueue = JSON.parse(fs.readFileSync(path.join(args.run, "titlepro_approval_queue_preview.json"), "utf8"));
+  const manifestPath = path.join(args.run, "run_manifest.json");
+  const manifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, "utf8")) : {};
+  const actionQueue = buildDigestActionQueue({
+    runId: manifest.run_id || path.basename(path.resolve(args.run)),
+    leads,
+    subitems,
+    titleproQueue,
+    approvedTitleproPulls: approvedPullRequests,
+    confirmedTitleproActions: confirmedActions
+  });
+  writeActionQueueCsv(path.join(args.run, "monday_action_queue.csv"), actionQueue);
+  const invalidConfirmationCount = confirmationRows.filter((row) => row.validation_errors.length > 0).length;
+  writeJson(path.join(args.run, "titlepro_action_confirmation_source_profile.json"), {
+    source_path: confirmationSource.source_path,
+    source_path_scope: confirmationSource.source_path_scope,
+    source_sha256: confirmationSource.source_sha256,
+    source_format: confirmationSource.source_format,
+    confirmation_record_count: confirmationSource.confirmations.length,
+    action_time_confirmed_count: confirmedActions.length,
+    invalid_confirmation_count: invalidConfirmationCount,
+    titlepro_pulls_executed: 0,
+    browser_actions_executed: 0,
+    paid_actions_executed: 0,
+    external_writes_executed: 0
+  });
+  updateManifestAfterTitleProConfirmation(args.run, [
+    path.join(args.run, "titlepro_action_confirmations.json"),
+    path.join(args.run, "titlepro_confirmed_manual_actions.json"),
+    path.join(args.run, "titlepro_action_confirmation_source_profile.json"),
+    path.join(args.run, "monday_action_queue.csv")
+  ]);
+  console.log(`titlepro_action_confirmations=${confirmationRows.length} confirmed_manual_actions=${confirmedActions.length} invalid_confirmations=${invalidConfirmationCount} titlepro_pulls_executed=0`);
+}
+
 function titleProImportCommand(args) {
   if (!args.run || !args.evidence) {
     throw new Error("titlepro-import requires --run RUN_FOLDER --evidence TITLEPRO_EVIDENCE.json");
@@ -462,6 +513,17 @@ function titleProImportCommand(args) {
     path.join(args.run, "needs_review.json")
   ]);
   console.log(`titlepro_evidence_records=${matchedRecords.length} role_assertions=${roleAssertions.length} matched=${sourceProfile.matched_record_count} titlepro_pulls_executed=0`);
+}
+
+function updateManifestAfterTitleProConfirmation(runFolder, outputPaths) {
+  const manifestPath = path.join(runFolder, "run_manifest.json");
+  if (!fs.existsSync(manifestPath)) return;
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...outputPaths]));
+  manifest.last_titlepro_action_confirmation_at = nowIso();
+  manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
+  manifest.forbidden_actions.titlepro_pulls = manifest.forbidden_actions.titlepro_pulls || 0;
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 function updateManifestAfterTitleProEvidenceImport(runFolder, outputPaths) {
@@ -555,6 +617,9 @@ function main() {
       case "titlepro-approve":
         titleProApproveCommand(args);
         break;
+      case "titlepro-confirm":
+        titleProConfirmCommand(args);
+        break;
       case "titlepro-import":
         titleProImportCommand(args);
         break;
@@ -589,6 +654,7 @@ module.exports = {
   exportCommand,
   syncCommand,
   titleProApproveCommand,
+  titleProConfirmCommand,
   titleProImportCommand,
   batchCommand,
   sourceAuditCommand,

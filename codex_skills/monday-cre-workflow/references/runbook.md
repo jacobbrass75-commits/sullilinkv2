@@ -122,6 +122,15 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 Approval intake should produce `titlepro_approval_decisions.json`, `titlepro_pull_requests_approved.json`, and `titlepro_approval_source_profile.json`. It must leave `pull_executed = false`, `external_write_executed = false`, and `forbidden_actions.titlepro_pulls = 0`.
 
+Before any actual TitlePro browser/order work, record action-time confirmation for the already-approved request:
+
+```bash
+node src/cli.js titlepro-confirm --run ../outputs/monday_digest_runs/dev --confirmations path/to/titlepro_confirmations.csv
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+Confirmation intake should produce `titlepro_action_confirmations.json`, `titlepro_confirmed_manual_actions.json`, and `titlepro_action_confirmation_source_profile.json`, then refresh `monday_action_queue.csv` with `action_time_confirmed_pending_serial_titlepro_pull`. It must leave `titlepro_pulls_executed = 0`, `browser_actions_executed = 0`, `paid_actions_executed = 0`, and `external_writes_executed = 0`. `titlepro-confirm` only records the selected manual action; it does not execute it.
+
 For TitlePro evidence that has already been saved or manually extracted:
 
 ```bash
@@ -131,7 +140,7 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 Evidence import should produce `titlepro_evidence_intake.json`, `titlepro_role_assertions_preview.json`, and `titlepro_evidence_source_profile.json`. It must leave paid/browser/write action counts at zero, keep service actors out of control-lead claims, and keep `beneficial_owner_claim_allowed=false` until independent ownership proof exists.
 
-After action-time confirmation, use the TitlePro skill. Save:
+After a confirmed manual action is selected for serial execution, use the TitlePro skill. Save:
 
 - source URL/report/order id
 - property address

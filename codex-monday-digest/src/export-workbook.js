@@ -76,6 +76,7 @@ else:
     add_sheet(wb, "TitlePro Approval", read_json("titlepro_approval_queue_preview.json", []))
     add_sheet(wb, "TitlePro Decisions", read_json("titlepro_approval_decisions.json", []))
     add_sheet(wb, "TitlePro Pull Requests", read_json("titlepro_pull_requests_approved.json", []))
+    add_sheet(wb, "TitlePro Confirmed", read_json("titlepro_confirmed_manual_actions.json", []))
     add_sheet(wb, "TitlePro Evidence", read_json("titlepro_evidence_intake.json", []))
     add_sheet(wb, "Role Assertions", read_json("titlepro_role_assertions_preview.json", []))
     add_sheet(wb, "Broker Packets", read_json("broker_packets_preview.json", []))

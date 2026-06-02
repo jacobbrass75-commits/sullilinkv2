@@ -109,6 +109,15 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 `titlepro-approve` writes approval decision and approved pending pull-request artifacts only. It does not open TitlePro, order reports, download paid documents, or execute browser actions.
 
+Action-time TitlePro confirmation before browser/order work:
+
+```bash
+node src/cli.js titlepro-confirm --run ../outputs/monday_digest_runs/dev --confirmations path/to/titlepro_confirmations.csv
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+`titlepro-confirm` validates the confirmation against `titlepro_pull_requests_approved.json`, writes confirmation/manual-action/profile artifacts, and refreshes `monday_action_queue.csv`. It still does not open TitlePro, order reports, download paid documents, execute browser actions, or write external systems.
+
 Saved TitlePro evidence import:
 
 ```bash
@@ -136,7 +145,7 @@ TitlePro is an evidence layer after screening, not a broad lead source.
 - Set/keep `TitlePro Status = Not needed until screened` for low-context leads.
 - Move to `Needs approval` only for a scoped missing proof: profile, deed, DOT, NOD, NTS, assignment, SOS, trustee status, or signature page.
 - Paid/order actions require explicit approval for property, APN/county when known, doc/profile type, reason, and cost ceiling.
-- Approval intake can mark a request as approved-pending, but the actual browser/order step still requires separate action-time confirmation.
+- Approval intake and `titlepro-confirm --confirmations` are record-only/zero-execution steps; the actual browser/order step still requires separate serial authorization for one selected confirmed manual action.
 - Prefer existing TitlePro orders/reports over duplicate pulls.
 - Mark wrong-property or duplicate evidence as excluded; do not delete it.
 

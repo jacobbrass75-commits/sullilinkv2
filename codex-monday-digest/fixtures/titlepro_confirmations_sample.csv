@@ -1,0 +1,2 @@
+radar_id,confirm_action,requested_doc_type,reason,cost_ceiling,confirmed_by,confirmed_at,county,address,notes
+P15F1852,confirmed,property_profile,Need title owner/current notice evidence after broker screen,25,Broker,2026-06-01T12:00:00Z,Ventura,2701 STATHAM BLVD,Sample action-time confirmation only; no TitlePro pull executed.

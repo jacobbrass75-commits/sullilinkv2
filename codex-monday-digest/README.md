@@ -75,6 +75,7 @@ codex-monday-digest connector-readiness --gmail-json GMAIL_CONNECTOR_READ.json -
 codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --lookup-file MONDAY_EXPORT.csv
 codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --connector-json MONDAY_CONNECTOR_READ.json
 codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|json
+codex-monday-digest titlepro-confirm --run RUN_FOLDER --confirmations CONFIRMATIONS.csv|json
 codex-monday-digest titlepro-import --run RUN_FOLDER --evidence TITLEPRO_EVIDENCE.json
 codex-monday-digest source-audit --zip SOURCE.zip --source-dir EXTERNAL_REFERENCE_DIR --goal-md GOAL.md --out RUN_FOLDER
 codex-monday-digest sync --run RUN_FOLDER --mode live_write
@@ -85,6 +86,8 @@ codex-monday-digest sync --run RUN_FOLDER --mode live_write
 `connector-readiness` validates the saved read-only Gmail and Monday connector JSON before scheduled use. It proves the canonical Gmail label/query, full PropertyRadar email bodies, Monday board/item/group IDs, Radar ID columns, basename-only provenance, and zero Gmail/Monday/external writes.
 
 `titlepro-approve` reads a broker/admin approval CSV or JSON and writes `titlepro_approval_decisions.json`, `titlepro_pull_requests_approved.json`, and `titlepro_approval_source_profile.json`. It is intake only: approved rows become pending manual TitlePro pull requests, but `pull_executed` stays `false` and no paid TitlePro action is performed.
+
+`titlepro-confirm` reads an action-time confirmation CSV or JSON against already approved pending pull requests. It writes `titlepro_action_confirmations.json`, `titlepro_confirmed_manual_actions.json`, and `titlepro_action_confirmation_source_profile.json`, refreshes `monday_action_queue.csv`, and still executes no TitlePro pull or browser action.
 
 `titlepro-import` reads already-saved TitlePro profile/document extraction JSON and writes `titlepro_evidence_intake.json`, `titlepro_role_assertions_preview.json`, and `titlepro_evidence_source_profile.json`. It does not open TitlePro, order documents, or execute paid pulls; role assertions preserve title owner, borrower/trustor, lender/beneficiary, trustee, signer, and deed-party separation.
 
@@ -103,6 +106,7 @@ npm run proof:connector-readiness
 npm run proof:lookup
 npm run proof:monday-connector
 npm run proof:titlepro-approval
+npm run proof:titlepro-confirm
 npm run proof:titlepro-evidence
 npm run proof:source-audit
 npm run proof:edge
@@ -118,6 +122,8 @@ Digest and `gmail_preview` runs also write `titlepro_approval_queue_preview.json
 `connector-readiness` writes `connector_readiness_report.json`, `gmail_connector_contract.json`, `monday_connector_contract.json`, and `connector_readiness_plan.md`. Run it after saving read-only Gmail and Monday connector results and before relying on scheduled connector reads.
 
 After a scoped approval is supplied, run `titlepro-approve` to create the separate decision and pending-pull artifacts. These artifacts make the approval reviewable in the dashboard/workbook, but the actual TitlePro browser/order step still requires separate action-time confirmation.
+
+After action-time confirmation is supplied, run `titlepro-confirm` to produce confirmed manual action artifacts. The generated status is `action_time_confirmed_pending_serial_titlepro_pull`, with `titlepro_pulls_executed=false`, `browser_action_executed=false`, and `external_write_executed=false`.
 
 After TitlePro evidence has already been saved or manually extracted, run `titlepro-import` to attach the facts to the run. The generated role assertions keep `beneficial_owner_claim_allowed=false`, `outreach_ready=false`, and exclude service actors such as trustees/lenders from control-lead claims.
 

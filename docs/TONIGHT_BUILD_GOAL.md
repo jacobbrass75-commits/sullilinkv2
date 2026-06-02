@@ -13,7 +13,8 @@ The workflow should take PropertyRadar daily digest rows or batch CSV exports, d
 3. Add digest parsing improvements from SullyLink-style logic, especially HTML table support.
 4. Add saved-Gmail preview support: a pasted/exported email file can run through the digest pipeline in `gmail_preview` mode while preserving label/window provenance.
 5. Add a preview-only TitlePro approval queue so missing-evidence decisions become Monday-operational without enabling paid pulls.
-6. Preserve the current safety model:
+6. Keep TitlePro approval intake, action-time confirmation, and saved evidence import as record-only lanes that report zero TitlePro pulls, browser actions, paid actions, and external writes.
+7. Preserve the current safety model:
    - no Monday live writes by default
    - no Gmail sends
    - no RealNex writes
@@ -70,6 +71,7 @@ CRE Brain / SullyLink database
 - `sync --mode monday_lookup_dry_run --lookup-file` matches existing Monday export rows by Radar ID without writes.
 - `sync --mode monday_lookup_dry_run --connector-json` consumes saved read-only Monday connector JSON, preserves board/item/group IDs, and records zero Monday writes.
 - `titlepro-approve --approvals` records broker/admin approval decisions and approved pending pull-request artifacts without executing any TitlePro pull.
+- `titlepro-confirm --confirmations` records action-time confirmation against approved pending requests, refreshes the action queue, and records zero TitlePro/browser/write execution.
 - `titlepro-import --evidence` consumes already-saved TitlePro profile/document extraction JSON, writes role assertions, and records zero paid/browser/write actions.
 - `source-audit --zip/--source-dir --goal-md` turns SullyLink/retranToReel reference material and the current goal markdown into a compact reuse plan without copying old source, credentials, cookies, dependency trees, or raw paid docs.
 - Shareable packet files have no credentials, cookies, local absolute paths, or paid raw docs.
@@ -88,6 +90,7 @@ npm run proof:connector-readiness
 npm run proof:lookup
 npm run proof:monday-connector
 npm run proof:titlepro-approval
+npm run proof:titlepro-confirm
 npm run proof:titlepro-evidence
 npm run proof:source-audit
 npm run app
@@ -102,6 +105,6 @@ http://localhost:8787
 ## Open Work
 
 - Run the connected Gmail read and Monday board-item read tools against the live mailbox/board, save their JSON, and pass them through `connector-readiness`; the local readiness contract is present.
-- Add action-time TitlePro pull execution after an approved request is re-confirmed for property, APN/county when known, doc/profile type, reason, and cost ceiling. Saved TitlePro evidence intake is present; browser/order execution remains gated.
+- Execute the actual TitlePro browser/order step separately from `titlepro-confirm`, only after a confirmed manual action is selected and explicitly authorized for one request at a time. Approval intake, action-time confirmation, and saved evidence import are present; browser/order execution remains gated.
 - Add official-provider status checks only after source rights and API shape are confirmed.
 - Use `source-audit` before adapting additional SullyLink/retranToReel patterns so broad app code, credentials, and raw artifacts stay out of the Monday-first lane.
