@@ -1,0 +1,6 @@
+interface:
+  display_name: "Monday CRE Workflow"
+  short_description: "Monday-first distressed CRE workflow"
+  default_prompt: "Use $monday-cre-workflow to run the local PropertyRadar-to-Monday CRE workflow safely."
+policy:
+  allow_implicit_invocation: true

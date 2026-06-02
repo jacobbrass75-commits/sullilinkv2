@@ -35,6 +35,7 @@ For the current repo shape, the runner lives in `codex-monday-digest/`.
 ```bash
 cd /path/to/repo/codex-monday-digest
 npm test
+npm run proof:skill
 npm run app
 ```
 
@@ -163,6 +164,14 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/source-audit
 ```
 
 `source-audit` turns the old zip/extracted reference directory and the current goal markdown into a compact reuse plan. It must copy patterns only, never old source files, credentials, cookies, raw paid docs, or dependency trees.
+
+Skill package validation:
+
+```bash
+npm run proof:skill
+```
+
+Run this after changing `codex_skills/monday-cre-workflow`, `docs/TONIGHT_BUILD_GOAL.md`, or proof scripts. It validates `SKILL.md`, `agents/openai.yaml`, required references, proof-script alignment, and safety language without external actions.
 
 If Python workbook export fails because `openpyxl` is missing, set `CODEX_PYTHON_BIN` to a Python that has the workspace spreadsheet dependencies.
 

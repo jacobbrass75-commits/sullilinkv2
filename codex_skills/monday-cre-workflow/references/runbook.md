@@ -243,6 +243,7 @@ For broker-facing output:
 ```bash
 cd codex-monday-digest
 CODEX_PYTHON_BIN=/path/to/python-with-openpyxl PROPERTYRADAR_BATCH_CSV=/path/to/export.csv npm test
+npm run proof:skill
 ```
 
 For share packets:

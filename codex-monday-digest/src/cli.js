@@ -20,6 +20,7 @@ const { readCurrentStatusFile, matchCurrentStatusToLeads, buildCurrentStatusAsse
 const { buildSourceReuseAudit, writeSourceAuditRun } = require("./source-reuse-audit");
 const { buildConnectorReadiness, writeConnectorReadinessRun } = require("./connector-readiness");
 const { buildWorkflowMap, writeWorkflowMapRun } = require("./monday-workflow-map");
+const { buildSkillPackageCheck, writeSkillPackageCheckRun } = require("./skill-package-check");
 const { buildDigestActionQueue, writeActionQueueCsv } = require("./monday-action-queue");
 const { lookupLeads, readLookupFile, readMondayConnectorLookupFile } = require("./monday-lookup");
 const { assertLiveWriteAllowed, redactedBoardShapeFromEnv } = require("./monday-graphql");
@@ -62,6 +63,7 @@ function usage() {
     "  codex-monday-digest titlepro-import --run RUN_FOLDER --evidence TITLEPRO_EVIDENCE.json",
     "  codex-monday-digest contact-import --run RUN_FOLDER --contacts CONTACTS.csv|json",
     "  codex-monday-digest status-import --run RUN_FOLDER --status STATUS.json|csv",
+    "  codex-monday-digest skill-check --skill-dir SKILL_DIR --package-json PACKAGE.json --goal-md GOAL.md --out RUN_FOLDER",
     "  codex-monday-digest source-audit --zip SOURCE.zip --source-dir EXTERNAL_REFERENCE_DIR --goal-md GOAL.md --out RUN_FOLDER",
     "  codex-monday-digest connector-readiness --gmail-json GMAIL_CONNECTOR_READ.json --monday-json MONDAY_CONNECTOR_READ.json --label LABEL --since WINDOW --out RUN_FOLDER",
     "  codex-monday-digest sync --run RUN_FOLDER --mode live_write"
@@ -719,6 +721,19 @@ function connectorReadinessCommand(args) {
   console.log(`connector_readiness=${readiness.report.ready ? "ready" : "not_ready"} checks=${readiness.report.checks.length} failed=${failed} out=${args.out}`);
 }
 
+function skillCheckCommand(args) {
+  if (!args.out) {
+    throw new Error("skill-check requires --out RUN_FOLDER");
+  }
+  const skillDir = args["skill-dir"] || args.skill_dir || args.skillDir;
+  const packageJson = args["package-json"] || args.package_json || args.packageJson;
+  const goalMd = args["goal-md"] || args.goal_md || args.goalMd;
+  const report = buildSkillPackageCheck({ skillDir, packageJson, goalMd });
+  writeSkillPackageCheckRun(args.out, report);
+  const failed = report.checks.filter((check) => check.status !== "pass").length;
+  console.log(`skill_package_check=${report.passed ? "pass" : "fail"} checks=${report.checks.length} failed=${failed} out=${args.out}`);
+}
+
 function verifyCommand(args) {
   if (!args.run) throw new Error("verify requires --run RUN_FOLDER");
   const result = verifyRun(args.run);
@@ -769,6 +784,9 @@ function main() {
       case "connector-readiness":
         connectorReadinessCommand(args);
         break;
+      case "skill-check":
+        skillCheckCommand(args);
+        break;
       case "verify":
         verifyCommand(args);
         break;
@@ -799,5 +817,6 @@ module.exports = {
   workflowMapCommand,
   sourceAuditCommand,
   connectorReadinessCommand,
+  skillCheckCommand,
   verifyCommand
 };

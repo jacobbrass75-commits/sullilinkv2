@@ -63,11 +63,19 @@ const WORKFLOW_MAP_FILES = [
   "run_manifest.json"
 ];
 
+const SKILL_PACKAGE_FILES = [
+  "skill_package_report.json",
+  "skill_package_summary.md",
+  "run_manifest.json"
+];
+
 function verifyRun(runFolder) {
+  const isSkillPackage = fs.existsSync(path.join(runFolder, "skill_package_report.json"));
   const isConnectorReadiness = fs.existsSync(path.join(runFolder, "connector_readiness_report.json"));
   const isWorkflowMap = fs.existsSync(path.join(runFolder, "monday_workflow_map.json"));
   const isSourceAudit = fs.existsSync(path.join(runFolder, "source_reuse_audit.json"));
   const isBatch = fs.existsSync(path.join(runFolder, "batch_source_profile.json"));
+  if (isSkillPackage) return verifySkillPackageRun(runFolder);
   if (isConnectorReadiness) return verifyConnectorReadinessRun(runFolder);
   if (isWorkflowMap) return verifyWorkflowMapRun(runFolder);
   if (isSourceAudit) return verifySourceAuditRun(runFolder);
@@ -900,6 +908,39 @@ function verifyWorkflowMapRun(runFolder) {
   return makeReport(runFolder, "codex-monday-digest Workflow Map Verification", checks);
 }
 
+function verifySkillPackageRun(runFolder) {
+  const checks = [];
+  checkFiles(runFolder, SKILL_PACKAGE_FILES, checks);
+  if (checks.some((check) => !check.pass)) return makeReport(runFolder, "codex-monday-digest Skill Package Verification", checks);
+
+  const report = readJson(path.join(runFolder, "skill_package_report.json"));
+  const manifest = readJson(path.join(runFolder, "run_manifest.json"));
+  const summary = fs.readFileSync(path.join(runFolder, "skill_package_summary.md"), "utf8");
+  const reportChecks = report.checks || [];
+
+  checks.push({ pass: manifest.mode === "skill_package_check", message: "manifest records skill_package_check mode" });
+  checks.push({ pass: forbiddenZero(manifest), message: "forbidden action counts are zero" });
+  checks.push({ pass: report.mode === "skill_package_check" && report.passed === true, message: "skill package report passed" });
+  checks.push({ pass: report.forbidden_actions && forbiddenZero(report), message: "skill package report forbidden action counts are zero" });
+  checks.push({ pass: report.skill_name === "monday-cre-workflow", message: "skill package report is for monday-cre-workflow" });
+  checks.push({ pass: Array.isArray(reportChecks) && reportChecks.length >= 30 && reportChecks.every(hasSkillPackageCheckFields), message: "skill package checks are structured" });
+  checks.push({ pass: reportChecks.every((check) => check.status === "pass"), message: "all skill package checks passed" });
+  checks.push({ pass: Array.isArray(report.required_references) && report.required_references.includes("references/runbook.md") && report.required_references.includes("references/sullilink-reuse.md"), message: "skill package requires runbook and SullyLink references" });
+  checks.push({ pass: Array.isArray(report.required_proof_scripts) && report.required_proof_scripts.includes("proof:skill") === false && report.required_proof_scripts.includes("proof:workflow-map"), message: "skill package proof requirements cover workflow-map without self-dependency" });
+  checks.push({ pass: report.skill_source?.source_path_scope === "basename_only" && !String(report.skill_source?.source_path || "").includes("/"), message: "skill source path is basename-only" });
+  checks.push({ pass: report.package_source?.source_path_scope === "basename_only" && !String(report.package_source?.source_path || "").includes("/"), message: "package source path is basename-only" });
+  checks.push({ pass: summary.includes("Monday CRE Skill Package Check") && summary.includes("Status: PASS"), message: "skill package summary records pass status" });
+  checks.push({ pass: noAbsoluteLocalPathsInSkillPackage(runFolder), message: "skill package outputs contain no absolute local paths" });
+  checks.push({ pass: !summary.includes("Authorization:") && !summary.includes("PASSWORD="), message: "skill package summary contains no credential values" });
+  checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
+
+  return makeReport(runFolder, "codex-monday-digest Skill Package Verification", checks);
+}
+
+function hasSkillPackageCheckFields(row) {
+  return ["id", "status", "message"].every((field) => Object.prototype.hasOwnProperty.call(row, field));
+}
+
 function hasWorkflowMapFields(workflow) {
   return [
     "workflow_id",
@@ -1004,6 +1045,14 @@ function hasConnectorReadinessCheckFields(row) {
 
 function noAbsoluteLocalPathsInConnectorReadiness(runFolder) {
   const files = CONNECTOR_READINESS_FILES.filter((file) => file !== "run_manifest.json");
+  return files.every((file) => {
+    const text = fs.readFileSync(path.join(runFolder, file), "utf8");
+    return !hasAbsoluteLocalPath(text);
+  });
+}
+
+function noAbsoluteLocalPathsInSkillPackage(runFolder) {
+  const files = SKILL_PACKAGE_FILES.filter((file) => file !== "run_manifest.json");
   return files.every((file) => {
     const text = fs.readFileSync(path.join(runFolder, file), "utf8");
     return !hasAbsoluteLocalPath(text);
@@ -1162,5 +1211,6 @@ module.exports = {
   verifyDigestRun,
   verifyBatchRun,
   verifySourceAuditRun,
-  verifyConnectorReadinessRun
+  verifyConnectorReadinessRun,
+  verifySkillPackageRun
 };
