@@ -23,6 +23,17 @@ test("dashboard server exposes health and creates digest runs", async () => {
     });
     assert.equal(created.summary.status, "PASS");
     assert.equal(created.summary.counts.deduped_leads, 3);
+    assert.deepEqual(created.titlepro_approval_decisions, []);
+    assert.deepEqual(created.titlepro_pull_requests_approved, []);
+
+    const details = await fetchJson(`http://127.0.0.1:${port}/api/runs/${encodeURIComponent(created.summary.id)}`);
+    assert.deepEqual(details.titlepro_approval_decisions, []);
+    assert.deepEqual(details.titlepro_pull_requests_approved, []);
+
+    const decisionsDownload = await fetchText(`http://127.0.0.1:${port}/api/runs/${encodeURIComponent(created.summary.id)}/download/titlepro_approval_decisions.json`);
+    const pullRequestsDownload = await fetchText(`http://127.0.0.1:${port}/api/runs/${encodeURIComponent(created.summary.id)}/download/titlepro_pull_requests_approved.json`);
+    assert.deepEqual(JSON.parse(decisionsDownload), []);
+    assert.deepEqual(JSON.parse(pullRequestsDownload), []);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
@@ -33,4 +44,11 @@ async function fetchJson(url, options) {
   const data = await response.json();
   assert.equal(response.ok, true, data.error);
   return data;
+}
+
+async function fetchText(url, options) {
+  const response = await fetch(url, options);
+  const text = await response.text();
+  assert.equal(response.ok, true, text);
+  return text;
 }

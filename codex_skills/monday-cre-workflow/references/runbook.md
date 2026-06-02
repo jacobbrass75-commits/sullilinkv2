@@ -72,7 +72,16 @@ The lookup file can be CSV, JSON, or XLSX. Required output is `monday_lookup_res
 
 ### TitlePro Evidence
 
-Use the TitlePro skill. Save:
+Start from `titlepro_approval_queue_preview.json`. If a broker/admin approves a specific pull, record the decision before any browser/order work:
+
+```bash
+node src/cli.js titlepro-approve --run ../outputs/monday_digest_runs/dev --approvals path/to/titlepro_approvals.csv
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+Approval intake should produce `titlepro_approval_decisions.json`, `titlepro_pull_requests_approved.json`, and `titlepro_approval_source_profile.json`. It must leave `pull_executed = false`, `external_write_executed = false`, and `forbidden_actions.titlepro_pulls = 0`.
+
+After action-time confirmation, use the TitlePro skill. Save:
 
 - source URL/report/order id
 - property address

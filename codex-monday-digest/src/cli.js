@@ -11,6 +11,7 @@ const { exportWorkbook, updateManifestWithWorkbook } = require("./export-workboo
 const { verifyRun } = require("./verify-run");
 const { buildBatchArtifacts, writeBatchRun } = require("./batch-owner-clusters");
 const { buildTitleProApprovalQueue } = require("./titlepro-approval-queue");
+const { applyTitleProApprovals, readApprovalFile } = require("./titlepro-approval-intake");
 const { lookupLeads, readLookupFile } = require("./monday-lookup");
 const { assertLiveWriteAllowed, redactedBoardShapeFromEnv } = require("./monday-graphql");
 const { FORBIDDEN_ZERO, ensureDir, writeJson, appendJsonl, nowIso } = require("./runtime");
@@ -43,6 +44,7 @@ function usage() {
     "  codex-monday-digest verify --run RUN_FOLDER",
     "  codex-monday-digest batch-owner-clusters --input CSV --mode local_dry_run --out RUN_FOLDER",
     "  codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --lookup-file MONDAY_EXPORT.csv|json|xlsx",
+    "  codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|json",
     "  codex-monday-digest sync --run RUN_FOLDER --mode live_write"
   ].join("\n");
 }
@@ -105,6 +107,8 @@ function writeDigestRunFromFile({ input, out, mode, inputPaths = [input], source
     "monday_subitems_preview.json": subitems,
     "monday_comments_preview.json": comments,
     "titlepro_approval_queue_preview.json": titleproQueue,
+    "titlepro_approval_decisions.json": [],
+    "titlepro_pull_requests_approved.json": [],
     "broker_packets_preview.json": packets,
     "approval_events_preview.json": approvals,
     "queue_decisions_preview.json": queue,
@@ -183,6 +187,8 @@ function previewCommand(args) {
   writeJson(path.join(args.out, "monday_subitems_preview.json"), []);
   writeJson(path.join(args.out, "monday_comments_preview.json"), []);
   writeJson(path.join(args.out, "titlepro_approval_queue_preview.json"), []);
+  writeJson(path.join(args.out, "titlepro_approval_decisions.json"), []);
+  writeJson(path.join(args.out, "titlepro_pull_requests_approved.json"), []);
   writeJson(path.join(args.out, "broker_packets_preview.json"), []);
   writeJson(path.join(args.out, "approval_events_preview.json"), []);
   writeJson(path.join(args.out, "queue_decisions_preview.json"), []);
@@ -263,6 +269,51 @@ function updateManifestAfterSync(runFolder, outputPaths) {
   fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
+function titleProApproveCommand(args) {
+  if (!args.run || !args.approvals) {
+    throw new Error("titlepro-approve requires --run RUN_FOLDER --approvals APPROVALS.csv|json");
+  }
+  const queuePath = path.join(args.run, "titlepro_approval_queue_preview.json");
+  if (!fs.existsSync(queuePath)) throw new Error("Run has no titlepro_approval_queue_preview.json");
+  const queueRows = JSON.parse(fs.readFileSync(queuePath, "utf8"));
+  const approvalSource = readApprovalFile(args.approvals);
+  const { decisions, approvedPullRequests } = applyTitleProApprovals(queueRows, approvalSource.approvals);
+  writeJson(path.join(args.run, "titlepro_approval_decisions.json"), decisions);
+  writeJson(path.join(args.run, "titlepro_pull_requests_approved.json"), approvedPullRequests);
+  const invalidDecisionCount = decisions.filter((decision) => decision.validation_errors.length > 0).length;
+  writeJson(path.join(args.run, "titlepro_approval_source_profile.json"), {
+    source_path: approvalSource.source_path,
+    source_sha256: approvalSource.source_sha256,
+    source_format: approvalSource.source_format,
+    approval_record_count: approvalSource.approvals.length,
+    approved_decision_count: decisions.filter((decision) => decision.decision === "approved").length,
+    recorded_approval_count: decisions.filter((decision) => decision.approval_recorded).length,
+    hold_decision_count: decisions.filter((decision) => decision.decision === "hold").length,
+    rejected_decision_count: decisions.filter((decision) => decision.decision === "rejected").length,
+    approved_pull_request_count: approvedPullRequests.length,
+    invalid_decision_count: invalidDecisionCount,
+    titlepro_pulls_executed: 0,
+    external_writes_executed: 0
+  });
+  updateManifestAfterTitleProApproval(args.run, [
+    path.join(args.run, "titlepro_approval_decisions.json"),
+    path.join(args.run, "titlepro_pull_requests_approved.json"),
+    path.join(args.run, "titlepro_approval_source_profile.json")
+  ]);
+  console.log(`titlepro_approval_decisions=${decisions.length} approved_pull_requests=${approvedPullRequests.length} invalid_decisions=${invalidDecisionCount} titlepro_pulls_executed=0`);
+}
+
+function updateManifestAfterTitleProApproval(runFolder, outputPaths) {
+  const manifestPath = path.join(runFolder, "run_manifest.json");
+  if (!fs.existsSync(manifestPath)) return;
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...outputPaths]));
+  manifest.last_titlepro_approval_intake_at = nowIso();
+  manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
+  manifest.forbidden_actions.titlepro_pulls = manifest.forbidden_actions.titlepro_pulls || 0;
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
 function batchCommand(args) {
   rejectAmbiguousDryRun(args.mode);
   if (!args.input || !args.out || args.mode !== "local_dry_run") {
@@ -297,6 +348,9 @@ function main() {
       case "sync":
         syncCommand(args);
         break;
+      case "titlepro-approve":
+        titleProApproveCommand(args);
+        break;
       case "batch-owner-clusters":
         batchCommand(args);
         break;
@@ -321,6 +375,7 @@ module.exports = {
   previewCommand,
   exportCommand,
   syncCommand,
+  titleProApproveCommand,
   batchCommand,
   verifyCommand
 };

@@ -13,6 +13,8 @@ const DIGEST_FILES = [
   "monday_subitems_preview.json",
   "monday_comments_preview.json",
   "titlepro_approval_queue_preview.json",
+  "titlepro_approval_decisions.json",
+  "titlepro_pull_requests_approved.json",
   "broker_packets_preview.json",
   "approval_events_preview.json",
   "audit_events_preview.jsonl",
@@ -81,6 +83,8 @@ function verifyDigestRun(runFolder) {
   const subitems = readJson(path.join(runFolder, "monday_subitems_preview.json"));
   const comments = readJson(path.join(runFolder, "monday_comments_preview.json"));
   const titleproQueue = readJson(path.join(runFolder, "titlepro_approval_queue_preview.json"));
+  const titleproDecisions = readJson(path.join(runFolder, "titlepro_approval_decisions.json"));
+  const approvedTitleproPulls = readJson(path.join(runFolder, "titlepro_pull_requests_approved.json"));
   const packets = readJson(path.join(runFolder, "broker_packets_preview.json"));
   const approvals = readJson(path.join(runFolder, "approval_events_preview.json"));
   const queueDecisions = readJson(path.join(runFolder, "queue_decisions_preview.json"));
@@ -101,6 +105,10 @@ function verifyDigestRun(runFolder) {
   checks.push({ pass: titleproQueue.length >= leads.length && titleproQueue.every(hasTitleProQueueFields), message: "TitlePro approval queue exists with required fields for every lead" });
   checks.push({ pass: titleproQueue.every((row) => row.approval_required === true && row.paid_action_allowed === false), message: "TitlePro queue requires approval and allows no paid actions" });
   checks.push({ pass: leads.every((lead) => hasTitleProQueueLinks(lead, titleproQueue, subitems, queueDecisions)), message: "TitlePro queue approval ids are linked to subitems and queue decisions" });
+  checks.push({ pass: Array.isArray(titleproDecisions) && titleproDecisions.every(hasTitleProDecisionFields), message: "TitlePro approval decisions are structured audit rows" });
+  checks.push({ pass: Array.isArray(approvedTitleproPulls) && approvedTitleproPulls.every(hasApprovedTitleProPullFields), message: "approved TitlePro pull requests are structured pending requests" });
+  checks.push({ pass: approvedTitleproPulls.every((row) => row.pull_executed === false && row.external_write_executed === false), message: "approved TitlePro pull requests have not executed paid/browser/write actions" });
+  checks.push({ pass: approvedTitleproPulls.every((row) => hasMatchingRecordedTitleProDecision(row, titleproDecisions)), message: "approved TitlePro pull requests match recorded valid approvals" });
   checks.push({ pass: approvals.length >= leads.length, message: "approval previews exist for every lead" });
   checks.push({ pass: auditEvents.length >= leads.length + 2, message: "audit events exist for parse, dedupe, and blocked decisions" });
   checks.push({ pass: queueDecisions.length >= leads.length, message: "queue decisions exist for every lead" });
@@ -243,6 +251,57 @@ function hasTitleProQueueLinks(lead, titleproQueue, subitems, queueDecisions) {
       && decision.decision === "hold";
   });
   return Boolean(titleproSubitem && queueDecision);
+}
+
+function hasTitleProDecisionFields(row) {
+  return [
+    "source_row_index",
+    "decision",
+    "validation_errors",
+    "approval_recorded",
+    "paid_action_allowed",
+    "pull_executed",
+    "external_write_executed",
+    "recorded_at"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && Array.isArray(row.validation_errors)
+    && row.pull_executed === false
+    && row.external_write_executed === false;
+}
+
+function hasApprovedTitleProPullFields(row) {
+  return [
+    "request_id",
+    "approval_id",
+    "lead_key",
+    "radar_id",
+    "requested_doc_type",
+    "reason",
+    "cost_ceiling",
+    "approved_by",
+    "approved_at",
+    "status",
+    "paid_action_allowed",
+    "pull_executed",
+    "external_write_executed",
+    "evidence_destination",
+    "next_action"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && row.status === "approved_pending_manual_titlepro_pull"
+    && row.paid_action_allowed === true;
+}
+
+function hasMatchingRecordedTitleProDecision(pullRequest, decisions) {
+  return decisions.some((decision) => {
+    return decision.approval_recorded === true
+      && decision.paid_action_allowed === true
+      && decision.matched_approval_id === pullRequest.approval_id
+      && decision.matched_lead_key === pullRequest.lead_key
+      && decision.matched_radar_id === pullRequest.radar_id
+      && decision.requested_doc_type === pullRequest.requested_doc_type
+      && decision.reason === pullRequest.reason
+      && decision.approved_by === pullRequest.approved_by;
+  });
 }
 
 function noCredentialLeaks(runFolder) {

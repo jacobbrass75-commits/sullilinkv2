@@ -157,7 +157,16 @@ function downloadLinks(summary) {
   const id = encodeURIComponent(summary.id);
   const files = summary.type === "batch"
     ? ["monday_import_preview.xlsx", "verification_report.md", "candidate_properties.json", "owner_cluster_candidates.json"]
-    : ["monday_import_preview.xlsx", "verification_report.md", "deduped_leads.json", "monday_lookup_results.json", "monday_subitems_preview.json", "titlepro_approval_queue_preview.json"];
+    : [
+      "monday_import_preview.xlsx",
+      "verification_report.md",
+      "deduped_leads.json",
+      "monday_lookup_results.json",
+      "monday_subitems_preview.json",
+      "titlepro_approval_queue_preview.json",
+      "titlepro_approval_decisions.json",
+      "titlepro_pull_requests_approved.json"
+    ];
   return files.map((file) => `<a href="/api/runs/${id}/download/${encodeURIComponent(file)}">${escapeHtml(file)}</a>`);
 }
 
@@ -166,6 +175,8 @@ function renderDigestDetail(detail) {
   const lookup = detail.lookup_results || [];
   const subitems = detail.subitems || [];
   const titleproQueue = detail.titlepro_approval_queue || [];
+  const titleproDecisions = detail.titlepro_approval_decisions || [];
+  const approvedTitleproPulls = detail.titlepro_pull_requests_approved || [];
   els.detailBody.innerHTML = `
     <h3>Leads</h3>
     <table>
@@ -212,6 +223,38 @@ function renderDigestDetail(detail) {
             <td class="blocked">${row.paid_action_allowed ? "allowed" : "blocked"}</td>
           </tr>
         `).join("")}
+      </tbody>
+    </table>
+    <h3>TitlePro Approval Decisions</h3>
+    <table>
+      <thead><tr><th>Lead</th><th>Decision</th><th>Doc/Profile</th><th>Approved By</th><th>Cost Ceiling</th><th>Validation</th></tr></thead>
+      <tbody>
+        ${titleproDecisions.map((row) => `
+          <tr>
+            <td class="wrap">${escapeHtml(row.matched_lead_key || row.lead_key || row.radar_id || "")}</td>
+            <td class="${row.approval_recorded ? "hold" : row.validation_errors?.length ? "blocked" : ""}">${escapeHtml(row.decision || "")}</td>
+            <td class="wrap">${escapeHtml(row.requested_doc_type || "")}</td>
+            <td>${escapeHtml(row.approved_by || "")}</td>
+            <td>${row.cost_ceiling === null || row.cost_ceiling === undefined ? "" : money(row.cost_ceiling)}</td>
+            <td class="wrap">${escapeHtml((row.validation_errors || []).join(", ") || "recorded")}</td>
+          </tr>
+        `).join("") || '<tr><td colspan="6">No approval intake recorded.</td></tr>'}
+      </tbody>
+    </table>
+    <h3>Approved Pending TitlePro Pull Requests</h3>
+    <table>
+      <thead><tr><th>Lead</th><th>Request</th><th>Address</th><th>Approved By</th><th>Cost Ceiling</th><th>Pull Executed</th></tr></thead>
+      <tbody>
+        ${approvedTitleproPulls.map((row) => `
+          <tr>
+            <td class="wrap">${escapeHtml(row.lead_key || "")}</td>
+            <td class="wrap">${escapeHtml(row.requested_doc_type || "")}</td>
+            <td class="wrap">${escapeHtml(`${row.address || ""}, ${row.city || ""}`)}</td>
+            <td>${escapeHtml(row.approved_by || "")}</td>
+            <td>${money(row.cost_ceiling)}</td>
+            <td class="blocked">${row.pull_executed ? "yes" : "no"}</td>
+          </tr>
+        `).join("") || '<tr><td colspan="6">No approved pending pull requests.</td></tr>'}
       </tbody>
     </table>
     <h3>Default Work Queue</h3>

@@ -16,8 +16,12 @@ test("browser workflow creates a digest run with workbook and verification", asy
   assert.equal(detail.summary.counts.parsed_rows, 4);
   assert.equal(detail.summary.counts.deduped_leads, 3);
   assert.equal(detail.titlepro_approval_queue.length, 3);
+  assert.deepEqual(detail.titlepro_approval_decisions, []);
+  assert.deepEqual(detail.titlepro_pull_requests_approved, []);
   assert.equal(detail.titlepro_approval_queue.every((row) => row.paid_action_allowed === false), true);
   assert.equal(fs.existsSync(path.join(tmp, detail.summary.id, "monday_import_preview.xlsx")), true);
   assert.equal(fs.existsSync(path.join(tmp, detail.summary.id, "titlepro_approval_queue_preview.json")), true);
+  assert.equal(fs.existsSync(path.join(tmp, detail.summary.id, "titlepro_approval_decisions.json")), true);
+  assert.equal(fs.existsSync(path.join(tmp, detail.summary.id, "titlepro_pull_requests_approved.json")), true);
   assert.equal(listRuns().length, 1);
 });

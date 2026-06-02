@@ -30,6 +30,8 @@ function readJson(file) {
 function assertTitleProApprovalQueue(runFolder) {
   const queuePath = path.join(runFolder, "titlepro_approval_queue_preview.json");
   assert.equal(fs.existsSync(queuePath), true, "TitlePro approval queue preview artifact exists");
+  assert.deepEqual(readJson(path.join(runFolder, "titlepro_approval_decisions.json")), []);
+  assert.deepEqual(readJson(path.join(runFolder, "titlepro_pull_requests_approved.json")), []);
 
   const queue = readJson(queuePath);
   const leads = readJson(path.join(runFolder, "deduped_leads.json"));
@@ -74,6 +76,8 @@ function assertVerifyRunChecksTitleProQueue(runFolder) {
   const result = verifyRun(runFolder);
   assert.equal(result.passed, true, result.report);
   assert.match(result.report, /titlepro_approval_queue_preview\.json/);
+  assert.match(result.report, /titlepro_approval_decisions\.json/);
+  assert.match(result.report, /titlepro_pull_requests_approved\.json/);
   assert.match(result.report, /TitlePro approval queue/i);
 }
 

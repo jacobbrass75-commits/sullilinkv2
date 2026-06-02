@@ -71,6 +71,15 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 `monday_lookup_dry_run` reads a Monday board export CSV/JSON/XLSX and matches existing items by Radar ID. It must not call live write mutations.
 
+TitlePro approval intake after broker/admin approval:
+
+```bash
+node src/cli.js titlepro-approve --run ../outputs/monday_digest_runs/dev --approvals path/to/titlepro_approvals.csv
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+`titlepro-approve` writes approval decision and approved pending pull-request artifacts only. It does not open TitlePro, order reports, download paid documents, or execute browser actions.
+
 If Python workbook export fails because `openpyxl` is missing, set `CODEX_PYTHON_BIN` to a Python that has the workspace spreadsheet dependencies.
 
 ## TitlePro Lane
@@ -80,6 +89,7 @@ TitlePro is an evidence layer after screening, not a broad lead source.
 - Set/keep `TitlePro Status = Not needed until screened` for low-context leads.
 - Move to `Needs approval` only for a scoped missing proof: profile, deed, DOT, NOD, NTS, assignment, SOS, trustee status, or signature page.
 - Paid/order actions require explicit approval for property, APN/county when known, doc/profile type, reason, and cost ceiling.
+- Approval intake can mark a request as approved-pending, but the actual browser/order step still requires separate action-time confirmation.
 - Prefer existing TitlePro orders/reports over duplicate pulls.
 - Mark wrong-property or duplicate evidence as excluded; do not delete it.
 

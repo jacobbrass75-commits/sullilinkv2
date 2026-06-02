@@ -65,6 +65,7 @@ CRE Brain / SullyLink database
 - Batch CSV preview normalizes APNs when present, collapses duplicate APN rows, and preserves source row indexes.
 - Digest preview writes `titlepro_approval_queue_preview.json`, plus a workbook `TitlePro Approval` sheet, with approval IDs linked to blocked TitlePro subitems and queue decisions.
 - `sync --mode monday_lookup_dry_run --lookup-file` matches existing Monday export rows by Radar ID without writes.
+- `titlepro-approve --approvals` records broker/admin approval decisions and approved pending pull-request artifacts without executing any TitlePro pull.
 - Shareable packet files have no credentials, cookies, local absolute paths, or paid raw docs.
 - Every broker-facing owner/control claim has evidence and confidence language.
 - TitlePro actions remain serialized and approval-gated.
@@ -77,6 +78,7 @@ cd codex-monday-digest
 CODEX_PYTHON_BIN=/path/to/python-with-openpyxl PROPERTYRADAR_BATCH_CSV=/path/to/propertyradar_export.csv npm test
 npm run proof:preview
 npm run proof:lookup
+npm run proof:titlepro-approval
 npm run app
 ```
 
@@ -90,5 +92,5 @@ http://localhost:8787
 
 - Add live Gmail connector read preview after the saved-email `gmail_preview --input` lane is used successfully.
 - Add live Monday connector read lookup after the board-export lookup lane is used successfully.
-- Add approval intake for TitlePro decisions after a broker/admin supplies property, APN/county when known, doc/profile type, reason, and cost ceiling.
+- Add action-time TitlePro pull execution after an approved request is re-confirmed for property, APN/county when known, doc/profile type, reason, and cost ceiling.
 - Add official-provider status checks only after source rights and API shape are confirmed.
