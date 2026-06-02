@@ -177,6 +177,8 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 Evidence import should produce `titlepro_evidence_intake.json`, `titlepro_role_assertions_preview.json`, and `titlepro_evidence_source_profile.json`. It must leave paid/browser/write action counts at zero, keep service actors out of control-lead claims, and keep `beneficial_owner_claim_allowed=false` until independent ownership proof exists.
 
+When the confirmed manual TitlePro action opens a document/PDF order, save the actual downloaded PDF into the project as primary evidence before summarizing it. Use `outputs/distressed_cre_research/<run>/documents/<property-slug>/` when a distressed-CRE run exists, or `outputs/titlepro_evidence/<YYYY-MM-DD>/<property-slug>/` when no run folder exists yet. Screenshots are secondary support for OCR/page proof and should not be the only saved artifact when the PDF can be downloaded.
+
 TitlePro queue state machine:
 
 - Start only from screened rows with usable address/city and a linked `titlepro_approval_id`.

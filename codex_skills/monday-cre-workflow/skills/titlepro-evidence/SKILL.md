@@ -13,6 +13,23 @@ Use this lane when a lead needs TitlePro profile/document evidence or when alrea
 
 Use the standalone `titlepro247` skill for authenticated TitlePro browser/report/PDF operation. This lane only controls the Monday-runner queue and evidence contract.
 
+## PDF Evidence Storage
+
+When the confirmed manual TitlePro action opens a PDF/document order, save the actual downloaded PDF into the project before summarizing or importing evidence. Preferred project-relative locations:
+
+```text
+outputs/distressed_cre_research/<run>/documents/<property-slug>/
+outputs/titlepro_evidence/<YYYY-MM-DD>/<property-slug>/
+```
+
+Use filenames like:
+
+```text
+<property-slug>__D123456789__doc_<recorder-docnum>__YYYY-MM-DD.pdf
+```
+
+Screenshots can support OCR, page-level excerpts, and viewer-state proof, but they are not the primary evidence when the original PDF can be downloaded. Evidence imports should reference the project-relative PDF path plus TitlePro order id, recorder document number, recording date, document type, capture date, and included/excluded status.
+
 ## Queue Commands
 
 Run from `codex-monday-digest/`.
@@ -54,5 +71,6 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 - Confirmation intake does not execute TitlePro.
 - Process one confirmed TitlePro action per browser execution.
 - Prefer existing order reuse over duplicate ordering.
+- Save the actual TitlePro PDF into the project evidence folder when a PDF/document order is available.
 - Keep title owner, borrower/trustor, beneficiary/lender, trustee, signer, and service actors separate.
 - Never promote TitlePro contact/service-party names to beneficial owner without independent proof.
