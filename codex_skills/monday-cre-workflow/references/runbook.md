@@ -81,7 +81,16 @@ node src/cli.js sync --run ../outputs/monday_digest_runs/dev --mode monday_looku
 node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 ```
 
-The lookup file can be CSV, JSON, or XLSX. Required output is `monday_lookup_results.json`; when a lookup file is supplied, also save `monday_lookup_source_profile.json`. This lane is read-only and must leave `forbidden_actions.monday_live_writes = 0`.
+The lookup file can be CSV, JSON, or XLSX. Required output is `monday_lookup_results.json`; when a lookup file is supplied, also save `monday_lookup_source_profile.json`.
+
+For a saved read-only Monday connector result:
+
+```bash
+node src/cli.js sync --run ../outputs/monday_digest_runs/dev --mode monday_lookup_dry_run --connector-json path/to/monday_connector_read.json
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+Connector JSON lookup also writes `monday_connector_source_profile.json` with board/item counts and basename-only source provenance. Both lookup lanes are read-only and must leave `forbidden_actions.monday_live_writes = 0`.
 
 ### TitlePro Evidence
 

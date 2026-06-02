@@ -86,7 +86,9 @@ function lookupPlaceholderForLead(lead) {
     existing_item_name: null,
     existing_item_names: [],
     board_id: null,
+    board_ids: [],
     group_id: null,
+    group_ids: [],
     error: null
   };
 }

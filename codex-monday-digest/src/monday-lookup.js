@@ -76,24 +76,68 @@ print(json.dumps(rows))
 
 function readJsonRecords(filePath) {
   const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
-  if (Array.isArray(parsed)) {
-    return parsed.map((item) => recordFromObject(item, { source_format: "json" })).filter(Boolean);
-  }
-  const items = [];
-  collectMondayItems(parsed, items);
-  return items.map((item) => recordFromMondayItem(item)).filter(Boolean);
+  return readJsonRecordsFromValue(parsed);
 }
 
-function collectMondayItems(value, items) {
+function readJsonRecordsFromValue(parsed) {
+  if (Array.isArray(parsed)) {
+    const mondayRecords = mondayItemRecordsFromValue(parsed);
+    if (mondayRecords.length) return mondayRecords;
+    return parsed.map((item) => recordFromObject(item, { source_format: "json" })).filter(Boolean);
+  }
+  return mondayItemRecordsFromValue(parsed);
+}
+
+function mondayItemRecordsFromValue(value) {
+  const items = [];
+  collectMondayItems(value, items);
+  return items.map(({ item, context }) => recordFromMondayItem(item, context)).filter(Boolean);
+}
+
+function collectMondayItems(value, items, context = {}) {
   if (!value || typeof value !== "object") return;
   if (Array.isArray(value)) {
-    value.forEach((item) => collectMondayItems(item, items));
+    value.forEach((item) => collectMondayItems(item, items, context));
     return;
   }
-  if ((value.id || value.item_id) && (value.name || value.column_values || value.columns)) {
-    items.push(value);
+  let nextContext = context;
+  if (isMondayBoard(value)) {
+    nextContext = {
+      ...nextContext,
+      board_id: value.id || value.board_id || nextContext.board_id || null,
+      board_name: value.name || value.board_name || nextContext.board_name || null
+    };
+  } else if (isMondayGroup(value)) {
+    nextContext = {
+      ...nextContext,
+      group_id: value.id || value.group_id || nextContext.group_id || null,
+      group_name: value.title || value.name || value.group_name || nextContext.group_name || null
+    };
   }
-  Object.values(value).forEach((child) => collectMondayItems(child, items));
+  if (isMondayItem(value)) {
+    items.push({ item: value, context: nextContext });
+  }
+  Object.values(value).forEach((child) => collectMondayItems(child, items, nextContext));
+}
+
+function isMondayBoard(value) {
+  return Boolean((value.id || value.board_id)
+    && (value.items_page || value.items || value.groups)
+    && (value.name || value.board_name));
+}
+
+function isMondayGroup(value) {
+  return Boolean((value.id || value.group_id)
+    && (value.items || value.items_page)
+    && (value.title || value.name || value.group_name));
+}
+
+function isMondayItem(value) {
+  return Boolean((value.id || value.item_id)
+    && (value.name || value.column_values || value.columns)
+    && !value.items_page
+    && !value.items
+    && !value.groups);
 }
 
 function valueFromHeaders(row, aliases) {
@@ -115,7 +159,7 @@ function recordFromObject(row, extra = {}) {
   };
 }
 
-function recordFromMondayItem(item) {
+function recordFromMondayItem(item, context = {}) {
   const radarColumnId = process.env.MONDAY_RADAR_ID_COLUMN_ID || null;
   const columns = item.column_values || item.columns || [];
   const columnRadar = Array.isArray(columns) ? columns.map((column) => {
@@ -131,8 +175,8 @@ function recordFromMondayItem(item) {
     radar_id: radarId,
     item_id: item.id || item.item_id || null,
     item_name: item.name || item.item_name || null,
-    board_id: item.board?.id || item.board_id || null,
-    group_id: item.group?.id || item.group_id || null,
+    board_id: item.board?.id || item.board_id || context.board_id || null,
+    group_id: item.group?.id || item.group_id || context.group_id || null,
     source_format: "json"
   };
 }
@@ -171,9 +215,15 @@ function lookupResult(lead, mode, matches, result, error) {
     existing_item_name: matches[0]?.item_name || null,
     existing_item_names: matches.map((match) => match.item_name).filter(Boolean),
     board_id: matches[0]?.board_id || null,
+    board_ids: uniqueValues(matches.map((match) => match.board_id)),
     group_id: matches[0]?.group_id || null,
+    group_ids: uniqueValues(matches.map((match) => match.group_id)),
     error
   };
+}
+
+function uniqueValues(values) {
+  return Array.from(new Set(values.filter(Boolean)));
 }
 
 function readLookupFile(filePath) {
@@ -186,8 +236,42 @@ function readLookupFile(filePath) {
   };
 }
 
+function readMondayConnectorLookupFile(filePath) {
+  const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  const records = readJsonRecordsFromValue(parsed);
+  return {
+    source_path: path.basename(filePath),
+    source_path_scope: "basename_only",
+    source_sha256: sha256File(filePath),
+    source_format: "json",
+    collection_mode: "monday_connector_lookup",
+    board_count: countMondayBoards(parsed),
+    lookup_record_count: records.length,
+    records,
+    monday_live_writes_executed: 0,
+    write_actions_executed: 0,
+    external_writes_executed: 0
+  };
+}
+
+function countMondayBoards(value) {
+  let count = 0;
+  function visit(node) {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+    if (isMondayBoard(node)) count += 1;
+    Object.values(node).forEach(visit);
+  }
+  visit(value);
+  return count;
+}
+
 module.exports = {
   lookupLeads,
   normalizeRadarId,
-  readLookupFile
+  readLookupFile,
+  readMondayConnectorLookupFile
 };

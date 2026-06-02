@@ -94,6 +94,7 @@ function verifyDigestRun(runFolder) {
   const queueDecisions = readJson(path.join(runFolder, "queue_decisions_preview.json"));
   const manifest = readJson(path.join(runFolder, "run_manifest.json"));
   const gmailConnectorProfilePath = path.join(runFolder, "gmail_connector_source_profile.json");
+  const mondayConnectorProfilePath = path.join(runFolder, "monday_connector_source_profile.json");
   const auditEvents = parseJsonl(path.join(runFolder, "audit_events_preview.jsonl"));
 
   checks.push({ pass: Array.isArray(sourceEmails) && sourceEmails.length >= 1, message: "source_emails has at least one source" });
@@ -129,6 +130,17 @@ function verifyDigestRun(runFolder) {
       checks.push({ pass: gmailProfile.parsed_row_count === parsedRows.length, message: "Gmail connector profile parsed row count matches parsed rows" });
       checks.push({ pass: parsedRows.length > 0 && leads.length > 0, message: "Gmail connector preview contains at least one parsed PropertyRadar lead" });
     }
+  }
+  if (manifest.last_lookup_mode === "monday_connector_lookup" || fs.existsSync(mondayConnectorProfilePath)) {
+    checks.push({ pass: fs.existsSync(mondayConnectorProfilePath), message: "Monday connector source profile exists for connector lookup mode" });
+    if (fs.existsSync(mondayConnectorProfilePath)) {
+      const mondayProfile = readJson(mondayConnectorProfilePath);
+      checks.push({ pass: mondayProfile.collection_mode === "monday_connector_lookup", message: "Monday connector profile records connector lookup mode" });
+      checks.push({ pass: mondayProfile.monday_live_writes_executed === 0 && mondayProfile.write_actions_executed === 0 && mondayProfile.external_writes_executed === 0, message: "Monday connector lookup executed no Monday writes or external writes" });
+      checks.push({ pass: mondayProfile.lookup_record_count > 0, message: "Monday connector lookup has at least one readable Monday item record" });
+      checks.push({ pass: mondayProfile.source_path_scope === "basename_only" && !String(mondayProfile.source_path || "").includes("/"), message: "Monday connector profile stores basename-only source path" });
+    }
+    checks.push({ pass: lookupResults.every((row) => row.lookup_mode === "monday_connector_lookup"), message: "Monday connector lookup results are marked with connector lookup mode" });
   }
   checks.push({ pass: forbiddenZero(manifest), message: "forbidden action counts are zero" });
   checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
@@ -217,7 +229,9 @@ function hasLookupFields(row) {
     "existing_item_name",
     "existing_item_names",
     "board_id",
+    "board_ids",
     "group_id",
+    "group_ids",
     "error"
   ].every((field) => Object.prototype.hasOwnProperty.call(row, field));
 }

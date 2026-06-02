@@ -12,6 +12,8 @@ For Gmail-sourced alerts, save or paste the email body to a local text/HTML file
 
 For connector-sourced alerts, use the Gmail connector read tools to search/read messages, save the read-only result JSON locally, and run `preview --gmail-json ... --mode gmail_connector_preview`. The runner never calls Gmail directly and never labels, archives, drafts, or sends.
 
+For Monday connector lookups, use the Monday connector read tools to fetch the target board/items, save the read-only result JSON locally, and run `sync --connector-json ... --mode monday_lookup_dry_run`. The runner consumes that JSON only; it does not call Monday or execute mutations.
+
 ## Team Dashboard
 
 Start the shared browser app:
@@ -70,11 +72,12 @@ codex-monday-digest export --run RUN_FOLDER --xlsx RUN_FOLDER/monday_import_prev
 codex-monday-digest verify --run RUN_FOLDER
 codex-monday-digest batch-owner-clusters --input PROPERTYRADAR_CSV --mode local_dry_run --out RUN_FOLDER
 codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --lookup-file MONDAY_EXPORT.csv
+codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --connector-json MONDAY_CONNECTOR_READ.json
 codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|json
 codex-monday-digest sync --run RUN_FOLDER --mode live_write
 ```
 
-`local_dry_run` and `monday_lookup_dry_run` need no credentials. The lookup mode reads a Monday board export CSV/JSON/XLSX, matches existing items by Radar ID, and writes `monday_lookup_results.json` without changing Monday. `live_write` is intentionally blocked unless the later Monday approval and environment gates are satisfied.
+`local_dry_run` and `monday_lookup_dry_run` need no credentials. The lookup mode reads a Monday board export CSV/JSON/XLSX or saved read-only connector JSON, matches existing items by Radar ID, and writes `monday_lookup_results.json` without changing Monday. `live_write` is intentionally blocked unless the later Monday approval and environment gates are satisfied.
 
 `titlepro-approve` reads a broker/admin approval CSV or JSON and writes `titlepro_approval_decisions.json`, `titlepro_pull_requests_approved.json`, and `titlepro_approval_source_profile.json`. It is intake only: approved rows become pending manual TitlePro pull requests, but `pull_executed` stays `false` and no paid TitlePro action is performed.
 
@@ -88,6 +91,7 @@ npm run proof:ken
 npm run proof:preview
 npm run proof:gmail-connector
 npm run proof:lookup
+npm run proof:monday-connector
 npm run proof:titlepro-approval
 npm run proof:edge
 npm run proof:batch
@@ -102,3 +106,5 @@ Digest and `gmail_preview` runs also write `titlepro_approval_queue_preview.json
 After a scoped approval is supplied, run `titlepro-approve` to create the separate decision and pending-pull artifacts. These artifacts make the approval reviewable in the dashboard/workbook, but the actual TitlePro browser/order step still requires separate action-time confirmation.
 
 Every digest and batch run writes `monday_action_queue.csv` and a workbook `Monday Action Queue` sheet. This queue is for Monday import/review only: rows keep `monday_write_executed=false`, `external_write_executed=false`, `broker_ready=false`, and `control_claim_allowed=false`.
+
+`sync --connector-json ... --mode monday_lookup_dry_run` writes `monday_connector_source_profile.json` with board/item counts, matched/duplicate/not-found counts, basename-only source provenance, and zero Monday/external writes. Use this for saved read-only connector results; use `--lookup-file` for CSV/XLSX board exports.

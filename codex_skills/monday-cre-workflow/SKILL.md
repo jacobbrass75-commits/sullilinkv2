@@ -82,6 +82,15 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 `monday_lookup_dry_run` reads a Monday board export CSV/JSON/XLSX and matches existing items by Radar ID. It must not call live write mutations.
 
+Read-only Monday connector result lookup:
+
+```bash
+node src/cli.js sync --run ../outputs/monday_digest_runs/dev --mode monday_lookup_dry_run --connector-json path/to/monday_connector_read.json
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+Use the Monday connector read/list tools outside the runner to create the JSON file. The runner consumes the saved result, preserves item/board/group IDs in `monday_lookup_results.json`, writes `monday_connector_source_profile.json`, and must leave Monday/external writes at zero.
+
 TitlePro approval intake after broker/admin approval:
 
 ```bash

@@ -67,6 +67,7 @@ CRE Brain / SullyLink database
 - Digest preview writes `titlepro_approval_queue_preview.json`, plus a workbook `TitlePro Approval` sheet, with approval IDs linked to blocked TitlePro subitems and queue decisions.
 - Digest and batch preview write `monday_action_queue.csv`, plus a workbook `Monday Action Queue` sheet, without executing Monday writes or promoting control claims.
 - `sync --mode monday_lookup_dry_run --lookup-file` matches existing Monday export rows by Radar ID without writes.
+- `sync --mode monday_lookup_dry_run --connector-json` consumes saved read-only Monday connector JSON, preserves board/item/group IDs, and records zero Monday writes.
 - `titlepro-approve --approvals` records broker/admin approval decisions and approved pending pull-request artifacts without executing any TitlePro pull.
 - Shareable packet files have no credentials, cookies, local absolute paths, or paid raw docs.
 - Every broker-facing owner/control claim has evidence and confidence language.
@@ -81,6 +82,7 @@ CODEX_PYTHON_BIN=/path/to/python-with-openpyxl PROPERTYRADAR_BATCH_CSV=/path/to/
 npm run proof:preview
 npm run proof:gmail-connector
 npm run proof:lookup
+npm run proof:monday-connector
 npm run proof:titlepro-approval
 npm run app
 ```
@@ -94,6 +96,6 @@ http://localhost:8787
 ## Open Work
 
 - Configure the canonical Gmail label/query (`CRE/PropertyRadar Alerts`) in the connected mailbox before scheduled connector use.
-- Add live Monday connector read lookup after the board-export lookup lane is used successfully.
+- Configure the live Monday connector read/export step that saves board items into the `--connector-json` shape; local connector-result matching is present.
 - Add action-time TitlePro pull execution after an approved request is re-confirmed for property, APN/county when known, doc/profile type, reason, and cost ceiling.
 - Add official-provider status checks only after source rights and API shape are confirmed.

@@ -14,7 +14,7 @@ const { buildBatchArtifacts, writeBatchRun } = require("./batch-owner-clusters")
 const { buildTitleProApprovalQueue } = require("./titlepro-approval-queue");
 const { applyTitleProApprovals, readApprovalFile } = require("./titlepro-approval-intake");
 const { buildDigestActionQueue, writeActionQueueCsv } = require("./monday-action-queue");
-const { lookupLeads, readLookupFile } = require("./monday-lookup");
+const { lookupLeads, readLookupFile, readMondayConnectorLookupFile } = require("./monday-lookup");
 const { assertLiveWriteAllowed, redactedBoardShapeFromEnv } = require("./monday-graphql");
 const { FORBIDDEN_ZERO, ensureDir, writeJson, appendJsonl, nowIso } = require("./runtime");
 
@@ -47,6 +47,7 @@ function usage() {
     "  codex-monday-digest verify --run RUN_FOLDER",
     "  codex-monday-digest batch-owner-clusters --input CSV --mode local_dry_run --out RUN_FOLDER",
     "  codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --lookup-file MONDAY_EXPORT.csv|json|xlsx",
+    "  codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --connector-json MONDAY_CONNECTOR_READ.json",
     "  codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|json",
     "  codex-monday-digest sync --run RUN_FOLDER --mode live_write"
   ].join("\n");
@@ -281,15 +282,43 @@ function syncCommand(args) {
   const leadsPath = path.join(args.run, "deduped_leads.json");
   const leads = fs.existsSync(leadsPath) ? JSON.parse(fs.readFileSync(leadsPath, "utf8")) : [];
   const lookupFile = args["lookup-file"] || args.lookup_file || args.lookupFile;
+  const connectorJson = args["connector-json"] || args.connector_json || args.connectorJson;
+  if (lookupFile && connectorJson) {
+    throw new Error("sync accepts either --lookup-file or --connector-json, not both");
+  }
   let lookup;
   let sourceProfile = null;
-  if (args.mode === "monday_lookup_dry_run" && lookupFile) {
+  let connectorProfile = null;
+  let lookupMode = args.mode;
+  if (args.mode === "monday_lookup_dry_run" && connectorJson) {
+    const connectorSource = readMondayConnectorLookupFile(connectorJson);
+    lookupMode = "monday_connector_lookup";
+    lookup = lookupLeads(leads, connectorSource.records, lookupMode);
+    connectorProfile = {
+      source_path: connectorSource.source_path,
+      source_path_scope: connectorSource.source_path_scope,
+      source_sha256: connectorSource.source_sha256,
+      source_format: connectorSource.source_format,
+      collection_mode: connectorSource.collection_mode,
+      board_count: connectorSource.board_count,
+      lookup_record_count: connectorSource.lookup_record_count,
+      monday_live_writes_executed: connectorSource.monday_live_writes_executed,
+      write_actions_executed: connectorSource.write_actions_executed,
+      external_writes_executed: connectorSource.external_writes_executed,
+      matched_lead_count: lookup.filter((row) => row.result === "matched").length,
+      duplicate_match_lead_count: lookup.filter((row) => row.result === "duplicate_match").length,
+      not_found_lead_count: lookup.filter((row) => row.result === "not_found").length
+    };
+    sourceProfile = connectorProfile;
+  } else if (args.mode === "monday_lookup_dry_run" && lookupFile) {
     const lookupSource = readLookupFile(lookupFile);
     lookup = lookupLeads(leads, lookupSource.records, "monday_lookup_file");
     sourceProfile = {
-      source_path: lookupSource.source_path,
+      source_path: path.basename(lookupSource.source_path),
+      source_path_scope: "basename_only",
       source_sha256: lookupSource.source_sha256,
       source_format: lookupSource.source_format,
+      collection_mode: "monday_lookup_file",
       lookup_record_count: lookupSource.records.length,
       matched_lead_count: lookup.filter((row) => row.result === "matched").length,
       duplicate_match_lead_count: lookup.filter((row) => row.result === "duplicate_match").length,
@@ -308,28 +337,33 @@ function syncCommand(args) {
       existing_item_name: null,
       existing_item_names: [],
       board_id: null,
+      board_ids: [],
       group_id: null,
-      error: args.mode === "monday_lookup_dry_run" ? "Supply --lookup-file with a Monday board export to run a read-only lookup." : "live_write is blocked unless explicit gates pass."
+      group_ids: [],
+      error: args.mode === "monday_lookup_dry_run" ? "Supply --lookup-file with a Monday board export or --connector-json with a read-only Monday connector result." : "live_write is blocked unless explicit gates pass."
     }));
   }
   writeJson(path.join(args.run, "monday_lookup_results.json"), lookup);
   writeJson(path.join(args.run, "monday_board_shape_redacted.json"), redactedBoardShapeFromEnv());
   if (sourceProfile) writeJson(path.join(args.run, "monday_lookup_source_profile.json"), sourceProfile);
+  if (connectorProfile) writeJson(path.join(args.run, "monday_connector_source_profile.json"), connectorProfile);
   updateManifestAfterSync(args.run, [
     path.join(args.run, "monday_lookup_results.json"),
     path.join(args.run, "monday_board_shape_redacted.json"),
-    ...(sourceProfile ? [path.join(args.run, "monday_lookup_source_profile.json")] : [])
-  ]);
+    ...(sourceProfile ? [path.join(args.run, "monday_lookup_source_profile.json")] : []),
+    ...(connectorProfile ? [path.join(args.run, "monday_connector_source_profile.json")] : [])
+  ], lookupMode);
   const matched = lookup.filter((row) => row.result === "matched" || row.result === "duplicate_match").length;
-  console.log(`${args.mode}=no_mutations lookup_rows=${lookup.length} matched_or_duplicate=${matched}`);
+  console.log(`${lookupMode}=no_mutations lookup_rows=${lookup.length} matched_or_duplicate=${matched}`);
 }
 
-function updateManifestAfterSync(runFolder, outputPaths) {
+function updateManifestAfterSync(runFolder, outputPaths, lookupMode = "monday_lookup_dry_run") {
   const manifestPath = path.join(runFolder, "run_manifest.json");
   if (!fs.existsSync(manifestPath)) return;
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...outputPaths]));
   manifest.last_lookup_sync_at = nowIso();
+  manifest.last_lookup_mode = lookupMode;
   manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
   manifest.forbidden_actions.monday_live_writes = manifest.forbidden_actions.monday_live_writes || 0;
   fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);

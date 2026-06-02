@@ -1,0 +1,44 @@
+{
+  "boards": [
+    {
+      "id": "board-4242",
+      "name": "CRE Distressed Intake",
+      "items_page": {
+        "items": [
+          {
+            "id": "5001",
+            "name": "P15F1852 - 2701 STATHAM BLVD",
+            "group": { "id": "new-leads", "title": "New Leads" },
+            "column_values": [
+              { "id": "radar_id", "title": "Radar ID", "text": "P15F1852" }
+            ]
+          },
+          {
+            "id": "5002",
+            "name": "P1555F5F - 16757 SLOVER AVE",
+            "group": { "id": "new-leads", "title": "New Leads" },
+            "column_values": [
+              { "id": "radar_id", "title": "Radar ID", "text": "P1555F5F" }
+            ]
+          },
+          {
+            "id": "5003",
+            "name": "P1555F5F duplicate review",
+            "group": { "id": "duplicates", "title": "Duplicates" },
+            "column_values": [
+              { "id": "radar_id", "title": "Radar ID", "text": "P1555F5F" }
+            ]
+          },
+          {
+            "id": "5004",
+            "name": "Unrelated lead",
+            "group": { "id": "new-leads", "title": "New Leads" },
+            "column_values": [
+              { "id": "radar_id", "title": "Radar ID", "text": "P9999999" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
