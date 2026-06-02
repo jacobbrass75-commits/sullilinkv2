@@ -96,6 +96,77 @@ const REUSE_CATALOG = [
   }
 ];
 
+const IDENTITY_LEDGER_KEYS = [
+  "gmail_message_id",
+  "gmail_thread_id",
+  "radar_id",
+  "normalized_apn",
+  "source_row_indexes",
+  "monday_board_id",
+  "monday_item_id",
+  "titlepro_approval_id",
+  "titlepro_request_id"
+];
+
+const CONNECTOR_READINESS_CONTRACT = {
+  canonical_gmail_label: "CRE/PropertyRadar Alerts",
+  full_body_required: true,
+  snippet_only_allowed: false,
+  required_gmail_fields: ["message_id", "thread_id", "body"],
+  required_monday_fields: ["board_id", "item_id", "group_id", "radar_id"],
+  scheduled_live_read_allowed_without_readiness: false
+};
+
+const TITLEPRO_SERIAL_WORKER_CONTRACT = {
+  one_confirmed_action_per_execution: true,
+  idempotency_key_fields: ["titlepro_approval_id", "titlepro_request_id", "radar_id", "normalized_apn", "requested_doc_type"],
+  duplicate_order_check_required: true,
+  allowed_statuses: ["queued", "action_time_confirmed_pending_serial_titlepro_pull", "processing", "success", "duplicate_order_reuse", "wrong_property_excluded", "date_mismatch_review", "search_failed", "skipped"],
+  required_provenance_fields: ["source_url", "titlepro_order_id", "property_address", "apn", "county", "document_type", "recording_number", "recording_date", "capture_date"],
+  unsupervised_paid_pull_allowed: false
+};
+
+const OWNER_CONTROL_PROMOTION_MATRIX = [
+  {
+    role: "title_owner",
+    control_claim_allowed_without_more_evidence: false,
+    beneficial_owner_claim_allowed: false,
+    notes: "Title owner proves title string only; control needs trust/entity/signature/SOS/current-status support."
+  },
+  {
+    role: "borrower_trustor_or_signer",
+    control_claim_allowed_without_more_evidence: false,
+    beneficial_owner_claim_allowed: false,
+    notes: "Use as control-candidate evidence only when tied to property/APN and current records."
+  },
+  {
+    role: "manager_member_or_authorized_person",
+    control_claim_allowed_without_more_evidence: false,
+    beneficial_owner_claim_allowed: false,
+    notes: "SOS role can support a likely control lead only with title/current-status/property evidence."
+  },
+  {
+    role: "registered_agent_lawyer_trustee_lender_title_company",
+    control_claim_allowed_without_more_evidence: false,
+    beneficial_owner_claim_allowed: false,
+    notes: "Treat as service actor unless independent evidence proves control."
+  },
+  {
+    role: "broker_confirmed_contact",
+    control_claim_allowed_without_more_evidence: false,
+    beneficial_owner_claim_allowed: false,
+    notes: "Contact data alone cannot prove ownership or beneficial control."
+  }
+];
+
+const CONTACT_ENRICHMENT_CONTRACT = {
+  required_fields: ["source_type", "source_url", "source_timestamp", "suppression_status", "broker_approval_status"],
+  manual_pasteback_only_until_approved: true,
+  contact_use_allowed_without_broker_approval: false,
+  outreach_ready_without_suppression_check: false,
+  beneficial_owner_promotion_from_contact_data_allowed: false
+};
+
 const RISK_RULES = [
   { id: "env_or_credentials", label: "credential/env file", test: (rel) => /(^|\/)\.env($|\.)|credentials?|secret|password/i.test(rel) },
   { id: "local_settings", label: "local app or agent settings", test: (rel) => /settings\.local\.json|\.claude\//i.test(rel) },
@@ -280,6 +351,12 @@ function buildReuseContract(recommendations) {
     schema_version: 1,
     mode: "sullilink_pattern_contract",
     contract_scope: "Map old SullyLink/retranToReel patterns to current local Monday runner surfaces without copying old source.",
+    copy_strategy: "copy_pattern_not_source",
+    identity_ledger_keys: [...IDENTITY_LEDGER_KEYS],
+    connector_readiness_contract: cloneJson(CONNECTOR_READINESS_CONTRACT),
+    titlepro_serial_worker_contract: cloneJson(TITLEPRO_SERIAL_WORKER_CONTRACT),
+    owner_control_promotion_matrix: cloneJson(OWNER_CONTROL_PROMOTION_MATRIX),
+    contact_enrichment_contract: cloneJson(CONTACT_ENRICHMENT_CONTRACT),
     lanes: recommendations.map((row) => ({
       pattern_id: row.id,
       matched: row.matched,
@@ -296,6 +373,10 @@ function buildReuseContract(recommendations) {
     })),
     forbidden_actions: { ...FORBIDDEN_ZERO }
   };
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
 function buildRiskScan({ zipEntries, sourceDirEntries, sourceDir }) {

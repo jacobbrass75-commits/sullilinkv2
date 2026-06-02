@@ -871,6 +871,7 @@ function verifySourceAuditRun(runFolder) {
   checks.push({ pass: sourceReuseContractHasLane(reuseContract, "apn_dedupe", "batch-owner-clusters", "proof:batch"), message: "source reuse contract maps APN dedupe to batch proof" });
   checks.push({ pass: sourceReuseContractHasLane(reuseContract, "titlepro_serial_worker", "titlepro-confirm", "proof:titlepro-confirm"), message: "source reuse contract maps TitlePro worker shape to confirmation proof" });
   checks.push({ pass: reuseContract.lanes.every((lane) => Array.isArray(lane.blocked_actions) && lane.blocked_actions.length > 0), message: "every source reuse contract lane records blocked actions" });
+  checks.push({ pass: sourceReuseContractHasReusableGuardrails(reuseContract), message: "source reuse contract includes identity, connector, TitlePro, owner-control, and contact guardrails" });
   checks.push({ pass: Boolean(bundledSourceContract), message: "bundled source-reuse contract reference is available" });
   checks.push({ pass: Boolean(bundledSourceContract) && sourceReuseContractsAligned(reuseContract, bundledSourceContract), message: "generated source reuse contract matches bundled skill baseline" });
   checks.push({ pass: riskScan.secret_values_exposed === false && riskScan.secret_hits.every((hit) => hit.value_exposed === false), message: "secret scan exposes no secret values" });
@@ -1404,7 +1405,12 @@ function sourceReuseContractsAligned(generated, bundled) {
   const generatedIds = generatedLanes.map((lane) => lane.pattern_id).sort();
   const bundledIds = bundledLanes.map((lane) => lane.pattern_id).sort();
   if (!sameStringSet(generatedIds, bundledIds)) return false;
-  return bundledLanes.every((baselineLane) => {
+  return sameStringSet(generated.identity_ledger_keys, bundled.identity_ledger_keys)
+    && stableJson(generated.connector_readiness_contract) === stableJson(bundled.connector_readiness_contract)
+    && stableJson(generated.titlepro_serial_worker_contract) === stableJson(bundled.titlepro_serial_worker_contract)
+    && stableJson(generated.owner_control_promotion_matrix) === stableJson(bundled.owner_control_promotion_matrix)
+    && stableJson(generated.contact_enrichment_contract) === stableJson(bundled.contact_enrichment_contract)
+    && bundledLanes.every((baselineLane) => {
     const generatedLane = generatedLanes.find((lane) => lane.pattern_id === baselineLane.pattern_id);
     return Boolean(generatedLane)
       && generatedLane.implementation_status === baselineLane.implementation_status
@@ -1415,11 +1421,43 @@ function sourceReuseContractsAligned(generated, bundled) {
   });
 }
 
+function sourceReuseContractHasReusableGuardrails(contract) {
+  return sameStringSet(contract?.identity_ledger_keys, [
+    "gmail_message_id",
+    "gmail_thread_id",
+    "radar_id",
+    "normalized_apn",
+    "source_row_indexes",
+    "monday_board_id",
+    "monday_item_id",
+    "titlepro_approval_id",
+    "titlepro_request_id"
+  ])
+    && contract?.connector_readiness_contract?.canonical_gmail_label === "CRE/PropertyRadar Alerts"
+    && contract.connector_readiness_contract.full_body_required === true
+    && contract.connector_readiness_contract.snippet_only_allowed === false
+    && contract?.titlepro_serial_worker_contract?.one_confirmed_action_per_execution === true
+    && contract.titlepro_serial_worker_contract.duplicate_order_check_required === true
+    && contract.titlepro_serial_worker_contract.unsupervised_paid_pull_allowed === false
+    && Array.isArray(contract.owner_control_promotion_matrix)
+    && contract.owner_control_promotion_matrix.every((row) => row.control_claim_allowed_without_more_evidence === false && row.beneficial_owner_claim_allowed === false)
+    && contract?.contact_enrichment_contract?.manual_pasteback_only_until_approved === true
+    && contract.contact_enrichment_contract.beneficial_owner_promotion_from_contact_data_allowed === false;
+}
+
 function sameStringSet(left, right) {
   const normalize = (values) => (values || []).map((value) => String(value)).sort();
   const a = normalize(left);
   const b = normalize(right);
   return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
 }
 
 function hasRiskCategoryFields(row) {

@@ -229,7 +229,7 @@ Treat matched files as pattern evidence only. Use `source_reuse_contract.json` t
 
 Use the bundled `references/source-reuse-contract.json` as the installed-skill baseline when comparing generated source-audit output or adapting additional old app behavior. It also records the identity ledger keys, connector readiness guardrails, TitlePro serial-worker rules, owner/control promotion matrix, and contact enrichment guardrails.
 
-Verification should fail if the generated `source_reuse_contract.json` drifts from the bundled baseline on lane IDs, runner surfaces, proof scripts, implementation statuses, or blocked actions.
+Generated `source_reuse_contract.json` should include the same identity ledger keys, connector readiness guardrails, TitlePro serial-worker rules, owner/control promotion matrix, and contact enrichment guardrails as the bundled baseline. Verification should fail if the generated contract drifts from the bundled baseline on those guardrail sections, lane IDs, runner surfaces, proof scripts, implementation statuses, or blocked actions.
 
 ## Packet Build
 

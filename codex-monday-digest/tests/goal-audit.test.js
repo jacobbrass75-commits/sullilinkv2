@@ -32,6 +32,7 @@ test("goal-audit maps every current acceptance gate without claiming completion"
   assert.equal(audit.acceptance_gates.some((row) => row.id === "shareable_packet_safety" && row.status === "covered_by_local_proof"), true);
   assert.equal(audit.acceptance_gates.some((row) => row.id === "broker_control_claims" && row.status === "covered_by_local_proof"), true);
   assert.equal(audit.acceptance_gates.some((row) => row.id === "source_audit_real" && row.status === "covered_by_local_proof"), true);
+  assert.equal(audit.acceptance_gates.some((row) => row.id === "source_audit_contract_guardrails" && row.status === "covered_by_local_proof"), true);
   assert.equal(audit.acceptance_gates.some((row) => row.id === "source_audit_real_contract_drift" && row.status === "covered_by_local_proof"), true);
   assert.equal(audit.acceptance_gates.some((row) => row.id === "monday_live_write_gate" && row.status === "deferred_external_gate"), true);
   assert.equal(audit.completion_claimed, false);

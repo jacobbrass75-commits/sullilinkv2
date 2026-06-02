@@ -47,6 +47,7 @@ const GATE_CATALOG = [
   gate("goal_audit", /goal-audit/i, ["proof:goal-audit"], "covered_by_local_proof", "Repeatable goal completion audit surface."),
   gate("packet_audit", /packet-audit --packet-dir/i, ["proof:packet-audit"], "covered_by_local_proof", "Shareable packet and broker claim audit surface."),
   gate("source_audit", /source-audit --zip/i, ["proof:source-audit"], "covered_by_local_proof", "Fixture/source reference reuse audit."),
+  gate("source_audit_contract_guardrails", /Generated `source_reuse_contract\.json` includes identity ledger keys/i, ["proof:source-audit-real"], "covered_by_local_proof", "Generated SullyLink pattern contract includes reusable guardrails."),
   gate("source_audit_real_contract_drift", /proof:source-audit-real[\s\S]*generated `source_reuse_contract\.json` matches/i, ["proof:source-audit-real"], "covered_by_local_proof", "Generated SullyLink pattern contract matches bundled skill baseline."),
   gate("source_audit_real", /proof:source-audit-real/i, ["proof:source-audit-real"], "covered_by_local_proof", "Local ignored SullyLink/retranToReel reuse audit."),
   gate("shareable_packet_safety", /Shareable packet files/i, ["proof:packet-audit"], "covered_by_local_proof", "Shareable packet safety, no raw docs, no secrets, and no local paths."),

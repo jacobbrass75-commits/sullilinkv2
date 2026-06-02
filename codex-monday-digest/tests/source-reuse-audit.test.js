@@ -47,6 +47,11 @@ test("source-audit maps SullyLink references without exposing old secrets or loc
   assert.equal(byId.titlepro_serial_worker.copy_strategy, "copy_pattern_not_source");
   assert.equal(contract.mode, "sullilink_pattern_contract");
   assert.deepEqual(contract.lanes.map((row) => row.pattern_id).sort(), baselineContract.lanes.map((row) => row.pattern_id).sort());
+  assert.deepEqual(contract.identity_ledger_keys, baselineContract.identity_ledger_keys);
+  assert.deepEqual(contract.connector_readiness_contract, baselineContract.connector_readiness_contract);
+  assert.deepEqual(contract.titlepro_serial_worker_contract, baselineContract.titlepro_serial_worker_contract);
+  assert.deepEqual(contract.owner_control_promotion_matrix, baselineContract.owner_control_promotion_matrix);
+  assert.deepEqual(contract.contact_enrichment_contract, baselineContract.contact_enrichment_contract);
   assert.ok(lanesById.propertyradar_digest_parser.current_runner_surface.includes("preview --gmail-json"));
   assert.ok(lanesById.propertyradar_digest_parser.proof_scripts.includes("proof:gmail-connector"));
   assert.ok(lanesById.apn_dedupe.current_runner_surface.includes("batch-owner-clusters"));
