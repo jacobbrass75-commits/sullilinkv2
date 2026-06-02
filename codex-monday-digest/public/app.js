@@ -156,10 +156,11 @@ function renderDetails(detail) {
 function downloadLinks(summary) {
   const id = encodeURIComponent(summary.id);
   const files = summary.type === "batch"
-    ? ["monday_import_preview.xlsx", "verification_report.md", "candidate_properties.json", "owner_cluster_candidates.json"]
+    ? ["monday_import_preview.xlsx", "verification_report.md", "monday_action_queue.csv", "candidate_properties.json", "owner_cluster_candidates.json"]
     : [
       "monday_import_preview.xlsx",
       "verification_report.md",
+      "monday_action_queue.csv",
       "deduped_leads.json",
       "monday_lookup_results.json",
       "monday_subitems_preview.json",
@@ -174,6 +175,7 @@ function renderDigestDetail(detail) {
   const leads = detail.leads || [];
   const lookup = detail.lookup_results || [];
   const subitems = detail.subitems || [];
+  const actionQueue = detail.action_queue || [];
   const titleproQueue = detail.titlepro_approval_queue || [];
   const titleproDecisions = detail.titlepro_approval_decisions || [];
   const approvedTitleproPulls = detail.titlepro_pull_requests_approved || [];
@@ -259,6 +261,22 @@ function renderDigestDetail(detail) {
     </table>
     <h3>Default Work Queue</h3>
     <table>
+      <thead><tr><th>Lead</th><th>Queue</th><th>Task</th><th>Status</th><th>Owner</th><th>Write Executed</th></tr></thead>
+      <tbody>
+        ${actionQueue.slice(0, 160).map((row) => `
+          <tr>
+            <td class="wrap">${escapeHtml(row.lead_key || row.radar_id || "")}</td>
+            <td>${escapeHtml(row.queue_name || "")}</td>
+            <td class="wrap">${escapeHtml(row.task || "")}</td>
+            <td class="${row.status === "blocked" || row.status === "approved_pending_manual_titlepro_pull" ? "blocked" : ""}">${escapeHtml(row.status || "")}</td>
+            <td>${escapeHtml(row.owner_role || "")}</td>
+            <td class="blocked">${escapeHtml(row.monday_write_executed || "false")}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    <h3>Subitem Preview</h3>
+    <table>
       <thead><tr><th>Lead</th><th>Task</th><th>Owner Role</th><th>Status</th><th>Exit Criteria</th></tr></thead>
       <tbody>
         ${subitems.slice(0, 120).map((task) => `
@@ -280,6 +298,7 @@ function renderDigestDetail(detail) {
 function renderBatchDetail(detail) {
   const clusters = detail.clusters || [];
   const candidates = detail.candidates || [];
+  const actionQueue = detail.action_queue || [];
   els.detailBody.innerHTML = `
     <h3>Owner-String Candidate Clusters</h3>
     <table>
@@ -293,6 +312,23 @@ function renderBatchDetail(detail) {
             <td>${money(cluster.total_est_value)}</td>
             <td>${money(cluster.total_est_equity)}</td>
             <td class="blocked">${escapeHtml(cluster.verification_status)} / no control claim</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    <h3>Monday Action Queue</h3>
+    <table>
+      <thead><tr><th>Property</th><th>Queue</th><th>Task</th><th>Status</th><th>Owner</th><th>Write Executed</th><th>Control Claim</th></tr></thead>
+      <tbody>
+        ${actionQueue.slice(0, 260).map((row) => `
+          <tr>
+            <td class="wrap">${escapeHtml(row.address || row.property_key || row.cluster_id || "")}</td>
+            <td>${escapeHtml(row.queue_name || "")}</td>
+            <td class="wrap">${escapeHtml(row.task || "")}</td>
+            <td class="${row.status === "blocked" ? "blocked" : ""}">${escapeHtml(row.status || "")}</td>
+            <td>${escapeHtml(row.owner_role || "")}</td>
+            <td class="blocked">${escapeHtml(row.monday_write_executed || "false")}</td>
+            <td class="blocked">${escapeHtml(row.control_claim_allowed || "false")}</td>
           </tr>
         `).join("")}
       </tbody>

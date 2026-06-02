@@ -64,6 +64,7 @@ CRE Brain / SullyLink database
 - Batch owner-cluster preview remains local-only and provisional.
 - Batch CSV preview normalizes APNs when present, collapses duplicate APN rows, and preserves source row indexes.
 - Digest preview writes `titlepro_approval_queue_preview.json`, plus a workbook `TitlePro Approval` sheet, with approval IDs linked to blocked TitlePro subitems and queue decisions.
+- Digest and batch preview write `monday_action_queue.csv`, plus a workbook `Monday Action Queue` sheet, without executing Monday writes or promoting control claims.
 - `sync --mode monday_lookup_dry_run --lookup-file` matches existing Monday export rows by Radar ID without writes.
 - `titlepro-approve --approvals` records broker/admin approval decisions and approved pending pull-request artifacts without executing any TitlePro pull.
 - Shareable packet files have no credentials, cookies, local absolute paths, or paid raw docs.

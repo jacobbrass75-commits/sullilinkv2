@@ -8,7 +8,7 @@ function pythonBin() {
 
 function exportWorkbook(runFolder, xlsxPath) {
   const script = String.raw`
-import json, os, sys
+import csv, json, os, sys
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -21,6 +21,13 @@ def read_json(name, default):
         return default
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+def read_csv(name):
+    path = os.path.join(run_folder, name)
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
 
 def add_sheet(wb, title, rows):
     ws = wb.create_sheet(title)
@@ -53,6 +60,7 @@ if os.path.exists(os.path.join(run_folder, "candidate_properties.json")):
     add_sheet(wb, "Candidate Properties", read_json("candidate_properties.json", []))
     add_sheet(wb, "Owner Clusters", read_json("owner_cluster_candidates.json", []))
     add_sheet(wb, "Monday Batch Preview", read_json("monday_batch_preview.json", []))
+    add_sheet(wb, "Monday Action Queue", read_csv("monday_action_queue.csv"))
     add_sheet(wb, "Needs Review", read_json("needs_review.json", []))
 else:
     mutations = read_json("monday_mutations_preview.json", [])
@@ -62,6 +70,7 @@ else:
         row.update(mutation.get("columns", {}))
         rows.append(row)
     add_sheet(wb, "Monday Import", rows)
+    add_sheet(wb, "Monday Action Queue", read_csv("monday_action_queue.csv"))
     add_sheet(wb, "Monday Lookup", read_json("monday_lookup_results.json", []))
     add_sheet(wb, "Subitems Preview", read_json("monday_subitems_preview.json", []))
     add_sheet(wb, "TitlePro Approval", read_json("titlepro_approval_queue_preview.json", []))

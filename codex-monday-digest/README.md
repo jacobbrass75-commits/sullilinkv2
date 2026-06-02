@@ -42,7 +42,7 @@ The dashboard supports:
 - build a digest review run
 - upload or use the default PropertyRadar CSV for owner clusters
 - review lead rows, source-event preservation, default tasks, hard holds, TitlePro approval holds, owner clusters, and verification status
-- download `monday_import_preview.xlsx` and the JSON/verification artifacts
+- download `monday_import_preview.xlsx`, `monday_action_queue.csv`, and the JSON/verification artifacts
 
 Run folders are saved under:
 
@@ -94,3 +94,5 @@ The batch owner-cluster lane treats CSV owner strings as candidate grouping clue
 Digest and `gmail_preview` runs also write `titlepro_approval_queue_preview.json` and include the same rows in the workbook's `TitlePro Approval` sheet. This is an operations queue for deciding whether TitlePro evidence is needed; every row is approval-required and has `paid_action_allowed: false`.
 
 After a scoped approval is supplied, run `titlepro-approve` to create the separate decision and pending-pull artifacts. These artifacts make the approval reviewable in the dashboard/workbook, but the actual TitlePro browser/order step still requires separate action-time confirmation.
+
+Every digest and batch run writes `monday_action_queue.csv` and a workbook `Monday Action Queue` sheet. This queue is for Monday import/review only: rows keep `monday_write_executed=false`, `external_write_executed=false`, `broker_ready=false`, and `control_claim_allowed=false`.

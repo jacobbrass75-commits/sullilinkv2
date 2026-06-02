@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { parseCsv } = require("./batch-owner-clusters");
+const { parseCsv } = require("./csv-utils");
 const { sha256File, nowIso } = require("./runtime");
 
 const APPROVAL_ID_HEADERS = ["approval_id", "Approval ID", "TitlePro Approval ID"];

@@ -3,6 +3,7 @@ const path = require("path");
 const { FORBIDDEN_ZERO, readJson } = require("./runtime");
 const { REQUIRED_GATE_COLUMNS } = require("./monday-field-map");
 const { DEFAULT_SUBITEMS } = require("./subitems");
+const { ACTION_QUEUE_HEADERS, readActionQueueCsv } = require("./monday-action-queue");
 
 const DIGEST_FILES = [
   "source_emails.json",
@@ -11,6 +12,7 @@ const DIGEST_FILES = [
   "monday_lookup_results.json",
   "monday_mutations_preview.json",
   "monday_subitems_preview.json",
+  "monday_action_queue.csv",
   "monday_comments_preview.json",
   "titlepro_approval_queue_preview.json",
   "titlepro_approval_decisions.json",
@@ -31,6 +33,7 @@ const BATCH_FILES = [
   "current_status_tasks.json",
   "document_pull_tasks.json",
   "monday_batch_preview.json",
+  "monday_action_queue.csv",
   "needs_review.json",
   "run_manifest.json"
 ];
@@ -81,6 +84,7 @@ function verifyDigestRun(runFolder) {
   const lookupResults = readJson(path.join(runFolder, "monday_lookup_results.json"));
   const mutations = readJson(path.join(runFolder, "monday_mutations_preview.json"));
   const subitems = readJson(path.join(runFolder, "monday_subitems_preview.json"));
+  const actionQueue = readActionQueueCsv(path.join(runFolder, "monday_action_queue.csv"));
   const comments = readJson(path.join(runFolder, "monday_comments_preview.json"));
   const titleproQueue = readJson(path.join(runFolder, "titlepro_approval_queue_preview.json"));
   const titleproDecisions = readJson(path.join(runFolder, "titlepro_approval_decisions.json"));
@@ -101,6 +105,9 @@ function verifyDigestRun(runFolder) {
   checks.push({ pass: noDuplicateRadarMutation(mutations), message: "no duplicate Monday mutation targets the same Radar ID" });
   checks.push({ pass: mutations.every((mutation) => REQUIRED_GATE_COLUMNS.every((column) => Object.prototype.hasOwnProperty.call(mutation.columns || {}, column))), message: "mutation previews include default gate columns" });
   checks.push({ pass: leads.every((lead) => hasRequiredSubitems(lead, subitems)), message: "every lead has current-status, owner/control, provider, and relationship subitems" });
+  checks.push({ pass: actionQueue.length >= subitems.length && actionQueue.every(hasActionQueueFields), message: "Monday action queue CSV has one structured row per subitem or more" });
+  checks.push({ pass: actionQueue.every(actionQueueIsPreviewOnly), message: "Monday action queue rows are preview-only with no writes, paid pulls, broker-ready status, or control claims" });
+  checks.push({ pass: subitems.every((subitem) => hasActionQueueRowForSubitem(subitem, actionQueue)), message: "every subitem is represented in the Monday action queue" });
   checks.push({ pass: comments.length >= leads.length, message: "comment previews exist for every lead" });
   checks.push({ pass: titleproQueue.length >= leads.length && titleproQueue.every(hasTitleProQueueFields), message: "TitlePro approval queue exists with required fields for every lead" });
   checks.push({ pass: titleproQueue.every((row) => row.approval_required === true && row.paid_action_allowed === false), message: "TitlePro queue requires approval and allows no paid actions" });
@@ -214,6 +221,30 @@ function hasRequiredSubitems(lead, subitems) {
     "Relationship/suppression readiness"
   ];
   return required.every((task) => leadSubitems.includes(task)) && DEFAULT_SUBITEMS.length <= leadSubitems.length;
+}
+
+function hasActionQueueFields(row) {
+  return ACTION_QUEUE_HEADERS.every((field) => Object.prototype.hasOwnProperty.call(row, field));
+}
+
+function actionQueueIsPreviewOnly(row) {
+  return row.monday_write_executed === "false"
+    && row.external_write_executed === "false"
+    && row.control_claim_allowed === "false"
+    && row.broker_ready === "false";
+}
+
+function hasActionQueueRowForSubitem(subitem, actionQueue) {
+  return actionQueue.some((row) => {
+    return row.lead_key === subitem.lead_key
+      && row.queue_name === subitem.queue_name
+      && row.task === subitem.task
+      && (!subitem.approval_id || row.approval_id === subitem.approval_id);
+  });
+}
+
+function hasActionQueueSourceRef(sourceRef, actionQueue) {
+  return actionQueue.some((row) => row.source_ref === sourceRef);
 }
 
 function hasTitleProQueueFields(row) {
@@ -335,6 +366,7 @@ function verifyBatchRun(runFolder) {
   const statusTasks = readJson(path.join(runFolder, "current_status_tasks.json"));
   const docTasks = readJson(path.join(runFolder, "document_pull_tasks.json"));
   const mondayPreview = readJson(path.join(runFolder, "monday_batch_preview.json"));
+  const actionQueue = readActionQueueCsv(path.join(runFolder, "monday_action_queue.csv"));
   const manifest = readJson(path.join(runFolder, "run_manifest.json"));
 
   checks.push({ pass: profile.source_sha256 === manifest.source_sha256, message: "source SHA matches manifest" });
@@ -353,6 +385,9 @@ function verifyBatchRun(runFolder) {
   checks.push({ pass: roleTasks.length >= clusters.length && roleTasks.every((task) => task.task_type === "owner_string_candidate"), message: "role assertion tasks exist for owner-string clusters" });
   checks.push({ pass: statusTasks.length >= candidates.length, message: "current-status tasks exist for every candidate property" });
   checks.push({ pass: docTasks.length >= candidates.length, message: "document/identity decision tasks exist for every candidate property" });
+  checks.push({ pass: actionQueue.length >= statusTasks.length + docTasks.length + roleTasks.length && actionQueue.every(hasActionQueueFields), message: "Monday action queue CSV includes batch status, document, and owner-control tasks" });
+  checks.push({ pass: actionQueue.every(actionQueueIsPreviewOnly), message: "batch Monday action queue rows are preview-only with no writes, paid pulls, broker-ready status, or control claims" });
+  checks.push({ pass: statusTasks.every((task) => hasActionQueueSourceRef(task.source_ref, actionQueue)) && docTasks.every((task) => hasActionQueueSourceRef(task.source_ref, actionQueue)), message: "every batch status/document task is represented in the Monday action queue" });
   checks.push({ pass: mondayPreview.length === candidates.length && mondayPreview.every((row) => row.operation === "preview_only" && row.broker_ready === false && row.control_claim_allowed === false), message: "Monday batch preview is one preview-only row per candidate" });
   checks.push({ pass: typeof profile.target_identity_rows_after_apn_dedupe === "number" && profile.target_identity_rows_after_apn_dedupe === candidates.length, message: "APN-aware identity count matches candidate properties" });
   checks.push({ pass: typeof profile.duplicate_target_apn_groups === "number" && typeof profile.duplicate_target_apn_rows === "number", message: "APN duplicate counters are present" });

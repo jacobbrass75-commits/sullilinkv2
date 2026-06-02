@@ -23,17 +23,21 @@ test("dashboard server exposes health and creates digest runs", async () => {
     });
     assert.equal(created.summary.status, "PASS");
     assert.equal(created.summary.counts.deduped_leads, 3);
+    assert.equal(created.action_queue.length, 36);
     assert.deepEqual(created.titlepro_approval_decisions, []);
     assert.deepEqual(created.titlepro_pull_requests_approved, []);
 
     const details = await fetchJson(`http://127.0.0.1:${port}/api/runs/${encodeURIComponent(created.summary.id)}`);
+    assert.equal(details.action_queue.length, 36);
     assert.deepEqual(details.titlepro_approval_decisions, []);
     assert.deepEqual(details.titlepro_pull_requests_approved, []);
 
     const decisionsDownload = await fetchText(`http://127.0.0.1:${port}/api/runs/${encodeURIComponent(created.summary.id)}/download/titlepro_approval_decisions.json`);
     const pullRequestsDownload = await fetchText(`http://127.0.0.1:${port}/api/runs/${encodeURIComponent(created.summary.id)}/download/titlepro_pull_requests_approved.json`);
+    const actionQueueDownload = await fetchText(`http://127.0.0.1:${port}/api/runs/${encodeURIComponent(created.summary.id)}/download/monday_action_queue.csv`);
     assert.deepEqual(JSON.parse(decisionsDownload), []);
     assert.deepEqual(JSON.parse(pullRequestsDownload), []);
+    assert.match(actionQueueDownload, /monday_write_executed/);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

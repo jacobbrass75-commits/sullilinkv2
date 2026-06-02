@@ -10,6 +10,7 @@ const { exportWorkbook, updateManifestWithWorkbook } = require("./export-workboo
 const { verifyRun } = require("./verify-run");
 const { buildBatchArtifacts, writeBatchRun } = require("./batch-owner-clusters");
 const { buildTitleProApprovalQueue } = require("./titlepro-approval-queue");
+const { buildDigestActionQueue, readActionQueueCsv, writeActionQueueCsv } = require("./monday-action-queue");
 const { FORBIDDEN_ZERO, ensureDir, writeJson, appendJsonl, nowIso, readJson } = require("./runtime");
 
 const WORKSPACE_ROOT = path.resolve(__dirname, "..", "..");
@@ -84,6 +85,7 @@ function writeDigestRun({ inputPath, outDir, mode }) {
   const mutations = leads.map((lead) => mutationPreviewForLead(lead, mode));
   const titleproQueue = buildTitleProApprovalQueue(leads, id);
   const subitems = buildSubitems(leads, { titleproQueue });
+  const actionQueue = buildDigestActionQueue({ runId: id, leads, subitems, titleproQueue });
   const packets = buildBrokerPackets(leads);
   const approvals = buildApprovalEvents(leads, id, at);
   const comments = buildComments(leads);
@@ -127,6 +129,8 @@ function writeDigestRun({ inputPath, outDir, mode }) {
     writeJson(outputPath, value);
     outputPaths.push(outputPath);
   }
+  writeActionQueueCsv(path.join(outDir, "monday_action_queue.csv"), actionQueue);
+  outputPaths.push(path.join(outDir, "monday_action_queue.csv"));
   appendJsonl(path.join(outDir, "audit_events_preview.jsonl"), audit);
   outputPaths.push(path.join(outDir, "audit_events_preview.jsonl"));
   manifest.output_paths = outputPaths;
@@ -230,6 +234,7 @@ function readRunDetails(id) {
       role_tasks: readIfExists(path.join(folder, "role_assertion_tasks.json"), []),
       current_status_tasks: readIfExists(path.join(folder, "current_status_tasks.json"), []),
       document_pull_tasks: readIfExists(path.join(folder, "document_pull_tasks.json"), []),
+      action_queue: readActionQueueCsv(path.join(folder, "monday_action_queue.csv")),
       preview: readIfExists(path.join(folder, "monday_batch_preview.json"), []),
       needs_review: readIfExists(path.join(folder, "needs_review.json"), []),
       report: readReport(folder).text
@@ -243,6 +248,7 @@ function readRunDetails(id) {
     lookup_results: readIfExists(path.join(folder, "monday_lookup_results.json"), []),
     mutations: readIfExists(path.join(folder, "monday_mutations_preview.json"), []),
     subitems: readIfExists(path.join(folder, "monday_subitems_preview.json"), []),
+    action_queue: readActionQueueCsv(path.join(folder, "monday_action_queue.csv")),
     titlepro_approval_queue: readIfExists(path.join(folder, "titlepro_approval_queue_preview.json"), []),
     titlepro_approval_decisions: readIfExists(path.join(folder, "titlepro_approval_decisions.json"), []),
     titlepro_pull_requests_approved: readIfExists(path.join(folder, "titlepro_pull_requests_approved.json"), []),
@@ -269,13 +275,15 @@ function downloadableFile(id, fileName) {
     "monday_lookup_results.json",
     "monday_mutations_preview.json",
     "monday_subitems_preview.json",
+    "monday_action_queue.csv",
     "titlepro_approval_queue_preview.json",
     "titlepro_approval_decisions.json",
     "titlepro_pull_requests_approved.json",
     "broker_packets_preview.json",
     "candidate_properties.json",
     "owner_cluster_candidates.json",
-    "monday_batch_preview.json"
+    "monday_batch_preview.json",
+    "monday_action_queue.csv"
   ]);
   if (!allowed.has(fileName)) throw new Error("File is not downloadable from the app.");
   const file = path.join(runPath(id), fileName);

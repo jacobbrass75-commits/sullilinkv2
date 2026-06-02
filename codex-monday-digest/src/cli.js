@@ -12,6 +12,7 @@ const { verifyRun } = require("./verify-run");
 const { buildBatchArtifacts, writeBatchRun } = require("./batch-owner-clusters");
 const { buildTitleProApprovalQueue } = require("./titlepro-approval-queue");
 const { applyTitleProApprovals, readApprovalFile } = require("./titlepro-approval-intake");
+const { buildDigestActionQueue, writeActionQueueCsv } = require("./monday-action-queue");
 const { lookupLeads, readLookupFile } = require("./monday-lookup");
 const { assertLiveWriteAllowed, redactedBoardShapeFromEnv } = require("./monday-graphql");
 const { FORBIDDEN_ZERO, ensureDir, writeJson, appendJsonl, nowIso } = require("./runtime");
@@ -78,6 +79,7 @@ function writeDigestRunFromFile({ input, out, mode, inputPaths = [input], source
   const mutations = leads.map((lead) => mutationPreviewForLead(lead, mode));
   const titleproQueue = buildTitleProApprovalQueue(leads, runId);
   const subitems = buildSubitems(leads, { titleproQueue });
+  const actionQueue = buildDigestActionQueue({ runId, leads, subitems, titleproQueue });
   const packets = buildBrokerPackets(leads);
   const approvals = buildApprovalEvents(leads, runId, at);
   const comments = buildComments(leads);
@@ -121,6 +123,8 @@ function writeDigestRunFromFile({ input, out, mode, inputPaths = [input], source
     writeJson(outputPath, value);
     outputPaths.push(outputPath);
   }
+  writeActionQueueCsv(path.join(outDir, "monday_action_queue.csv"), actionQueue);
+  outputPaths.push(path.join(outDir, "monday_action_queue.csv"));
   appendJsonl(path.join(outDir, "audit_events_preview.jsonl"), audit);
   outputPaths.push(path.join(outDir, "audit_events_preview.jsonl"));
   manifest.output_paths = outputPaths;
@@ -192,6 +196,7 @@ function previewCommand(args) {
   writeJson(path.join(args.out, "broker_packets_preview.json"), []);
   writeJson(path.join(args.out, "approval_events_preview.json"), []);
   writeJson(path.join(args.out, "queue_decisions_preview.json"), []);
+  writeActionQueueCsv(path.join(args.out, "monday_action_queue.csv"), []);
   writeJson(path.join(args.out, "needs_review.json"), [{ source_id: "gmail_preview", reason: "unsupported_format", severity: "blocker", summary: "Use saved digest text until Gmail preview is promoted." }]);
   appendJsonl(path.join(args.out, "audit_events_preview.jsonl"), [{ run_id: runId, event_type: "preview_blocked", at, lead_key: null, summary: "Gmail preview blocked in first local proof." }]);
   writeJson(path.join(args.out, "run_manifest.json"), manifest);
@@ -280,6 +285,18 @@ function titleProApproveCommand(args) {
   const { decisions, approvedPullRequests } = applyTitleProApprovals(queueRows, approvalSource.approvals);
   writeJson(path.join(args.run, "titlepro_approval_decisions.json"), decisions);
   writeJson(path.join(args.run, "titlepro_pull_requests_approved.json"), approvedPullRequests);
+  const leads = JSON.parse(fs.readFileSync(path.join(args.run, "deduped_leads.json"), "utf8"));
+  const subitems = JSON.parse(fs.readFileSync(path.join(args.run, "monday_subitems_preview.json"), "utf8"));
+  const manifestPath = path.join(args.run, "run_manifest.json");
+  const manifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, "utf8")) : {};
+  const actionQueue = buildDigestActionQueue({
+    runId: manifest.run_id || path.basename(path.resolve(args.run)),
+    leads,
+    subitems,
+    titleproQueue: queueRows,
+    approvedTitleproPulls: approvedPullRequests
+  });
+  writeActionQueueCsv(path.join(args.run, "monday_action_queue.csv"), actionQueue);
   const invalidDecisionCount = decisions.filter((decision) => decision.validation_errors.length > 0).length;
   writeJson(path.join(args.run, "titlepro_approval_source_profile.json"), {
     source_path: approvalSource.source_path,
@@ -298,7 +315,8 @@ function titleProApproveCommand(args) {
   updateManifestAfterTitleProApproval(args.run, [
     path.join(args.run, "titlepro_approval_decisions.json"),
     path.join(args.run, "titlepro_pull_requests_approved.json"),
-    path.join(args.run, "titlepro_approval_source_profile.json")
+    path.join(args.run, "titlepro_approval_source_profile.json"),
+    path.join(args.run, "monday_action_queue.csv")
   ]);
   console.log(`titlepro_approval_decisions=${decisions.length} approved_pull_requests=${approvedPullRequests.length} invalid_decisions=${invalidDecisionCount} titlepro_pulls_executed=0`);
 }

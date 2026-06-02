@@ -41,6 +41,7 @@ Required evidence for a digest run:
 - `deduped_leads.json`
 - Monday preview JSON
 - subitem/task preview JSON
+- `monday_action_queue.csv` and workbook `Monday Action Queue` sheet with preview-only write/control flags
 - `titlepro_approval_queue_preview.json` and workbook `TitlePro Approval` sheet with approval IDs linked to blocked TitlePro subitems and `paid_action_allowed: false`
 - verification report
 
@@ -49,6 +50,8 @@ Required evidence for a digest run:
 Use `batch-owner-clusters`. Treat exact owner-string clusters as candidate groups only.
 
 If the export has an APN column, normalize APNs for candidate identity and collapse duplicate target rows with the same APN. Preserve every original source row index on the candidate and add duplicate-APN review notes. If the export has no APN column, keep row/address/owner identity provisional.
+
+Batch runs should also write `monday_action_queue.csv` with current-status, document-decision, and owner-control rows. The queue must preserve APN/county and source row indexes when present, and keep `broker_ready=false` and `control_claim_allowed=false`.
 
 Required gates before promotion:
 

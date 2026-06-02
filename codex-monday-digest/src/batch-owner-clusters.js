@@ -2,6 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const { FORBIDDEN_ZERO, hash16, sha256File, slugify } = require("./runtime");
 const { parseMoneyOrNumber } = require("./normalize-row");
+const { parseCsv } = require("./csv-utils");
+const { buildBatchActionQueue, writeActionQueueCsv } = require("./monday-action-queue");
 
 const REQUIRED_HEADERS = ["Type", "Address", "City", "Sq Ft", "Beds", "Baths", "Est Value", "Est Equity $", "Owner", "Owner Occ?", "Listed for Sale?"];
 const APN_HEADER_ALIASES = ["APN", "Assessor Parcel Number", "Assessor's Parcel Number", "Parcel Number", "Parcel #", "Property APN", "AIN", "PIN"];
@@ -18,43 +20,6 @@ const KNOWN_CLUSTER_ORDER = [
   "SDRES PARTNERS LLC",
   "T BK NA"
 ];
-
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let field = "";
-  let quoted = false;
-  for (let i = 0; i < text.length; i += 1) {
-    const char = text[i];
-    if (quoted) {
-      if (char === "\"" && text[i + 1] === "\"") {
-        field += "\"";
-        i += 1;
-      } else if (char === "\"") {
-        quoted = false;
-      } else {
-        field += char;
-      }
-    } else if (char === "\"") {
-      quoted = true;
-    } else if (char === ",") {
-      row.push(field);
-      field = "";
-    } else if (char === "\n") {
-      row.push(field.replace(/\r$/, ""));
-      rows.push(row);
-      row = [];
-      field = "";
-    } else {
-      field += char;
-    }
-  }
-  if (field.length || row.length) {
-    row.push(field.replace(/\r$/, ""));
-    rows.push(row);
-  }
-  return rows;
-}
 
 function toRecord(headers, row, sourceRowIndex) {
   const record = { source_row_index: sourceRowIndex };
@@ -324,6 +289,14 @@ function buildBatchArtifacts(inputPath, mode, runId) {
     est_value: candidate.est_value,
     est_equity: candidate.est_equity
   }));
+  const mondayActionQueue = buildBatchActionQueue({
+    runId,
+    candidates: candidateProperties,
+    clusters: ownerClusterCandidates,
+    roleTasks: roleAssertionTasks,
+    currentStatusTasks,
+    documentPullTasks
+  });
 
   const missingAddressRows = usableRows.filter((record) => !hasKnownAddressAndCity(record));
   const needsReview = [
@@ -416,6 +389,7 @@ function buildBatchArtifacts(inputPath, mode, runId) {
       role_assertion_tasks: roleAssertionTasks.length,
       current_status_tasks: currentStatusTasks.length,
       document_pull_tasks: documentPullTasks.length,
+      monday_action_queue: mondayActionQueue.length,
       monday_batch_preview: mondayBatchPreview.length
     }
   };
@@ -427,6 +401,7 @@ function buildBatchArtifacts(inputPath, mode, runId) {
     role_assertion_tasks: roleAssertionTasks,
     current_status_tasks: currentStatusTasks,
     document_pull_tasks: documentPullTasks,
+    monday_action_queue: mondayActionQueue,
     monday_batch_preview: mondayBatchPreview,
     needs_review: needsReview,
     run_manifest: runManifest
@@ -452,6 +427,8 @@ function writeBatchRun(outDir, artifacts) {
     fs.writeFileSync(outputPath, `${JSON.stringify(value, null, 2)}\n`);
     outputPaths.push(outputPath);
   }
+  writeActionQueueCsv(path.join(outDir, "monday_action_queue.csv"), artifacts.monday_action_queue);
+  outputPaths.push(path.join(outDir, "monday_action_queue.csv"));
   artifacts.run_manifest.output_paths = outputPaths;
   fs.writeFileSync(path.join(outDir, "run_manifest.json"), `${JSON.stringify(artifacts.run_manifest, null, 2)}\n`);
 }
