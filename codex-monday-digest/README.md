@@ -75,6 +75,7 @@ codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --lookup-
 codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --connector-json MONDAY_CONNECTOR_READ.json
 codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|json
 codex-monday-digest titlepro-import --run RUN_FOLDER --evidence TITLEPRO_EVIDENCE.json
+codex-monday-digest source-audit --zip SOURCE.zip --source-dir EXTERNAL_REFERENCE_DIR --goal-md GOAL.md --out RUN_FOLDER
 codex-monday-digest sync --run RUN_FOLDER --mode live_write
 ```
 
@@ -83,6 +84,8 @@ codex-monday-digest sync --run RUN_FOLDER --mode live_write
 `titlepro-approve` reads a broker/admin approval CSV or JSON and writes `titlepro_approval_decisions.json`, `titlepro_pull_requests_approved.json`, and `titlepro_approval_source_profile.json`. It is intake only: approved rows become pending manual TitlePro pull requests, but `pull_executed` stays `false` and no paid TitlePro action is performed.
 
 `titlepro-import` reads already-saved TitlePro profile/document extraction JSON and writes `titlepro_evidence_intake.json`, `titlepro_role_assertions_preview.json`, and `titlepro_evidence_source_profile.json`. It does not open TitlePro, order documents, or execute paid pulls; role assertions preserve title owner, borrower/trustor, lender/beneficiary, trustee, signer, and deed-party separation.
+
+`source-audit` reads a SullyLink/retranToReel source zip and/or ignored extracted reference directory, plus the current goal markdown, and writes a compact reuse plan. It reports which old patterns should be copied conceptually, which paths are excluded as risky, and records zero external actions. It never copies old source files, credentials, cookies, raw paid docs, or dependency trees into the shareable repo.
 
 ## Local Proofs
 
@@ -97,6 +100,7 @@ npm run proof:lookup
 npm run proof:monday-connector
 npm run proof:titlepro-approval
 npm run proof:titlepro-evidence
+npm run proof:source-audit
 npm run proof:edge
 npm run proof:batch
 ```
@@ -114,3 +118,5 @@ After TitlePro evidence has already been saved or manually extracted, run `title
 Every digest and batch run writes `monday_action_queue.csv` and a workbook `Monday Action Queue` sheet. This queue is for Monday import/review only: rows keep `monday_write_executed=false`, `external_write_executed=false`, `broker_ready=false`, and `control_claim_allowed=false`.
 
 `sync --connector-json ... --mode monday_lookup_dry_run` writes `monday_connector_source_profile.json` with board/item counts, matched/duplicate/not-found counts, basename-only source provenance, and zero Monday/external writes. Use this for saved read-only connector results; use `--lookup-file` for CSV/XLSX board exports.
+
+`source-audit` writes `source_reuse_audit.json`, `source_reuse_recommendations.json`, `source_risk_scan.json`, and `source_reuse_plan.md`. Use it before importing more SullyLink code so the next change is tied to the Monday workflow and does not accidentally promote old credentials, raw evidence, or broad app rewrites.

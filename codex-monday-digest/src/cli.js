@@ -14,6 +14,7 @@ const { buildBatchArtifacts, writeBatchRun } = require("./batch-owner-clusters")
 const { buildTitleProApprovalQueue } = require("./titlepro-approval-queue");
 const { applyTitleProApprovals, readApprovalFile } = require("./titlepro-approval-intake");
 const { readTitleProEvidenceFile, matchTitleProEvidenceToLeads, buildTitleProRoleAssertions, buildTitleProNeedsReview } = require("./titlepro-evidence-intake");
+const { buildSourceReuseAudit, writeSourceAuditRun } = require("./source-reuse-audit");
 const { buildDigestActionQueue, writeActionQueueCsv } = require("./monday-action-queue");
 const { lookupLeads, readLookupFile, readMondayConnectorLookupFile } = require("./monday-lookup");
 const { assertLiveWriteAllowed, redactedBoardShapeFromEnv } = require("./monday-graphql");
@@ -51,6 +52,7 @@ function usage() {
     "  codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --connector-json MONDAY_CONNECTOR_READ.json",
     "  codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|json",
     "  codex-monday-digest titlepro-import --run RUN_FOLDER --evidence TITLEPRO_EVIDENCE.json",
+    "  codex-monday-digest source-audit --zip SOURCE.zip --source-dir EXTERNAL_REFERENCE_DIR --goal-md GOAL.md --out RUN_FOLDER",
     "  codex-monday-digest sync --run RUN_FOLDER --mode live_write"
   ].join("\n");
 }
@@ -493,6 +495,20 @@ function batchCommand(args) {
   console.log(`candidate_properties=${artifacts.candidate_properties.length} owner_clusters=${artifacts.owner_cluster_candidates.length} out=${args.out}`);
 }
 
+function sourceAuditCommand(args) {
+  if (!args.out) {
+    throw new Error("source-audit requires --out RUN_FOLDER");
+  }
+  const zipPath = args.zip || args["source-zip"] || args.source_zip || args.sourceZip;
+  const sourceDir = args["source-dir"] || args.source_dir || args.sourceDir;
+  const goalMd = args["goal-md"] || args.goal_md || args.goalMd;
+  const audit = buildSourceReuseAudit({ zipPath, sourceDir, goalMd });
+  writeSourceAuditRun(args.out, audit);
+  const matched = audit.recommendations.filter((row) => row.matched).length;
+  const risks = audit.risk_scan.risk_categories.reduce((sum, row) => sum + row.count, 0);
+  console.log(`source_audit_patterns=${matched} risk_path_count=${risks} out=${args.out}`);
+}
+
 function verifyCommand(args) {
   if (!args.run) throw new Error("verify requires --run RUN_FOLDER");
   const result = verifyRun(args.run);
@@ -525,6 +541,9 @@ function main() {
       case "batch-owner-clusters":
         batchCommand(args);
         break;
+      case "source-audit":
+        sourceAuditCommand(args);
+        break;
       case "verify":
         verifyCommand(args);
         break;
@@ -549,5 +568,6 @@ module.exports = {
   titleProApproveCommand,
   titleProImportCommand,
   batchCommand,
+  sourceAuditCommand,
   verifyCommand
 };

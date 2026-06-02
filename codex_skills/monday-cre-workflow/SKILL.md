@@ -109,6 +109,15 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 `titlepro-import` consumes already-saved TitlePro profile/document extraction JSON and writes `titlepro_evidence_intake.json`, `titlepro_role_assertions_preview.json`, and `titlepro_evidence_source_profile.json`. It must not open TitlePro, order documents, execute paid pulls, or promote beneficial-owner/outreach-ready claims. Role assertions must keep title owner, borrower/trustor, lender/beneficiary, trustee, signer, and deed-party roles separate.
 
+SullyLink/retranToReel source bundle audit:
+
+```bash
+node src/cli.js source-audit --zip path/to/retranToReel_codebase.zip --source-dir ../external_references --goal-md ../docs/TONIGHT_BUILD_GOAL.md --out ../outputs/monday_digest_runs/source-audit
+node src/cli.js verify --run ../outputs/monday_digest_runs/source-audit
+```
+
+`source-audit` turns the old zip/extracted reference directory and the current goal markdown into a compact reuse plan. It must copy patterns only, never old source files, credentials, cookies, raw paid docs, or dependency trees.
+
 If Python workbook export fails because `openpyxl` is missing, set `CODEX_PYTHON_BIN` to a Python that has the workspace spreadsheet dependencies.
 
 ## TitlePro Lane

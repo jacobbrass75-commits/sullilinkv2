@@ -123,6 +123,25 @@ After action-time confirmation, use the TitlePro skill. Save:
 - capture date
 - included/excluded status and exclusion reason
 
+### SullyLink / retranToReel Source Audit
+
+Before adapting more old SullyLink or retranToReel code, generate a source reuse audit:
+
+```bash
+node src/cli.js source-audit --zip path/to/retranToReel_codebase.zip --source-dir ../external_references --goal-md ../docs/TONIGHT_BUILD_GOAL.md --out ../outputs/monday_digest_runs/source-audit
+node src/cli.js verify --run ../outputs/monday_digest_runs/source-audit
+```
+
+Required output:
+
+- `source_reuse_audit.json`
+- `source_reuse_recommendations.json`
+- `source_risk_scan.json`
+- `source_reuse_plan.md`
+- `run_manifest.json`
+
+Treat matched files as pattern evidence only. Exclude old `.env` files, cookies, browser sessions, raw PDFs/images, `.git`, `node_modules`, contact dumps, and old app database material from shareable artifacts. If a source audit detects secret-like text, it may record file and pattern counts only; it must not copy values.
+
 ## Packet Build
 
 For broker-facing output:

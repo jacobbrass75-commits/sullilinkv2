@@ -38,8 +38,18 @@ const BATCH_FILES = [
   "run_manifest.json"
 ];
 
+const SOURCE_AUDIT_FILES = [
+  "source_reuse_audit.json",
+  "source_reuse_recommendations.json",
+  "source_risk_scan.json",
+  "source_reuse_plan.md",
+  "run_manifest.json"
+];
+
 function verifyRun(runFolder) {
+  const isSourceAudit = fs.existsSync(path.join(runFolder, "source_reuse_audit.json"));
   const isBatch = fs.existsSync(path.join(runFolder, "batch_source_profile.json"));
+  if (isSourceAudit) return verifySourceAuditRun(runFolder);
   return isBatch ? verifyBatchRun(runFolder) : verifyDigestRun(runFolder);
 }
 
@@ -507,6 +517,68 @@ function verifyBatchRun(runFolder) {
   return makeReport(runFolder, "codex-monday-digest Batch Verification", checks);
 }
 
+function verifySourceAuditRun(runFolder) {
+  const checks = [];
+  checkFiles(runFolder, SOURCE_AUDIT_FILES, checks);
+  if (checks.some((check) => !check.pass)) return makeReport(runFolder, "codex-monday-digest Source Audit Verification", checks);
+
+  const audit = readJson(path.join(runFolder, "source_reuse_audit.json"));
+  const recommendations = readJson(path.join(runFolder, "source_reuse_recommendations.json"));
+  const riskScan = readJson(path.join(runFolder, "source_risk_scan.json"));
+  const manifest = readJson(path.join(runFolder, "run_manifest.json"));
+  const plan = fs.readFileSync(path.join(runFolder, "source_reuse_plan.md"), "utf8");
+
+  checks.push({ pass: manifest.mode === "source_audit", message: "manifest records source_audit mode" });
+  checks.push({ pass: forbiddenZero(manifest), message: "forbidden action counts are zero" });
+  checks.push({ pass: audit.source_profile?.mode === "source_audit", message: "source profile records source_audit mode" });
+  checks.push({ pass: audit.source_profile?.forbidden_actions && forbiddenZero(audit.source_profile), message: "source profile forbidden action counts are zero" });
+  checks.push({ pass: Array.isArray(recommendations) && recommendations.length >= 5, message: "source reuse recommendations are present" });
+  checks.push({ pass: recommendations.some((row) => row.id === "propertyradar_digest_parser" && row.matched), message: "PropertyRadar parser pattern is matched when present" });
+  checks.push({ pass: recommendations.every(hasSourceRecommendationFields), message: "source reuse recommendations are structured" });
+  checks.push({ pass: recommendations.every((row) => row.copy_strategy === "copy_pattern_not_source"), message: "recommendations copy patterns, not old source files" });
+  checks.push({ pass: riskScan.secret_values_exposed === false && riskScan.secret_hits.every((hit) => hit.value_exposed === false), message: "secret scan exposes no secret values" });
+  checks.push({ pass: Array.isArray(riskScan.risk_categories) && riskScan.risk_categories.every(hasRiskCategoryFields), message: "risk scan categories are structured" });
+  checks.push({ pass: noAbsoluteLocalPathsInSourceAudit(runFolder), message: "source audit outputs contain no absolute local paths" });
+  checks.push({ pass: !plan.includes("PASSWORD=") && !plan.includes("BEGIN PRIVATE KEY"), message: "source reuse plan contains no credential values" });
+  checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
+
+  return makeReport(runFolder, "codex-monday-digest Source Audit Verification", checks);
+}
+
+function hasSourceRecommendationFields(row) {
+  return [
+    "id",
+    "matched",
+    "matched_files",
+    "useful_pattern",
+    "treatment",
+    "copy_strategy",
+    "monday_lane_action",
+    "implementation_status",
+    "guardrail"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && Array.isArray(row.matched_files);
+}
+
+function hasRiskCategoryFields(row) {
+  return [
+    "id",
+    "label",
+    "count",
+    "examples",
+    "treatment"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && Array.isArray(row.examples);
+}
+
+function noAbsoluteLocalPathsInSourceAudit(runFolder) {
+  const files = SOURCE_AUDIT_FILES.filter((file) => file !== "run_manifest.json");
+  return files.every((file) => {
+    const text = fs.readFileSync(path.join(runFolder, file), "utf8");
+    return !/\/Users\/|file:\/\/|[A-Za-z]:\\/.test(text);
+  });
+}
+
 function isSortedBySourceRow(candidates) {
   for (let i = 1; i < candidates.length; i += 1) {
     if (candidates[i - 1].source_row_index > candidates[i].source_row_index) return false;
@@ -607,5 +679,6 @@ function batchNeedsReviewMinimums(runFolder) {
 module.exports = {
   verifyRun,
   verifyDigestRun,
-  verifyBatchRun
+  verifyBatchRun,
+  verifySourceAuditRun
 };

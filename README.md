@@ -16,6 +16,7 @@ Workflow context:
 - `docs/TONIGHT_BUILD_GOAL.md` describes the current repeatable-workflow build target.
 - `docs/SULLILINK_REUSE_AUDIT.md` records which SullyLink/retranToReel patterns are being reused and which are intentionally excluded.
 - `codex_skills/monday-cre-workflow/` is a shareable copy of the local Codex skill installed at `~/.codex/skills/monday-cre-workflow/`.
+- `codex-monday-digest source-audit` turns old SullyLink/retranToReel reference material plus the goal markdown into a compact reuse plan without committing old app source, secrets, or raw evidence.
 
 Not included:
 
