@@ -132,6 +132,9 @@ function verifyDigestRun(runFolder) {
   const titleproActionConfirmationsPath = path.join(runFolder, "titlepro_action_confirmations.json");
   const titleproConfirmedManualActionsPath = path.join(runFolder, "titlepro_confirmed_manual_actions.json");
   const titleproActionConfirmationProfilePath = path.join(runFolder, "titlepro_action_confirmation_source_profile.json");
+  const contactEnrichmentPath = path.join(runFolder, "contact_enrichment_intake.json");
+  const contactAssertionsPath = path.join(runFolder, "contact_role_assertions_preview.json");
+  const contactProfilePath = path.join(runFolder, "contact_enrichment_source_profile.json");
   const auditEvents = parseJsonl(path.join(runFolder, "audit_events_preview.jsonl"));
 
   checks.push({ pass: Array.isArray(sourceEmails) && sourceEmails.length >= 1, message: "source_emails has at least one source" });
@@ -189,6 +192,24 @@ function verifyDigestRun(runFolder) {
       checks.push({ pass: titleproProfile.titlepro_pulls_executed === 0 && titleproProfile.paid_actions_executed === 0 && titleproProfile.external_writes_executed === 0, message: "TitlePro evidence source profile records zero paid/browser/write actions" });
       checks.push({ pass: titleproProfile.source_path_scope === "basename_only" && !String(titleproProfile.source_path || "").includes("/"), message: "TitlePro evidence source profile stores basename-only source path" });
       checks.push({ pass: titleproProfile.record_count === titleproEvidence.length && titleproProfile.role_assertion_count === titleproAssertions.length, message: "TitlePro evidence profile counts match artifacts" });
+    }
+  }
+  if (manifest.last_contact_enrichment_import_at || fs.existsSync(contactEnrichmentPath) || fs.existsSync(contactAssertionsPath)) {
+    checks.push({ pass: fs.existsSync(contactEnrichmentPath), message: "contact enrichment intake exists after contact import" });
+    checks.push({ pass: fs.existsSync(contactAssertionsPath), message: "contact role assertions exist after contact import" });
+    checks.push({ pass: fs.existsSync(contactProfilePath), message: "contact enrichment source profile exists" });
+    if (fs.existsSync(contactEnrichmentPath) && fs.existsSync(contactAssertionsPath) && fs.existsSync(contactProfilePath)) {
+      const contactRecords = readJson(contactEnrichmentPath);
+      const contactAssertions = readJson(contactAssertionsPath);
+      const contactProfile = readJson(contactProfilePath);
+      checks.push({ pass: Array.isArray(contactRecords) && contactRecords.length > 0 && contactRecords.every(hasContactEnrichmentFields), message: "contact enrichment intake rows are structured" });
+      checks.push({ pass: contactRecords.every((row) => row.rocketreach_reveal_executed === false && row.external_lookup_executed === false && row.realnex_write_executed === false && row.outreach_executed === false && row.external_write_executed === false), message: "contact enrichment import executed no lookup/outreach/CRM actions" });
+      checks.push({ pass: Array.isArray(contactAssertions) && contactAssertions.every(hasContactAssertionFields), message: "contact role assertions are structured" });
+      checks.push({ pass: contactAssertions.every((row) => row.contact_use_allowed === false && row.outreach_ready === false && row.realnex_write_allowed === false && row.control_lead_claim_allowed === false && row.beneficial_owner_claim_allowed === false), message: "contact assertions are not outreach-ready and promote no control/beneficial-owner claims" });
+      checks.push({ pass: contactAssertions.every((row) => contactRecords.some((record) => record.contact_enrichment_id === row.contact_enrichment_id)), message: "contact assertions match imported contact records" });
+      checks.push({ pass: contactProfile.rocketreach_reveals_executed === 0 && contactProfile.external_lookups_executed === 0 && contactProfile.realnex_writes_executed === 0 && contactProfile.outreach_actions_executed === 0 && contactProfile.external_writes_executed === 0, message: "contact enrichment source profile records zero lookup/outreach/CRM actions" });
+      checks.push({ pass: contactProfile.source_path_scope === "basename_only" && !String(contactProfile.source_path || "").includes("/"), message: "contact enrichment source profile stores basename-only source path" });
+      checks.push({ pass: contactProfile.record_count === contactRecords.length && contactProfile.role_assertion_count === contactAssertions.length, message: "contact enrichment profile counts match artifacts" });
     }
   }
   checks.push({ pass: approvals.length >= leads.length, message: "approval previews exist for every lead" });
@@ -500,6 +521,64 @@ function hasTitleProRoleAssertionFields(row) {
     "outreach_ready",
     "broker_packet_note"
   ].every((field) => Object.prototype.hasOwnProperty.call(row, field));
+}
+
+function hasContactEnrichmentFields(row) {
+  return [
+    "contact_enrichment_id",
+    "source_row_index",
+    "lead_key",
+    "radar_id",
+    "property_address",
+    "owner_entity",
+    "contact_name",
+    "contact_title",
+    "company",
+    "relationship_to_owner",
+    "source_type",
+    "source_url",
+    "email",
+    "phone",
+    "linkedin_url",
+    "confidence",
+    "match_status",
+    "rocketreach_reveal_executed",
+    "external_lookup_executed",
+    "realnex_write_executed",
+    "outreach_executed",
+    "external_write_executed"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field));
+}
+
+function hasContactAssertionFields(row) {
+  return [
+    "contact_assertion_id",
+    "contact_enrichment_id",
+    "lead_key",
+    "radar_id",
+    "match_status",
+    "owner_entity",
+    "contact_name",
+    "contact_title",
+    "company",
+    "relationship_to_owner",
+    "source_type",
+    "has_email",
+    "has_phone",
+    "has_linkedin",
+    "confidence",
+    "service_actor",
+    "role_category",
+    "contact_use_allowed",
+    "outreach_ready",
+    "realnex_write_allowed",
+    "control_lead_claim_allowed",
+    "beneficial_owner_claim_allowed",
+    "broker_approval_required",
+    "basis",
+    "broker_packet_note"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && row.broker_approval_required === true;
 }
 
 function hasMatchingRecordedTitleProDecision(pullRequest, decisions) {

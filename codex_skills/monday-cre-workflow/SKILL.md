@@ -136,6 +136,15 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 `titlepro-import` consumes already-saved TitlePro profile/document extraction JSON and writes `titlepro_evidence_intake.json`, `titlepro_role_assertions_preview.json`, and `titlepro_evidence_source_profile.json`. It must not open TitlePro, order documents, execute paid pulls, or promote beneficial-owner/outreach-ready claims. Role assertions must keep title owner, borrower/trustor, lender/beneficiary, trustee, signer, and deed-party roles separate.
 
+Manual contact/RocketReach pasteback import:
+
+```bash
+node src/cli.js contact-import --run ../outputs/monday_digest_runs/dev --contacts path/to/contact_enrichment.csv
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+`contact-import` consumes manually supplied contact enrichment rows and writes `contact_enrichment_intake.json`, `contact_role_assertions_preview.json`, and `contact_enrichment_source_profile.json`. It must not search RocketReach, reveal contacts, send outreach, write RealNex, or promote contacts to beneficial-owner/control claims. Imported contacts stay blocked until broker approval and suppression checks exist.
+
 SullyLink/retranToReel source bundle audit:
 
 ```bash

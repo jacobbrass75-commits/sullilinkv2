@@ -160,6 +160,24 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 Evidence import should produce `titlepro_evidence_intake.json`, `titlepro_role_assertions_preview.json`, and `titlepro_evidence_source_profile.json`. It must leave paid/browser/write action counts at zero, keep service actors out of control-lead claims, and keep `beneficial_owner_claim_allowed=false` until independent ownership proof exists.
 
+### Manual Contact Enrichment
+
+For RocketReach/public/contact enrichment that was gathered manually outside the runner, import pasteback rows:
+
+```bash
+node src/cli.js contact-import --run ../outputs/monday_digest_runs/dev --contacts path/to/contact_enrichment.csv
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+Required output:
+
+- `contact_enrichment_intake.json`
+- `contact_role_assertions_preview.json`
+- `contact_enrichment_source_profile.json`
+- refreshed `needs_review.json`
+
+Contact import is not a contact-reveal, outreach, or CRM-sync tool. It must leave `rocketreach_reveals_executed = 0`, `external_lookups_executed = 0`, `realnex_writes_executed = 0`, `outreach_actions_executed = 0`, and keep every contact assertion `contact_use_allowed=false`, `outreach_ready=false`, and `beneficial_owner_claim_allowed=false`.
+
 After a confirmed manual action is selected for serial execution, use the TitlePro skill. Save:
 
 - source URL/report/order id

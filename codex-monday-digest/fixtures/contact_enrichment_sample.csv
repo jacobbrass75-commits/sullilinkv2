@@ -1,0 +1,2 @@
+radar_id,owner_entity,contact_name,contact_title,company,relationship_to_owner,source_type,source_url,email,phone,linkedin_url,confidence,found_by,found_at,notes
+P15F1852,Statham Industrial LLC,Jordan Manager,Managing Member,Statham Industrial LLC,recorded signer candidate,manual_pasteback,https://example.com/statham-contact,jordan@example.com,555-0100,https://www.linkedin.com/in/example-jordan,manual_unverified,Broker,2026-06-01T12:00:00Z,Sample manual contact pasteback only; not outreach-ready.
