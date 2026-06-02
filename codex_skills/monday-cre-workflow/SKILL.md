@@ -62,6 +62,15 @@ Batch owner-cluster preview:
 PROPERTYRADAR_BATCH_CSV=/path/to/propertyradar_export.csv npm run proof:batch
 ```
 
+Read-only Monday export lookup:
+
+```bash
+node src/cli.js sync --run ../outputs/monday_digest_runs/dev --mode monday_lookup_dry_run --lookup-file path/to/monday_board_export.csv
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+`monday_lookup_dry_run` reads a Monday board export CSV/JSON/XLSX and matches existing items by Radar ID. It must not call live write mutations.
+
 If Python workbook export fails because `openpyxl` is missing, set `CODEX_PYTHON_BIN` to a Python that has the workspace spreadsheet dependencies.
 
 ## TitlePro Lane

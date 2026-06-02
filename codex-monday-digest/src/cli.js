@@ -11,6 +11,7 @@ const { exportWorkbook, updateManifestWithWorkbook } = require("./export-workboo
 const { verifyRun } = require("./verify-run");
 const { buildBatchArtifacts, writeBatchRun } = require("./batch-owner-clusters");
 const { buildTitleProApprovalQueue } = require("./titlepro-approval-queue");
+const { lookupLeads, readLookupFile } = require("./monday-lookup");
 const { assertLiveWriteAllowed, redactedBoardShapeFromEnv } = require("./monday-graphql");
 const { FORBIDDEN_ZERO, ensureDir, writeJson, appendJsonl, nowIso } = require("./runtime");
 
@@ -41,7 +42,8 @@ function usage() {
     "  codex-monday-digest export --run RUN_FOLDER --xlsx RUN_FOLDER/monday_import_preview.xlsx",
     "  codex-monday-digest verify --run RUN_FOLDER",
     "  codex-monday-digest batch-owner-clusters --input CSV --mode local_dry_run --out RUN_FOLDER",
-    "  codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run|live_write"
+    "  codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --lookup-file MONDAY_EXPORT.csv|json|xlsx",
+    "  codex-monday-digest sync --run RUN_FOLDER --mode live_write"
   ].join("\n");
 }
 
@@ -206,17 +208,59 @@ function syncCommand(args) {
 
   const leadsPath = path.join(args.run, "deduped_leads.json");
   const leads = fs.existsSync(leadsPath) ? JSON.parse(fs.readFileSync(leadsPath, "utf8")) : [];
-  const lookup = leads.map((lead) => ({
-    dedupe_key: lead.dedupe_key,
-    radar_id: lead.radar_id,
-    lookup_mode: args.mode,
-    result: args.mode === "monday_lookup_dry_run" ? "not_run" : "error",
-    existing_item_id: null,
-    error: args.mode === "monday_lookup_dry_run" ? "Monday read connector not configured in local proof; no mutation executed." : "live_write is blocked unless explicit gates pass."
-  }));
+  const lookupFile = args["lookup-file"] || args.lookup_file || args.lookupFile;
+  let lookup;
+  let sourceProfile = null;
+  if (args.mode === "monday_lookup_dry_run" && lookupFile) {
+    const lookupSource = readLookupFile(lookupFile);
+    lookup = lookupLeads(leads, lookupSource.records, "monday_lookup_file");
+    sourceProfile = {
+      source_path: lookupSource.source_path,
+      source_sha256: lookupSource.source_sha256,
+      source_format: lookupSource.source_format,
+      lookup_record_count: lookupSource.records.length,
+      matched_lead_count: lookup.filter((row) => row.result === "matched").length,
+      duplicate_match_lead_count: lookup.filter((row) => row.result === "duplicate_match").length,
+      not_found_lead_count: lookup.filter((row) => row.result === "not_found").length,
+      write_actions_executed: 0
+    };
+  } else {
+    lookup = leads.map((lead) => ({
+      dedupe_key: lead.dedupe_key,
+      radar_id: lead.radar_id,
+      lookup_mode: args.mode,
+      result: args.mode === "monday_lookup_dry_run" ? "not_run" : "error",
+      match_count: 0,
+      existing_item_id: null,
+      existing_item_ids: [],
+      existing_item_name: null,
+      existing_item_names: [],
+      board_id: null,
+      group_id: null,
+      error: args.mode === "monday_lookup_dry_run" ? "Supply --lookup-file with a Monday board export to run a read-only lookup." : "live_write is blocked unless explicit gates pass."
+    }));
+  }
   writeJson(path.join(args.run, "monday_lookup_results.json"), lookup);
   writeJson(path.join(args.run, "monday_board_shape_redacted.json"), redactedBoardShapeFromEnv());
-  console.log(`${args.mode}=no_mutations lookup_rows=${lookup.length}`);
+  if (sourceProfile) writeJson(path.join(args.run, "monday_lookup_source_profile.json"), sourceProfile);
+  updateManifestAfterSync(args.run, [
+    path.join(args.run, "monday_lookup_results.json"),
+    path.join(args.run, "monday_board_shape_redacted.json"),
+    ...(sourceProfile ? [path.join(args.run, "monday_lookup_source_profile.json")] : [])
+  ]);
+  const matched = lookup.filter((row) => row.result === "matched" || row.result === "duplicate_match").length;
+  console.log(`${args.mode}=no_mutations lookup_rows=${lookup.length} matched_or_duplicate=${matched}`);
+}
+
+function updateManifestAfterSync(runFolder, outputPaths) {
+  const manifestPath = path.join(runFolder, "run_manifest.json");
+  if (!fs.existsSync(manifestPath)) return;
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...outputPaths]));
+  manifest.last_lookup_sync_at = nowIso();
+  manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
+  manifest.forbidden_actions.monday_live_writes = manifest.forbidden_actions.monday_live_writes || 0;
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 function batchCommand(args) {
@@ -276,6 +320,7 @@ module.exports = {
   parseCommand,
   previewCommand,
   exportCommand,
+  syncCommand,
   batchCommand,
   verifyCommand
 };

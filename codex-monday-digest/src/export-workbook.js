@@ -62,6 +62,7 @@ else:
         row.update(mutation.get("columns", {}))
         rows.append(row)
     add_sheet(wb, "Monday Import", rows)
+    add_sheet(wb, "Monday Lookup", read_json("monday_lookup_results.json", []))
     add_sheet(wb, "Subitems Preview", read_json("monday_subitems_preview.json", []))
     add_sheet(wb, "TitlePro Approval", read_json("titlepro_approval_queue_preview.json", []))
     add_sheet(wb, "Broker Packets", read_json("broker_packets_preview.json", []))

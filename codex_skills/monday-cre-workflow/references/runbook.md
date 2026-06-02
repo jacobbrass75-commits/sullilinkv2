@@ -59,6 +59,17 @@ Required gates before promotion:
 - current foreclosure/status evidence
 - broker/admin approval before any external write or outreach-ready claim
 
+### Monday Read-Only Lookup
+
+After a digest run, use a Monday board export to prevent duplicate work by Radar ID:
+
+```bash
+node src/cli.js sync --run ../outputs/monday_digest_runs/dev --mode monday_lookup_dry_run --lookup-file path/to/monday_board_export.csv
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+The lookup file can be CSV, JSON, or XLSX. Required output is `monday_lookup_results.json`; when a lookup file is supplied, also save `monday_lookup_source_profile.json`. This lane is read-only and must leave `forbidden_actions.monday_live_writes = 0`.
+
 ### TitlePro Evidence
 
 Use the TitlePro skill. Save:

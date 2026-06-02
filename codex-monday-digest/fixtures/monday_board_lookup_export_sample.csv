@@ -1,0 +1,5 @@
+Item ID,Name,Radar ID,Group ID
+1001,P15F1852 - 2701 STATHAM BLVD,P15F1852,new-leads
+1002,P1555F5F - 16757 SLOVER AVE,P1555F5F,new-leads
+1003,P1555F5F duplicate,P1555F5F,new-leads
+1004,Unrelated lead,P9999999,new-leads

@@ -157,12 +157,13 @@ function downloadLinks(summary) {
   const id = encodeURIComponent(summary.id);
   const files = summary.type === "batch"
     ? ["monday_import_preview.xlsx", "verification_report.md", "candidate_properties.json", "owner_cluster_candidates.json"]
-    : ["monday_import_preview.xlsx", "verification_report.md", "deduped_leads.json", "monday_subitems_preview.json", "titlepro_approval_queue_preview.json"];
+    : ["monday_import_preview.xlsx", "verification_report.md", "deduped_leads.json", "monday_lookup_results.json", "monday_subitems_preview.json", "titlepro_approval_queue_preview.json"];
   return files.map((file) => `<a href="/api/runs/${id}/download/${encodeURIComponent(file)}">${escapeHtml(file)}</a>`);
 }
 
 function renderDigestDetail(detail) {
   const leads = detail.leads || [];
+  const lookup = detail.lookup_results || [];
   const subitems = detail.subitems || [];
   const titleproQueue = detail.titlepro_approval_queue || [];
   els.detailBody.innerHTML = `
@@ -178,6 +179,21 @@ function renderDigestDetail(detail) {
             <td class="${lead.hard_hold ? "hold" : ""}">${escapeHtml(lead.current_status)}</td>
             <td>${lead.source_events.length} distinct / ${lead.exact_duplicate_count} duplicate</td>
             <td class="wrap">${escapeHtml(lead.next_action)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    <h3>Monday Lookup</h3>
+    <table>
+      <thead><tr><th>Radar ID</th><th>Result</th><th>Item ID</th><th>Item Name</th><th>Matches</th></tr></thead>
+      <tbody>
+        ${lookup.map((row) => `
+          <tr>
+            <td>${escapeHtml(row.radar_id || "")}</td>
+            <td class="${row.result === "matched" || row.result === "duplicate_match" ? "hold" : ""}">${escapeHtml(row.result)}</td>
+            <td>${escapeHtml(row.existing_item_id || "")}</td>
+            <td class="wrap">${escapeHtml(row.existing_item_name || "")}</td>
+            <td>${escapeHtml(row.match_count || 0)}</td>
           </tr>
         `).join("")}
       </tbody>

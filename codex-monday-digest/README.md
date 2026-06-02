@@ -66,11 +66,11 @@ codex-monday-digest preview --input SAVED_EMAIL_FILE --label "CRE/PropertyRadar 
 codex-monday-digest export --run RUN_FOLDER --xlsx RUN_FOLDER/monday_import_preview.xlsx
 codex-monday-digest verify --run RUN_FOLDER
 codex-monday-digest batch-owner-clusters --input PROPERTYRADAR_CSV --mode local_dry_run --out RUN_FOLDER
-codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run
+codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --lookup-file MONDAY_EXPORT.csv
 codex-monday-digest sync --run RUN_FOLDER --mode live_write
 ```
 
-`local_dry_run` needs no credentials. `live_write` is intentionally blocked unless the later Monday approval and environment gates are satisfied.
+`local_dry_run` and `monday_lookup_dry_run` need no credentials. The lookup mode reads a Monday board export CSV/JSON/XLSX, matches existing items by Radar ID, and writes `monday_lookup_results.json` without changing Monday. `live_write` is intentionally blocked unless the later Monday approval and environment gates are satisfied.
 
 ## Local Proofs
 
@@ -80,6 +80,7 @@ From this folder:
 npm test
 npm run proof:ken
 npm run proof:preview
+npm run proof:lookup
 npm run proof:edge
 npm run proof:batch
 ```

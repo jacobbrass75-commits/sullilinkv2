@@ -76,6 +76,7 @@ function verifyDigestRun(runFolder) {
   const sourceEmails = readJson(path.join(runFolder, "source_emails.json"));
   const parsedRows = readJson(path.join(runFolder, "parsed_rows.json"));
   const leads = readJson(path.join(runFolder, "deduped_leads.json"));
+  const lookupResults = readJson(path.join(runFolder, "monday_lookup_results.json"));
   const mutations = readJson(path.join(runFolder, "monday_mutations_preview.json"));
   const subitems = readJson(path.join(runFolder, "monday_subitems_preview.json"));
   const comments = readJson(path.join(runFolder, "monday_comments_preview.json"));
@@ -91,6 +92,8 @@ function verifyDigestRun(runFolder) {
   checks.push({ pass: leads.every(hasLeadFields), message: "all deduped leads have required gate fields" });
   checks.push({ pass: leads.every((lead) => lead.evidence_link && lead.source_events?.length), message: "all deduped leads keep evidence links and source events" });
   checks.push({ pass: totalExactDuplicates(leads) === Math.max(0, parsedRows.length - totalDistinctEvents(leads)), message: "exact duplicate count is recorded separately from distinct events" });
+  checks.push({ pass: lookupResults.length >= leads.length && lookupResults.every(hasLookupFields), message: "Monday lookup results exist with required read-only fields" });
+  checks.push({ pass: lookupResults.every((row) => row.lookup_mode !== "live_write"), message: "Monday lookup results are read-only, not live writes" });
   checks.push({ pass: noDuplicateRadarMutation(mutations), message: "no duplicate Monday mutation targets the same Radar ID" });
   checks.push({ pass: mutations.every((mutation) => REQUIRED_GATE_COLUMNS.every((column) => Object.prototype.hasOwnProperty.call(mutation.columns || {}, column))), message: "mutation previews include default gate columns" });
   checks.push({ pass: leads.every((lead) => hasRequiredSubitems(lead, subitems)), message: "every lead has current-status, owner/control, provider, and relationship subitems" });
@@ -175,6 +178,23 @@ function noDuplicateRadarMutation(mutations) {
     seen.add(radarId);
   }
   return true;
+}
+
+function hasLookupFields(row) {
+  return [
+    "dedupe_key",
+    "radar_id",
+    "lookup_mode",
+    "result",
+    "match_count",
+    "existing_item_id",
+    "existing_item_ids",
+    "existing_item_name",
+    "existing_item_names",
+    "board_id",
+    "group_id",
+    "error"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field));
 }
 
 function hasRequiredSubitems(lead, subitems) {

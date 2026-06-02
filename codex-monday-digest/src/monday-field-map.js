@@ -80,7 +80,13 @@ function lookupPlaceholderForLead(lead) {
     radar_id: lead.radar_id,
     lookup_mode: "not_run",
     result: "not_run",
+    match_count: 0,
     existing_item_id: null,
+    existing_item_ids: [],
+    existing_item_name: null,
+    existing_item_names: [],
+    board_id: null,
+    group_id: null,
     error: null
   };
 }
