@@ -84,6 +84,7 @@ codex-monday-digest status-import --run RUN_FOLDER --status CURRENT_STATUS.csv|j
 codex-monday-digest skill-check --skill-dir SKILL_DIR --package-json PACKAGE.json --goal-md GOAL.md --out RUN_FOLDER
 codex-monday-digest skill-pack --skill-dir SKILL_DIR --package-json PACKAGE.json --goal-md GOAL.md --out RUN_FOLDER
 codex-monday-digest goal-audit --goal-md GOAL.md --package-json PACKAGE.json --proof-root OUTPUT_ROOT --out RUN_FOLDER
+codex-monday-digest packet-audit --packet-dir PACKET_DIR --out RUN_FOLDER
 codex-monday-digest source-audit --zip SOURCE.zip --source-dir EXTERNAL_REFERENCE_DIR --goal-md GOAL.md --out RUN_FOLDER
 codex-monday-digest sync --run RUN_FOLDER --mode live_write
 ```
@@ -107,6 +108,8 @@ codex-monday-digest sync --run RUN_FOLDER --mode live_write
 `skill-pack` creates a local installable copy of the validated skill under `skill_package/monday-cre-workflow`, plus `skill_package_bundle_manifest.json` and `skill_package_install.md`. It hashes every packaged file and records zero external actions.
 
 `goal-audit` reads `docs/TONIGHT_BUILD_GOAL.md`, `package.json`, and prior proof run folders, then writes `goal_audit_report.json` and `goal_audit_summary.md`. It maps every acceptance gate to local proof coverage, documented/manual review, or deferred external gates without claiming the thread goal is complete.
+
+`packet-audit` reads a shareable broker packet folder and writes `packet_audit_report.json` plus `packet_audit_summary.md`. It verifies required packet files, scans text/JSON/HTML/XLSX contents for local paths and credential-like values, confirms no raw paid docs/images are included in the packet tree, and checks owner/control rows keep evidence, confidence, next-verification, and beneficial-owner caveats.
 
 `source-audit` reads a SullyLink/retranToReel source zip and/or ignored extracted reference directory, plus the current goal markdown, and writes a compact reuse plan and `source_reuse_contract.json`. It reports which old patterns should be copied conceptually, maps digest parsing/APN dedupe/TitlePro worker/contact/status patterns to current runner commands and proof scripts, records excluded risk paths, and records zero external actions. It never copies old source files, credentials, cookies, raw paid docs, or dependency trees into the shareable repo.
 
@@ -134,6 +137,7 @@ npm run proof:status
 npm run proof:skill
 npm run proof:skill-pack
 npm run proof:goal-audit
+npm run proof:packet-audit
 npm run proof:source-audit
 npm run proof:source-audit-real
 npm run proof:workflow-map
@@ -172,3 +176,5 @@ Every digest and batch run writes `monday_action_queue.csv` and a workbook `Mond
 `skill-pack` writes the installable package folder and manifest for sharing or reinstalling the skill. Use it after `proof:skill` when the skill package needs to move to another Codex setup.
 
 `goal-audit` writes a repeatable completion-audit surface for the active build goal. Use it after proof runs to see which acceptance gates are locally covered and which remain manual or externally gated.
+
+`packet-audit` writes a local proof that `broker_packet/` remains shareable and keeps owner/control claims evidence-backed without beneficial-owner overclaims.

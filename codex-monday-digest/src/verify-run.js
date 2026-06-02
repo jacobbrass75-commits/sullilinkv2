@@ -84,10 +84,17 @@ const GOAL_AUDIT_FILES = [
   "run_manifest.json"
 ];
 
+const PACKET_AUDIT_FILES = [
+  "packet_audit_report.json",
+  "packet_audit_summary.md",
+  "run_manifest.json"
+];
+
 function verifyRun(runFolder) {
   const isSkillBundle = fs.existsSync(path.join(runFolder, "skill_package_bundle_manifest.json"));
   const isSkillPackage = fs.existsSync(path.join(runFolder, "skill_package_report.json"));
   const isGoalAudit = fs.existsSync(path.join(runFolder, "goal_audit_report.json"));
+  const isPacketAudit = fs.existsSync(path.join(runFolder, "packet_audit_report.json"));
   const isConnectorReadiness = fs.existsSync(path.join(runFolder, "connector_readiness_report.json"));
   const isWorkflowMap = fs.existsSync(path.join(runFolder, "monday_workflow_map.json"));
   const isSourceAudit = fs.existsSync(path.join(runFolder, "source_reuse_audit.json"));
@@ -95,6 +102,7 @@ function verifyRun(runFolder) {
   if (isSkillBundle) return verifySkillBundleRun(runFolder);
   if (isSkillPackage) return verifySkillPackageRun(runFolder);
   if (isGoalAudit) return verifyGoalAuditRun(runFolder);
+  if (isPacketAudit) return verifyPacketAuditRun(runFolder);
   if (isConnectorReadiness) return verifyConnectorReadinessRun(runFolder);
   if (isWorkflowMap) return verifyWorkflowMapRun(runFolder);
   if (isSourceAudit) return verifySourceAuditRun(runFolder);
@@ -1020,7 +1028,7 @@ function verifyGoalAuditRun(runFolder) {
   checks.push({ pass: gates.every((row) => row.status !== "uncategorized" && row.status !== "missing_proof"), message: "goal audit has no uncategorized or missing local-proof gates" });
   checks.push({ pass: gates.some((row) => row.id === "source_audit_real" && row.status === "covered_by_local_proof"), message: "goal audit covers real SullyLink source audit proof" });
   checks.push({ pass: gates.some((row) => row.id === "monday_live_write_gate" && row.status === "deferred_external_gate"), message: "goal audit keeps Monday live write as deferred gated work" });
-  checks.push({ pass: gates.some((row) => row.id === "shareable_packet_safety" && row.status === "documented_manual_gate"), message: "goal audit keeps shareable packet safety as a tracked manual gate" });
+  checks.push({ pass: gates.some((row) => row.id === "shareable_packet_safety" && row.status === "covered_by_local_proof"), message: "goal audit covers shareable packet safety proof" });
   checks.push({ pass: proofCommands.every(hasGoalAuditProofFields), message: "goal audit proof command rows are structured" });
   checks.push({ pass: proofCommands.filter((row) => row.script_present).length >= 15, message: "goal audit records proof script coverage" });
   checks.push({ pass: summary.includes("Status: REVIEW_READY"), message: "goal audit summary is review-ready" });
@@ -1031,7 +1039,58 @@ function verifyGoalAuditRun(runFolder) {
   return makeReport(runFolder, "codex-monday-digest Goal Audit Verification", checks);
 }
 
+function verifyPacketAuditRun(runFolder) {
+  const checks = [];
+  checkFiles(runFolder, PACKET_AUDIT_FILES, checks);
+  if (checks.some((check) => !check.pass)) return makeReport(runFolder, "codex-monday-digest Packet Audit Verification", checks);
+
+  const audit = readJson(path.join(runFolder, "packet_audit_report.json"));
+  const manifest = readJson(path.join(runFolder, "run_manifest.json"));
+  const summary = fs.readFileSync(path.join(runFolder, "packet_audit_summary.md"), "utf8");
+  const packetChecks = audit.checks || [];
+  const requiredFiles = audit.required_files || [];
+  const scans = audit.scans || [];
+  const claimAudit = audit.claim_audit || {};
+
+  checks.push({ pass: manifest.mode === "packet_audit", message: "manifest records packet_audit mode" });
+  checks.push({ pass: forbiddenZero(manifest), message: "forbidden action counts are zero" });
+  checks.push({ pass: manifest.output_path_scope === "run_folder_relative", message: "packet audit output paths are run-folder-relative" });
+  checks.push({ pass: audit.mode === "packet_audit" && audit.passed === true, message: "packet audit report passed" });
+  checks.push({ pass: audit.forbidden_actions && forbiddenZero(audit), message: "packet audit forbidden action counts are zero" });
+  checks.push({ pass: audit.packet_source?.source_path_scope === "basename_only" && !String(audit.packet_source?.source_path || "").includes("/"), message: "packet source path is basename-only" });
+  checks.push({ pass: Array.isArray(requiredFiles) && requiredFiles.length >= 6 && requiredFiles.every((row) => row.exists && row.sha256), message: "packet audit required files exist with hashes" });
+  checks.push({ pass: Array.isArray(audit.forbidden_files) && audit.forbidden_files.length === 0, message: "packet audit found no raw paid document/image files" });
+  checks.push({ pass: Array.isArray(scans) && scans.length >= requiredFiles.length && scans.every(hasPacketScanFields), message: "packet audit scan rows are structured" });
+  checks.push({ pass: scans.every((row) => row.absolute_local_path_count === 0 && row.secret_hit_count === 0), message: "packet scan found no local paths or secrets" });
+  checks.push({ pass: Array.isArray(packetChecks) && packetChecks.length >= 8 && packetChecks.every(hasPacketCheckFields), message: "packet audit checks are structured" });
+  checks.push({ pass: packetChecks.every((row) => row.status === "pass"), message: "all packet audit checks passed" });
+  checks.push({ pass: claimAudit.packet_count >= 5, message: "packet audit covers multiple owner/control clusters" });
+  checks.push({ pass: claimAudit.beneficial_owner_overclaim_count === 0, message: "packet audit records no beneficial-owner overclaims" });
+  checks.push({ pass: summary.includes("Status: PASS"), message: "packet audit summary records pass status" });
+  checks.push({ pass: noAbsoluteLocalPathsInPacketAudit(runFolder), message: "packet audit outputs contain no absolute local paths" });
+  checks.push({ pass: !summary.includes("Authorization:") && !summary.includes("PASSWORD="), message: "packet audit summary contains no credential values" });
+  checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
+
+  return makeReport(runFolder, "codex-monday-digest Packet Audit Verification", checks);
+}
+
 function hasSkillPackageCheckFields(row) {
+  return ["id", "status", "message"].every((field) => Object.prototype.hasOwnProperty.call(row, field));
+}
+
+function hasPacketScanFields(row) {
+  return [
+    "relative_path",
+    "size_bytes",
+    "scanned_text_units",
+    "absolute_local_path_count",
+    "secret_hit_count"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && !String(row.relative_path || "").includes("..")
+    && !String(row.relative_path || "").includes("\\");
+}
+
+function hasPacketCheckFields(row) {
   return ["id", "status", "message"].every((field) => Object.prototype.hasOwnProperty.call(row, field));
 }
 
@@ -1246,6 +1305,13 @@ function noAbsoluteLocalPathsInGoalAudit(runFolder) {
   });
 }
 
+function noAbsoluteLocalPathsInPacketAudit(runFolder) {
+  return PACKET_AUDIT_FILES.every((file) => {
+    const text = fs.readFileSync(path.join(runFolder, file), "utf8");
+    return !hasAbsoluteLocalPath(text);
+  });
+}
+
 function noAbsoluteLocalPathsInCurrentStatus(runFolder) {
   const files = [
     "current_status_intake.json",
@@ -1439,5 +1505,6 @@ module.exports = {
   verifyConnectorReadinessRun,
   verifySkillPackageRun,
   verifySkillBundleRun,
-  verifyGoalAuditRun
+  verifyGoalAuditRun,
+  verifyPacketAuditRun
 };

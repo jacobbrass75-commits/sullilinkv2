@@ -17,6 +17,7 @@ const PROOF_RUN_FOLDERS = {
   "proof:skill": "skill-package",
   "proof:skill-pack": "skill-package-bundle",
   "proof:goal-audit": "goal-audit",
+  "proof:packet-audit": "packet-audit",
   "proof:source-audit": "source-audit",
   "proof:source-audit-real": "source-audit-real",
   "proof:workflow-map": "workflow-map",
@@ -43,10 +44,11 @@ const GATE_CATALOG = [
   gate("skill_check", /skill-check/i, ["proof:skill"], "covered_by_local_proof", "Skill package validation."),
   gate("skill_pack", /skill-pack/i, ["proof:skill-pack"], "covered_by_local_proof", "Installable skill package export."),
   gate("goal_audit", /goal-audit/i, ["proof:goal-audit"], "covered_by_local_proof", "Repeatable goal completion audit surface."),
+  gate("packet_audit", /packet-audit --packet-dir/i, ["proof:packet-audit"], "covered_by_local_proof", "Shareable packet and broker claim audit surface."),
   gate("source_audit", /source-audit --zip/i, ["proof:source-audit"], "covered_by_local_proof", "Fixture/source reference reuse audit."),
   gate("source_audit_real", /proof:source-audit-real/i, ["proof:source-audit-real"], "covered_by_local_proof", "Local ignored SullyLink/retranToReel reuse audit."),
-  gate("shareable_packet_safety", /Shareable packet files/i, [], "documented_manual_gate", "Shareable packet safety is tracked separately from raw evidence and credentials."),
-  gate("broker_control_claims", /broker-facing owner\/control claim/i, [], "documented_manual_gate", "Broker-facing claims require evidence and confidence language."),
+  gate("shareable_packet_safety", /Shareable packet files/i, ["proof:packet-audit"], "covered_by_local_proof", "Shareable packet safety, no raw docs, no secrets, and no local paths."),
+  gate("broker_control_claims", /broker-facing owner\/control claim/i, ["proof:packet-audit"], "covered_by_local_proof", "Broker-facing control claims include evidence, confidence, and beneficial-owner caveats."),
   gate("titlepro_serialized", /TitlePro actions remain serialized/i, ["proof:titlepro-confirm"], "covered_by_local_proof", "TitlePro execution stays serialized and approval-gated."),
   gate("monday_live_write_gate", /Monday live write remains blocked/i, [], "deferred_external_gate", "Live Monday writes require explicit board, column, rollback, and broker gates.")
 ];

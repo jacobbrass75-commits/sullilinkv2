@@ -38,6 +38,7 @@ npm test
 npm run proof:skill
 npm run proof:skill-pack
 npm run proof:goal-audit
+npm run proof:packet-audit
 npm run proof:source-audit-real
 npm run app
 ```
@@ -199,6 +200,14 @@ npm run proof:goal-audit
 ```
 
 Run this after proof runs when deciding what remains. It maps `docs/TONIGHT_BUILD_GOAL.md` acceptance gates to proof scripts, prior verified run folders, documented/manual review, or deferred external gates. It must not claim the active thread goal is complete.
+
+Broker packet safety audit:
+
+```bash
+npm run proof:packet-audit
+```
+
+Run this before sharing `broker_packet/`. It checks required files, scans text/JSON/HTML/XLSX content for local paths and credential-like values, confirms raw paid docs/images are not included in the packet tree, and verifies owner/control rows keep evidence, confidence, next-verification, and beneficial-owner caveats.
 
 If Python workbook export fails because `openpyxl` is missing, set `CODEX_PYTHON_BIN` to a Python that has the workspace spreadsheet dependencies.
 
