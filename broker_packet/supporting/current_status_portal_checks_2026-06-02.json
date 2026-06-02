@@ -1,0 +1,130 @@
+{
+  "as_of": "2026-06-02",
+  "scope": "Public portal checks layered onto the owner-disambiguation packet. No authenticated, paid, or TitlePro document-order actions were used.",
+  "checks": [
+    {
+      "subject": "Pacific Snow Valley Resort LLC / 40650 Village Dr, Big Bear Lake",
+      "case_or_file": "First American trustee sale no. 1228605",
+      "public_status": "First American public foreclosure search returned one active-stage row for trustee number 1228605. The row shows borrower Pacific Snow Valley Resort LLC, address 40650 Village Drive, Big Bear Lake, San Bernardino County, sale date 2026-06-24, stage 1, NOD amount $25,461,332.85, NOS amount $26,488,642.35, lender Hua Nan Commercial Bank, LTD Los Angeles Branch. The detail endpoint for foreclosure id 1556 also lists loan no. 017752, lender contact Kevin Tseng, lender phone (213) 362-6666, lender address 707 Wilshire Blvd, Suite 3100, Los Angeles, CA 90017, and APN 0308-135-01-0-000.",
+      "packet_interpretation": "This upgrades the Big Bear placeholder row from stale public NTS only to an official First American active sale-status lead. The old 2026-02-04 public-notice date should be treated as superseded by First American's 2026-06-24 public search row, but APN/package differences still need reconciliation against TitlePro's APN 0308-271-01-0000.",
+      "confidence": "High for First American public-search row; still verify day-of-sale status before broker action.",
+      "source_urls": [
+        "https://foreclosure.firstam.com/#/foreclosure",
+        "https://api.foreclosure.firstam.com/foreclosure?limit=50&offset=0&ispublic=1&trustee_number=1228605"
+      ],
+      "saved_evidence": [
+        "evidence/public_sources/firstam_api_2026-06-02/trustee_number_1228605.json",
+        "evidence/public_sources/firstam_api_2026-06-02/trustee_number_1228605_county_San_20Bernardino.json",
+        "evidence/public_sources/firstam_api_2026-06-02/foreclosure_id_1556_detail.json",
+        "evidence/public_sources/portal_checks_2026-06-02/firstam_foreclosure__1228605__attempts.json",
+        "evidence/public_sources/portal_checks_2026-06-02/firstam_foreclosure__1228605__screenshot.png"
+      ],
+      "next_action": "Use First American sale no. 1228605 as the live status channel; reconcile APNs/legal package before presenting collateral as one clean parcel."
+    },
+    {
+      "subject": "Alessandro Group LLC / 23750 Alessandro Blvd",
+      "case_or_file": "First American / Nano Banc trustee sale no. 1262662",
+      "public_status": "First American public foreclosure search returned no result for trustee number 1262662. This is a no-result state from the official public search, not proof of no default or no later private trustee activity.",
+      "packet_interpretation": "Keep Alessandro as recorded-role verified from TitlePro NOD/DOT evidence, but current First American public status remains unresolved.",
+      "confidence": "Medium for no public First American row as of this check; low for broader legal status.",
+      "source_urls": [
+        "https://foreclosure.firstam.com/#/foreclosure",
+        "https://api.foreclosure.firstam.com/foreclosure?limit=50&offset=0&ispublic=1&trustee_number=1262662"
+      ],
+      "saved_evidence": [
+        "evidence/public_sources/firstam_api_2026-06-02/trustee_number_1262662.json",
+        "evidence/public_sources/firstam_api_2026-06-02/trustee_number_1262662_county_Riverside.json",
+        "evidence/public_sources/portal_checks_2026-06-02/firstam_foreclosure__1262662__attempts.json",
+        "evidence/public_sources/portal_checks_2026-06-02/firstam_foreclosure__1262662__screenshot.png"
+      ],
+      "next_action": "Verify Nano Banc/First American status by phone or lender/trustee channel before outreach."
+    },
+    {
+      "subject": "Euclid Hazard Capital LLC / 3521 MSB Capital LLC",
+      "case_or_file": "S.B.S. / SuperiorDefault cases 2024-2355 and 2024-2352",
+      "public_status": "SuperiorDefault public search returned one row for each file number. Case 2024-2355 / 3519 W Washington shows original sale 2025-10-28, current sale 2026-06-18 at 11:00 AM, status Postponed due to Beneficiaries Request, Notice of Sale amount $4,137,723.58, opening bid $0.00, and sold amount $0.00. Case 2024-2352 / 17046 Bellflower shows original sale 2025-10-22, current sale 2026-06-23 at 11:00 AM, status Postponed due to Beneficiaries Request, Notice of Sale amount $2,438,509.65, opening bid $0.00, and sold amount $0.00.",
+      "packet_interpretation": "Upgrade both Euclid/S.B.S. rows from stale recorded NTS dates to live postponed sale-status leads. The 3519 title-owner/trustor split still matters: Euclid is current title owner by 2025 deed, while 3521 MSB remains the borrower/trustor on the foreclosed 2022 Artes loan.",
+      "confidence": "High for public SuperiorDefault rows as of this check; still re-check day-of-sale status before outreach.",
+      "source_urls": [
+        "https://superiordefault.com/orders/update_index_table?trustee_sale_file_number=2024-2355&landing_page=true",
+        "https://superiordefault.com/orders/update_index_table?trustee_sale_file_number=2024-2352&landing_page=true"
+      ],
+      "saved_evidence": [
+        "evidence/public_sources/trustee_status_2026-06-02/superiordefault_2024-2355.html",
+        "evidence/public_sources/trustee_status_2026-06-02/superiordefault_2024-2352.html"
+      ],
+      "next_action": "Re-check SuperiorDefault/S.B.S. before 2026-06-18 and 2026-06-23, then use Artes/S.B.S. status plus Golcheh/Kohan control leads for payoff/workout outreach."
+    },
+    {
+      "subject": "T Bank / Express Car Wash sale-status channel",
+      "case_or_file": "MK Consultants / Assured cases F25-00158 and F25-00157",
+      "public_status": "MK Consultants' public site exposes public Assured sale-sheet CSV tabs. The February sheet row for F25-00158 lists 6458 Van Buren Blvd, Riverside, 9:00 AM, PP-bid/cxl $4,300,000.00, result $4,300,000.00, trustee ASSURED. The April sheet row for F25-00157 lists 2035 N Tustin Ave, Orange, 3:00 PM, PP-bid/cxl $3,200,000.00, result $3,200,000.00, trustee ASSURED. MK's public contact channels are main (623) 434-5560, toll-free (877) 440-4460, Orders@MKConsultantsInc.com.",
+      "packet_interpretation": "Upgrade both Express Car Wash rows from sale-status pending to public MK/Assured sale-result found. Still verify official bankruptcy/stay, title/possession, and lender-owned posture before broker action, especially for Santa Ana.",
+      "confidence": "High for public MK/Assured sheet rows; official docket/title posture still requires verification.",
+      "source_urls": [
+        "https://mkconsultantsinc.com/",
+        "https://mkconsultantsinc.com/trustees-sales/",
+        "https://mkconsultantsinc.com/contact-mk/",
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQMop8Uelv1hdzsqfBVfz8vG06XVM8CDt6U3fgpKF3bNzrYTN3cgbGuFnAHXAPT5n9rM-QUtcMI8ztY/pub?gid=1204776611&single=true&output=csv",
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQMop8Uelv1hdzsqfBVfz8vG06XVM8CDt6U3fgpKF3bNzrYTN3cgbGuFnAHXAPT5n9rM-QUtcMI8ztY/pub?gid=1231433151&single=true&output=csv"
+      ],
+      "saved_evidence": [
+        "evidence/public_sources/portal_checks_2026-06-02/mk_consultants__initial_text.txt",
+        "evidence/public_sources/portal_checks_2026-06-02/mk_consultants__f25_00158__attempts.json",
+        "evidence/public_sources/portal_checks_2026-06-02/mk_consultants__f25_00157__attempts.json",
+        "evidence/public_sources/portal_checks_2026-06-02/mk_consultants__screenshot.png",
+        "evidence/public_sources/trustee_status_2026-06-02/mk_assured_gid_1204776611.csv",
+        "evidence/public_sources/trustee_status_2026-06-02/mk_assured_gid_1231433151.csv"
+      ],
+      "next_action": "Use the MK/Assured sale results as public corroboration, then confirm official bankruptcy/stay, title, possession, and lender-owned posture before outreach."
+    },
+    {
+      "subject": "Galois Group LLC / 28207 Newhall Ranch Rd",
+      "case_or_file": "Beacon Default Management TS/case 2026-100955",
+      "public_status": "Beacon Default's public foreclosure lookup returned an exact result for TSNumber 2026-100955 and Property Address 28207 Newhall Ranch Road, Valencia, CA 91355. The returned page provides Beacon/Stox trustee-sale information channels but does not expose live sale date, postponement status, opening bid, or sale result. Searches using only 26-0290769 or 100955 did not return a case row. STOX's public site points sale-calendar users to a Quickbase calendar and publishes contact channels. The public Quickbase Trustee Sales table is reachable, but API/query attempts for 2026-100955, 26-0290769, 28207, and Newhall-style terms returned no matching public records; a general five-row API pull confirmed the table fields are accessible for public rows.",
+      "packet_interpretation": "Upgrade Galois from generic Beacon follow-up to case/address-confirmed NOD status with no matching public Stox sale-calendar row found. Do not represent a live auction date or bid for 2026-100955 until Beacon or STOX confirms it by sale line, phone, or authenticated/status channel.",
+      "confidence": "High for Beacon case/address match; low for live sale status because the public result omits date/status/bid.",
+      "source_urls": [
+        "https://beacondefault.com/check-status/",
+        "https://lookup.beacondefault.com/search-box.php",
+        "https://beacondefault.com/contact-us",
+        "https://www.stoxposting.com/",
+        "https://stox.quickbase.com/nav/app/bk42trzjg/action/appoverview"
+      ],
+      "saved_evidence": [
+        "evidence/public_sources/beacon_status_2026-06-02/beacon_check_status.html",
+        "evidence/public_sources/beacon_status_2026-06-02/beacon_contact.html",
+        "evidence/public_sources/beacon_status_2026-06-02/beacon_lookup_search_box.html",
+        "evidence/public_sources/beacon_status_2026-06-02/beacon_lookup_post_2026_100955.html",
+        "evidence/public_sources/stox_status_2026-06-02/stoxposting_home.html",
+        "evidence/public_sources/stox_status_2026-06-02/stoxposting_index.js",
+        "evidence/public_sources/stox_status_2026-06-02/stoxcompany_home.html",
+        "evidence/public_sources/stox_status_2026-06-02/stox_quickbase_appoverview.html",
+        "evidence/public_sources/stox_status_2026-06-02/stox_quickbase_api_doquery_clientfile_contains_100955.xml",
+        "evidence/public_sources/stox_status_2026-06-02/stox_quickbase_api_doquery_clientfile_contains_26_0290769.xml",
+        "evidence/public_sources/stox_status_2026-06-02/stox_quickbase_api_doquery_clientfile_contains_28207.xml",
+        "evidence/public_sources/stox_status_2026-06-02/stox_quickbase_table_api_doquery_clientfile_2026_100955.xml",
+        "evidence/public_sources/stox_status_2026-06-02/stox_quickbase_table_api_doquery_stoxnum_2026_100955.xml",
+        "evidence/public_sources/stox_status_2026-06-02/stox_quickbase_api_doquery_report_all_num5.xml"
+      ],
+      "next_action": "Call Beacon Default at (310) 929-5457 or the Stox sale line at (844) 477-7869 for live sale date/status/opening bid before outreach."
+    },
+    {
+      "subject": "ServiceLink ASAP public access",
+      "case_or_file": "25-00381-2FNT, 26-00047-2FNT, 26-00049-2FNT",
+      "public_status": "The public ServiceLink ASAP page is visible by simple fetch and shows terms/search controls, but the browser automation route was blocked with a 403 web-page-blocked message. The public route did not yield case-specific results for SDRES or Anastasi in this pass.",
+      "packet_interpretation": "Keep ServiceLink/Fidelity status as a required phone/account check for SDRES and Anastasi. Do not treat recorded NTS/NOD dates as live statuses.",
+      "confidence": "High that Codex public browser automation could not verify; no conclusion on case status.",
+      "source_urls": [
+        "https://www.servicelinkasap.com/quicksearch.aspx"
+      ],
+      "saved_evidence": [
+        "evidence/public_sources/portal_checks_2026-06-02/servicelink_asap__initial_text.txt",
+        "evidence/public_sources/portal_checks_2026-06-02/servicelink_asap__25_00381_2fnt__attempts.json",
+        "evidence/public_sources/portal_checks_2026-06-02/servicelink_asap__26_00047_2fnt__attempts.json",
+        "evidence/public_sources/portal_checks_2026-06-02/servicelink_asap__26_00049_2fnt__attempts.json"
+      ],
+      "next_action": "Use phone/account verification for Fidelity/ServiceLink cases before any sale-status representation."
+    }
+  ]
+}

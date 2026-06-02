@@ -1,0 +1,102 @@
+Subject: FW: Daily Digest Alert: Southern California Foreclosures
+From: Broker User <broker@example.com>
+Original sender: PropertyRadar Alerts <no-reply@propertyradar.info>
+Message timestamp: 2026-05-30T04:15:46
+
+Purpose: parser edge cases from a live digest excerpt. This is not a broker-ready lead list.
+
+Radar ID
+Street
+City
+Zip
+State
+Type
+Sq Ft
+Beds
+Baths
+Est. Value
+What Changed
+
+[P15F1852](https://goradar.it/P15F1852)
+2701 STATHAM BLVD
+OXNARD
+93033
+CA
+IND
+102,543
+
+$8,458,447
+New Notice
+
+[P15F1852](https://goradar.it/P15F1852)
+2701 STATHAM BLVD
+OXNARD
+93033
+CA
+IND
+102,543
+
+$8,458,447
+New Notice
+
+[P1B357DC](https://goradar.it/P1B357DC)
+4722 EVERETT AVE
+LOS ANGELES
+90058
+CA
+IND
+6,395
+
+$5,971,986
+Opening Bid: $0.00 => $11,415,394.74
+
+[P19F0A4C](https://goradar.it/P19F0A4C)
+120 N BERENDO ST
+LOS ANGELES
+90004
+CA
+MFR
+2,964
+4
+2
+$1,496,269
+Prior Sale Date: 4/28/2026 => 6/2/2026
+Sale Date: 6/2/2026 => 7/7/2026
+
+[P187C3F2](https://goradar.it/P187C3F2)
+721 E 7TH ST
+LONG BEACH
+90813
+CA
+APT
+2,184
+12
+16
+$3,305,000
+New ShortSale Transfer
+Amount: $2,450,000
+
+[P187C3F2](https://goradar.it/P187C3F2)
+721 E 7TH ST
+LONG BEACH
+90813
+CA
+APT
+2,184
+12
+16
+$3,305,000
+Listing Status: Active => Sold
+
+[P12D8FEE](https://goradar.it/P12D8FEE)
+2530 S GROVE AVE
+ONTARIO
+91761
+CA
+COM
+6,600
+
+$2,286,786
+Prior Sale Date: - => 5/28/2026
+Postponed For: Original => Bankruptcy
+Sale Date: 5/28/2026 => 6/29/2026

@@ -1,0 +1,294 @@
+{
+  "createdAt": "2026-06-01T20:35:56.335Z",
+  "scope": "owner-disambiguation-clusters",
+  "dirs": {
+    "runDir": "raw_run_not_included",
+    "documents": "raw_run_not_included/documents",
+    "evidence": "raw_run_not_included/evidence",
+    "reports": "raw_run_not_included/reports",
+    "work": "raw_run_not_included/work",
+    "logs": "raw_run_not_included/logs"
+  },
+  "properties": [
+    "210-s-orange-grove-blvd-pasadena",
+    "3519-w-washington-blvd-los-angeles"
+  ],
+  "documents": [],
+  "evidence": [
+    {
+      "type": "official-sos-capture-summary",
+      "path": "work/sos_official_capture_summary_2026-06-01.json",
+      "createdAt": "2026-06-01T21:06:28.604Z"
+    },
+    {
+      "type": "official-sos-capture-raw-batch",
+      "path": "work/sos_capture_results_2026-06-01.json",
+      "createdAt": "2026-06-01T21:06:28.604Z"
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220013924/D220013924__20260343605__notice_of_trustee_sale__2026-06-01.pdf",
+      "createdAt": "2026-06-01T21:31:00.000Z",
+      "note": "TitlePro PDF D220013924; Los Angeles recorder document 20260343605; Notice of Trustee's Sale for 210 S Orange Grove Blvd."
+    },
+    {
+      "type": "titlepro-document-rendered-pages",
+      "path": "evidence/titlepro_documents/D220013924/normalized_pages",
+      "createdAt": "2026-06-01T21:31:00.000Z",
+      "note": "High-resolution normalized PNG render of all 5 scanned PDF pages."
+    },
+    {
+      "type": "titlepro-document-extraction-json",
+      "path": "work/titlepro_document_extractions_2026-06-01.json",
+      "createdAt": "2026-06-01T21:31:00.000Z",
+      "note": "Structured extraction from TitlePro PDF D220013924 including trustor, beneficiary, trustee, sale date, APN, and unpaid balance estimate."
+    },
+    {
+      "type": "servicelink-public-search-terms-html",
+      "path": "evidence/public_sources/servicelink_basic_search_after_accept_2026-06-01.html",
+      "createdAt": "2026-06-01T21:36:00.000Z",
+      "note": "ServiceLink ASAP basic property search terms page after public terms post; no sale result exposed through non-account fetch."
+    },
+    {
+      "type": "propertyshark-current-status-crosscheck",
+      "path": "evidence/public_sources/propertyshark_pasadena_trustee_sales_2026-06-01.txt",
+      "createdAt": "2026-06-01T21:36:00.000Z",
+      "note": "Secondary public cross-check for SDRES / 210 S Orange Grove trustee sale; not authoritative trustee status."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220022916/D220022916__20170671620__deed_of_trust__2026-06-01.pdf",
+      "property": "210-s-orange-grove-blvd-pasadena",
+      "createdAt": "2026-06-01T22:15:50.004Z",
+      "note": "DOT 20170671620; Cantor Group LLC original trustor; Deba Shyam General Manager; Preferred Bank beneficiary."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220023585/D220023585__20170671622__grant_deed__2026-06-01.pdf",
+      "property": "210-s-orange-grove-blvd-pasadena",
+      "createdAt": "2026-06-01T22:15:50.004Z",
+      "note": "Grant deed 20170671622; Cantor Group LLC to SDRES Partners LLC; Deba Shyam signed for Cantor."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220026960/D220026960__20170671623__memorandum_of_assumption_agreement__2026-06-01.pdf",
+      "property": "210-s-orange-grove-blvd-pasadena",
+      "createdAt": "2026-06-01T22:15:50.004Z",
+      "note": "Assumption agreement 20170671623; SDRES New Borrower; Cantor Managing Member; Deba Shyam signer; Andrew Stupin guarantor."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220023692/D220023692__20240020404__loan_extension_or_amendment__2026-06-01.pdf",
+      "property": "210-s-orange-grove-blvd-pasadena",
+      "createdAt": "2026-06-01T22:15:50.004Z",
+      "note": "Fifth extension 20240020404; SDRES borrower; Banayatis Haddad manager; Andrew Stupin party."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220026973/D220026973__20240688400__third_amendment_to_loan_documents__2026-06-01.pdf",
+      "property": "210-s-orange-grove-blvd-pasadena",
+      "createdAt": "2026-06-01T22:15:50.004Z",
+      "note": "Third amendment 20240688400; SDRES borrower; Jason Miller manager; Andrew Stupin party."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220023677/D220023677__20260071283__notice_of_default__2026-06-01.pdf",
+      "property": "210-s-orange-grove-blvd-pasadena",
+      "createdAt": "2026-06-01T22:15:50.004Z",
+      "note": "NOD 20260071283; Preferred Bank beneficiary; Fidelity trustee; repeats SDRES/Cantor assumption chain."
+    },
+    {
+      "type": "titlepro-ocr-text",
+      "path": "evidence/titlepro_documents/D220026960/D220026960__20170671623__memorandum_of_assumption_agreement__2026-06-01.corrected_ocr.txt",
+      "property": "210-s-orange-grove-blvd-pasadena",
+      "createdAt": "2026-06-01T22:15:50.004Z",
+      "note": "OCR text for assumption agreement 20170671623."
+    },
+    {
+      "type": "titlepro-ocr-text",
+      "path": "evidence/titlepro_documents/D220026973/D220026973__20240688400__third_amendment_to_loan_documents__2026-06-01.corrected_ocr.txt",
+      "property": "210-s-orange-grove-blvd-pasadena",
+      "createdAt": "2026-06-01T22:15:50.004Z",
+      "note": "OCR text for third amendment 20240688400."
+    },
+    {
+      "type": "titlepro-ocr-text",
+      "path": "evidence/titlepro_documents/D220023692/D220023692__20240020404__loan_extension_or_amendment__2026-06-01.corrected_ocr.txt",
+      "property": "210-s-orange-grove-blvd-pasadena",
+      "createdAt": "2026-06-01T22:15:50.004Z",
+      "note": "OCR text for fifth extension 20240020404."
+    },
+    {
+      "type": "titlepro-ocr-text",
+      "path": "evidence/titlepro_documents/D220023677/D220023677__20260071283__notice_of_default__2026-06-01.corrected_ocr.txt",
+      "property": "210-s-orange-grove-blvd-pasadena",
+      "createdAt": "2026-06-01T22:15:50.004Z",
+      "note": "OCR text for NOD 20260071283."
+    },
+    {
+      "type": "titlepro-report-html",
+      "path": "evidence/titlepro_reports/U219771319/U219771319__17046_bellflower_blvd__property_profile__2026-06-01.html",
+      "property": "17046-bellflower-blvd-bellflower",
+      "createdAt": "2026-06-01T22:47:48.000Z",
+      "note": "TitlePro property profile for 17046 Bellflower Blvd; confirms Euclid Hazard Capital LLC owner string, APN 7109-025-002, NTS/NOD/DOT/grant-deed transaction history."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D219771359/D219771359__250632770__bellflower_notice__2026-06-01.pdf",
+      "property": "17046-bellflower-blvd-bellflower",
+      "createdAt": "2026-06-01T22:47:48.000Z",
+      "note": "NTS 20250632770; Euclid Hazard Capital LLC trustor; S.B.S. Trust Deed Network foreclosure trustee; sale noticed for 2025-10-22; unpaid balance $2,438,509.65."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220031483/D220031483__20220462477__deed_of_trust__2026-06-01.pdf",
+      "property": "17046-bellflower-blvd-bellflower",
+      "createdAt": "2026-06-01T22:47:48.000Z",
+      "note": "DOT 20220462477; Euclid Hazard Capital LLC trustor/borrower; Artes Capital REIT I LLC beneficiary; Joshua Rabi Golcheh signed as Euclid Managing Member."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220032663/D220032663__20220462476__grant_deed__2026-06-01.pdf",
+      "property": "17046-bellflower-blvd-bellflower",
+      "createdAt": "2026-06-01T22:47:48.000Z",
+      "note": "Grant deed 20220462476; Goldman Revocable Trust trustees granted 17046 Bellflower Blvd to Euclid Hazard Capital LLC."
+    },
+    {
+      "type": "titlepro-ocr-text",
+      "path": "evidence/titlepro_documents/D219771359/D219771359__250632770__bellflower_notice__2026-06-01.corrected_ocr.txt",
+      "property": "17046-bellflower-blvd-bellflower",
+      "createdAt": "2026-06-01T22:47:48.000Z",
+      "note": "OCR text for Bellflower NTS 20250632770."
+    },
+    {
+      "type": "titlepro-ocr-text",
+      "path": "evidence/titlepro_documents/D220031483/D220031483__20220462477__deed_of_trust__2026-06-01.corrected_ocr.txt",
+      "property": "17046-bellflower-blvd-bellflower",
+      "createdAt": "2026-06-01T22:47:48.000Z",
+      "note": "OCR text for Bellflower DOT 20220462477."
+    },
+    {
+      "type": "titlepro-ocr-text",
+      "path": "evidence/titlepro_documents/D220032663/D220032663__20220462476__grant_deed__2026-06-01.corrected_ocr.txt",
+      "property": "17046-bellflower-blvd-bellflower",
+      "createdAt": "2026-06-01T22:47:48.000Z",
+      "note": "OCR text for Bellflower grant deed 20220462476."
+    },
+    {
+      "type": "titlepro-report-html",
+      "path": "evidence/titlepro_reports/B49533337/B49533337__3519_w_washington_blvd__property_profile__2026-06-01.html",
+      "createdAt": "2026-06-01T23:15:00.000Z",
+      "note": "TitlePro property profile B49533337; 3519 W Washington Blvd; Euclid current title-owner string and transaction history."
+    },
+    {
+      "type": "titlepro-report-text",
+      "path": "evidence/titlepro_reports/B49533337/B49533337__3519_w_washington_blvd__property_profile__2026-06-01.txt",
+      "createdAt": "2026-06-01T23:15:00.000Z",
+      "note": "Text extraction from TitlePro property profile B49533337."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220037366/D220037366__20250641571__grant_deed_3521_to_euclid__2026-06-01.pdf",
+      "createdAt": "2026-06-01T23:15:00.000Z",
+      "note": "Grant deed 20250641571; 3521 MSB Capital LLC to Euclid Hazard Capital LLC; signed by Kamran Kohan as manager."
+    },
+    {
+      "type": "titlepro-document-ocr",
+      "path": "evidence/titlepro_documents/D220037366/D220037366__20250641571__grant_deed_3521_to_euclid__2026-06-01.corrected_ocr.txt",
+      "createdAt": "2026-06-01T23:15:00.000Z",
+      "note": "Corrected OCR for grant deed 20250641571."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220038702/D220038702__20250632753__notice_of_trustee_sale__2026-06-01.pdf",
+      "createdAt": "2026-06-01T23:15:00.000Z",
+      "note": "NTS 20250632753; trustor 3521 MSB Capital LLC; sale 2025-10-28; unpaid balance $4,137,723.58."
+    },
+    {
+      "type": "titlepro-document-ocr",
+      "path": "evidence/titlepro_documents/D220038702/D220038702__20250632753__notice_of_trustee_sale__2026-06-01.corrected_ocr.txt",
+      "createdAt": "2026-06-01T23:15:00.000Z",
+      "note": "Corrected OCR for NTS 20250632753."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220039217/D220039217__20250382425__notice_of_default__2026-06-01.pdf",
+      "createdAt": "2026-06-01T23:15:00.000Z",
+      "note": "NOD 20250382425; borrower/trustor 3521 MSB Capital LLC; beneficiary Artes Capital REIT I LLC."
+    },
+    {
+      "type": "titlepro-document-ocr",
+      "path": "evidence/titlepro_documents/D220039217/D220039217__20250382425__notice_of_default__2026-06-01.corrected_ocr.txt",
+      "createdAt": "2026-06-01T23:15:00.000Z",
+      "note": "Corrected OCR for NOD 20250382425."
+    },
+    {
+      "type": "titlepro-document-pdf",
+      "path": "evidence/titlepro_documents/D220039224/D220039224__20220667371__deed_of_trust__2026-06-01.pdf",
+      "createdAt": "2026-06-01T23:15:00.000Z",
+      "note": "DOT 20220667371; 3521 MSB Capital LLC trustor/borrower; Artes Capital REIT I LLC beneficiary; Joshua Rabi Golcheh manager signer."
+    },
+    {
+      "type": "titlepro-document-ocr",
+      "path": "evidence/titlepro_documents/D220039224/D220039224__20220667371__deed_of_trust__2026-06-01.corrected_ocr.txt",
+      "createdAt": "2026-06-01T23:15:00.000Z",
+      "note": "Corrected OCR for DOT 20220667371."
+    },
+    {
+      "type": "titlepro-order-results",
+      "path": "work/titlepro_3519_order_results_2026-06-01.json",
+      "createdAt": "2026-06-01T23:15:00.000Z",
+      "note": "Clean metadata for 3519 TitlePro document orders and downloads."
+    },
+    {
+      "type": "property-visual-sources",
+      "path": "reports/assets/property_visual_sources_2026-06-01.json",
+      "createdAt": "2026-06-01T23:36:03.416Z",
+      "note": "Google Maps visual source manifest for report screenshots."
+    },
+    {
+      "type": "rocketreach-block-note",
+      "path": "evidence/public_sources/rocketreach_codex_browser_blocked_2026-06-01.txt",
+      "createdAt": "2026-06-01T23:36:03.416Z",
+      "note": "RocketReach automation blocked in Codex Browser and Brave Computer Use; manual enrichment required."
+    },
+    {
+      "type": "public-source-packet-json",
+      "path": "work/owner_disambiguation_packets.json",
+      "createdAt": "2026-06-02T01:48:57.182Z"
+    },
+    {
+      "type": "titlepro-observation",
+      "path": "work/owner_disambiguation_packets.json",
+      "createdAt": "2026-06-02T01:48:57.182Z",
+      "note": "Free TitlePro search observations and TitlePro PDF extraction are now represented in workbook tabs."
+    }
+  ],
+  "reports": [
+    {
+      "type": "html-broker-report",
+      "path": "reports/broker_owner_control_report.html",
+      "createdAt": "2026-06-01T23:36:03.416Z",
+      "note": "Broker-facing owner/control report with property visuals, role stacks, action queue, contact/status channels, and Monday field guidance."
+    },
+    {
+      "type": "csv-monday-action-queue",
+      "path": "reports/monday_action_queue.csv",
+      "createdAt": "2026-06-01T23:36:03.416Z",
+      "note": "Clean Monday import/update queue with separated role-stack fields and next broker actions."
+    },
+    {
+      "type": "markdown-report",
+      "path": "reports/owner_disambiguation_report.md",
+      "createdAt": "2026-06-02T01:48:57.182Z"
+    },
+    {
+      "type": "xlsx-workbook",
+      "path": "reports/owner_disambiguation_packet.xlsx",
+      "createdAt": "2026-06-02T01:48:57.182Z",
+      "note": "Includes Monday Import, TitlePro Evidence, and TitlePro Pull Queue sheets."
+    }
+  ],
+  "exclusions": [],
+  "reusableLessons": []
+}

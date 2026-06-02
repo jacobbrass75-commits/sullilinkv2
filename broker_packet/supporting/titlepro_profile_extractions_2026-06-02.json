@@ -1,0 +1,163 @@
+{
+  "as_of": "2026-06-02",
+  "note": "Profile-level TitlePro evidence only. The referenced document images were not ordered because the 2026-06-02 profiles show manual/upgraded retrieval language for document images.",
+  "profiles": [
+    {
+      "titlepro_order_id": "B49537140",
+      "titlepro_url": "https://www.titlepro247.com/Orders/Home/Html/B49537140",
+      "slug": "28207_newhall_ranch_rd_santa_clarita",
+      "property_address": "28207 Newhall Ranch Rd, Santa Clarita, CA 91355",
+      "apn": "2866-006-063",
+      "title_owner": "Galois Group LLC",
+      "use": "Community: Shopping Plaza, Shopping Center, Mini-Mall",
+      "key_profile_facts": [
+        "TitlePro profile shows 2026 NOD doc 26-0290769 recorded 2026-04-24 against Galois Group LLC.",
+        "TitlePro profile lists TS/case no. 2026-100955, original document 25-0005454, trustor Galois Group LLC, beneficiary Cantor Group V LLC, trustee/contact Beacon Default Management Inc., and delinquent amount $26,609,085 as of 2026-04-17.",
+        "TitlePro profile shows 2025 $20,000,000 commercial mortgage doc 25-0005454 with origination lender Cantor Group IV LLC, plus assignments 25-0061765 and 25-0070651 and earlier Preferred Bank $1,500,000 loan documents."
+      ],
+      "saved_evidence": [
+        "evidence/titlepro_reports/B49537140/B49537140__28207_newhall_ranch_rd__property_profile__2026-06-02.html",
+        "evidence/titlepro_reports/B49537140/B49537140__28207_newhall_ranch_rd__property_profile__2026-06-02.txt",
+        "work/titlepro_session/titlepro_remaining_profile_doc_links_2026-06-02.json"
+      ],
+      "manual_document_targets": [
+        "26-0290769 NOD",
+        "25-0005454 2025 commercial loan",
+        "25-0061765 assignment",
+        "25-0070651 assignment"
+      ]
+    },
+    {
+      "titlepro_order_id": "B49537141",
+      "titlepro_url": "https://www.titlepro247.com/Orders/Home/Html/B49537141",
+      "slug": "40650_village_dr_big_bear_lake",
+      "property_address": "40650 Village Dr, Big Bear Lake, CA 92315",
+      "apn": "0308-271-01-0000",
+      "title_owner": "Pacific Snow Valley Resort LLC",
+      "use": "Hotel",
+      "key_profile_facts": [
+        "TitlePro profile shows current ownership as Pacific Snow Valley Resort LLC and mailing address 11950 Webb Chapel Rd, Dallas, TX 75234.",
+        "TitlePro profile shows 2025 NTS doc 2025-0314764 recorded 2025-12-26, TS/case no. 1228605, auction date 2026-02-04, original document 2017-0083212, and trustor Pacific Snow Valley Resort LLC.",
+        "TitlePro profile shows the 2017 commercial loan doc 2017-0083212 for $19,000,000 with origination lender Hua Nan Commercial Bank Ltd. The public City News Group NTS listing estimates the 2026-02-04 sale amount at $31,101,536.84 and points to First American sale-status channels."
+      ],
+      "saved_evidence": [
+        "evidence/titlepro_reports/B49537141/B49537141__40650_village_dr__property_profile__2026-06-02.html",
+        "evidence/titlepro_reports/B49537141/B49537141__40650_village_dr__property_profile__2026-06-02.txt",
+        "work/titlepro_session/titlepro_remaining_profile_doc_links_2026-06-02.json"
+      ],
+      "manual_document_targets": [
+        "2025-0314764 NTS",
+        "2017-0083212 commercial loan",
+        "2010-0524096 grant deed"
+      ]
+    },
+    {
+      "titlepro_order_id": "B49537143",
+      "titlepro_url": "https://www.titlepro247.com/Orders/Home/Html/B49537143",
+      "slug": "4800_citrus_ave_fontana_vasari",
+      "property_address": "4800 Citrus Ave, Fontana, CA 92336",
+      "apn": "0226-075-85-0000",
+      "title_owner": "Vasari 2 LLC",
+      "use": "Apartment house (5+ units)",
+      "key_profile_facts": [
+        "TitlePro profile shows Vasari 2 LLC as current owner by recorder information, transfer date 2024-09-09, recording date 2024-09-13, recorder doc 2024-0219739, mailing address 2151 E Convention Center Way, Ontario.",
+        "TitlePro profile shows 2025 building/construction loan doc 2025-0007420 for $62,000,000, borrower Vasari 2 LLC, lender PNC Bank N.A.",
+        "TitlePro profile shows 2023 quitclaim doc 2023-0253536 from HDO4 LLC to Vasari 2 LLC and 2020 grant deed doc 2020-0437488 from City of Fontana to HDO4 LLC."
+      ],
+      "saved_evidence": [
+        "evidence/titlepro_reports/B49537143/B49537143__4800_citrus_ave__property_profile__2026-06-02.html",
+        "evidence/titlepro_reports/B49537143/B49537143__4800_citrus_ave__property_profile__2026-06-02.txt",
+        "work/titlepro_session/titlepro_remaining_profile_doc_links_2026-06-02.json"
+      ],
+      "manual_document_targets": [
+        "2025-0007420 PNC construction loan",
+        "2024-0219739 deed",
+        "2023-0253536 quitclaim deed"
+      ]
+    },
+    {
+      "titlepro_order_id": "B49537145",
+      "titlepro_url": "https://www.titlepro247.com/Orders/Home/Html/B49537145",
+      "slug": "4800_citrus_ave_fontana_ventana",
+      "property_address": "4800 Citrus Ave, Fontana, CA 92336",
+      "apn": "0226-075-84-0000",
+      "title_owner": "Ventana 257 LLC",
+      "use": "Apartment house (100+ units)",
+      "key_profile_facts": [
+        "TitlePro profile shows Ventana 257 LLC as current owner for APN 0226-075-84-0000, transfer date 2024-09-09, recording date 2024-09-13, recorder doc 2024-0219738.",
+        "TitlePro profile shows 2024 grant deed doc 2024-0219737 from Ventana 257 LLC to Vasari 2 LLC for a related same-address APN chain.",
+        "TitlePro profile mailing address is 2151 E Convention Center Way Ste 222, Ontario, CA 91764."
+      ],
+      "saved_evidence": [
+        "evidence/titlepro_reports/B49537145/B49537145__4800_citrus_ave__property_profile__2026-06-02.html",
+        "evidence/titlepro_reports/B49537145/B49537145__4800_citrus_ave__property_profile__2026-06-02.txt",
+        "work/titlepro_session/titlepro_remaining_profile_doc_links_2026-06-02.json"
+      ],
+      "manual_document_targets": [
+        "2024-0219738 deed",
+        "2024-0219737 grant deed"
+      ]
+    },
+    {
+      "titlepro_order_id": "B49537147",
+      "titlepro_url": "https://www.titlepro247.com/Orders/Home/Html/B49537147",
+      "slug": "14037_cerise_ave_hawthorne",
+      "property_address": "14037 Cerise Ave, Hawthorne, CA 90250",
+      "apn": "4052-029-078",
+      "title_owner": "Anastasi Lloyd R; L and L Anastasi Trust",
+      "use": "Apartment house (5+ units)",
+      "key_profile_facts": [
+        "TitlePro profile shows current ownership as Anastasi Lloyd R; L and L Anastasi Trust.",
+        "TitlePro profile shows 2026 NOD doc 26-0116455 recorded 2026-02-18, TS/case no. 26-00047-2FNT, original doc 19-0760721, beneficiary Columbia Bank, trustee/contact Theresa Leckey, and delinquent amount $30,983 as of 2026-02-11.",
+        "TitlePro profile shows 2026 commercial loan doc 26-0280954 for $7,500,000 with origination lender Stormfield SPV I LLC.",
+        "TitlePro profile shows 2019 grant deed doc 19-0760720 from BMJ Venture LLC to Lloyd R. Anastasi / Lloyd R. Anastasi & Laurene T. Anastasi trust interests, and 2016/2006 trust transfer history."
+      ],
+      "saved_evidence": [
+        "evidence/titlepro_reports/B49537147/B49537147__14037_cerise_ave__property_profile__2026-06-02.html",
+        "evidence/titlepro_reports/B49537147/B49537147__14037_cerise_ave__property_profile__2026-06-02.txt",
+        "work/titlepro_session/titlepro_remaining_profile_doc_links_2026-06-02.json"
+      ],
+      "manual_document_targets": [
+        "26-0116455 NOD",
+        "26-0280954 commercial loan",
+        "19-0760720 grant deed",
+        "16-1138606 intra-family transfer",
+        "06-0876484 intra-family transfer"
+      ]
+    },
+    {
+      "titlepro_order_id": "B49537152",
+      "titlepro_url": "https://www.titlepro247.com/Orders/Home/Html/B49537152",
+      "slug": "14103_cerise_ave_hawthorne",
+      "property_address": "14103 Cerise Ave, Hawthorne, CA 90250",
+      "apn": "4052-029-063",
+      "title_owner": "Anastasi Lloyd R; L and L Anastasi Trust",
+      "use": "Apartment house (5+ units)",
+      "key_profile_facts": [
+        "TitlePro profile shows current ownership as Anastasi Lloyd R; L and L Anastasi Trust.",
+        "TitlePro profile shows 2026 NOD doc 26-0116264 recorded 2026-02-18, TS/case no. 26-00049-2FNT, original doc 19-0760751, beneficiary Columbia Bank, trustee/contact Theresa Leckey, and delinquent amount $34,081 as of 2026-02-11.",
+        "TitlePro profile shows 2026 commercial loan doc 26-0280954 for $7,500,000 with origination lender Stormfield SPV I LLC.",
+        "TitlePro profile shows 2019 grant deed doc 19-0760750 from BMJ Venture LLC to Lloyd R. Anastasi / Lloyd R. Anastasi & Laurene T. Anastasi trust interests and 2009/2012 trust transfer history."
+      ],
+      "saved_evidence": [
+        "evidence/titlepro_reports/B49537152/B49537152__14103_cerise_ave__property_profile__2026-06-02.html",
+        "evidence/titlepro_reports/B49537152/B49537152__14103_cerise_ave__property_profile__2026-06-02.txt",
+        "work/titlepro_session/titlepro_remaining_profile_doc_links_2026-06-02.json"
+      ],
+      "manual_document_targets": [
+        "26-0116264 NOD",
+        "26-0280954 commercial loan",
+        "19-0760750 grant deed",
+        "12-1960400 intra-family transfer",
+        "09-1940601 intra-family transfer"
+      ]
+    }
+  ],
+  "public_sources_added": [
+    {
+      "source": "City News Group trustee sale listing",
+      "url": "https://www.citynewsgroup.com/legal-ads/database/trustee-sales/?C=N%3BO%3DD",
+      "use": "Secondary public cross-check for Pacific Snow Valley Resort LLC trustee sale no. 1228605."
+    }
+  ]
+}

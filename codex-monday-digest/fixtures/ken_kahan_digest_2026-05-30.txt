@@ -1,0 +1,62 @@
+Subject: FW: Daily Digest Alert: Ken Kahan List
+From: Broker User <broker@example.com>
+Original sender: PropertyRadar Alerts <no-reply@propertyradar.info>
+Message timestamp: 2026-05-30T04:16:22
+
+Your daily digest alert, Ken Kahan List, found matches.
+
+Radar ID
+Street
+City
+Zip
+State
+Type
+Sq Ft
+Beds
+Baths
+Est. Value
+What Changed
+
+[P15F1852](https://goradar.it/P15F1852)
+2701 STATHAM BLVD
+OXNARD
+93033
+CA
+IND
+102,543
+
+$8,458,447
+New Notice
+
+[P15F1852](https://goradar.it/P15F1852)
+2701 STATHAM BLVD
+OXNARD
+93033
+CA
+IND
+102,543
+
+$8,458,447
+New Notice
+
+[P1555F5F](https://goradar.it/P1555F5F)
+16757 SLOVER AVE
+FONTANA
+92337
+CA
+COM
+59,524
+
+$2,750,000
+New Matches
+
+[P17C6EDA](https://goradar.it/P17C6EDA)
+14338 FOOTHILL BLVD
+FONTANA
+92335
+CA
+COM
+98,673
+
+$1,150,000
+New Matches

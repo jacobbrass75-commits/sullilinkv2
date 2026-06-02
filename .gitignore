@@ -1,0 +1,34 @@
+# Local credentials and environment files
+credentials.env
+.env
+.env.local
+.env.*
+!.env.example
+
+# macOS/local noise
+.DS_Store
+
+# Large or private local reference material
+external_references/
+
+# Original local exports/output folders. Shareable copies live under broker_packet/.
+/monday_exports/
+/outputs/
+
+# Raw research/evidence dumps are intentionally excluded from the share repo.
+outputs/distressed_cre_pilot/
+outputs/monday_digest_runs/
+outputs/cre_ops_blueprint/
+outputs/anastasi_cerise_public_evidence/
+outputs/distressed_cre_research/**/evidence/
+outputs/distressed_cre_research/**/work/titlepro_session/
+outputs/distressed_cre_research/**/work/workbook_renders/
+
+# Browser/session artifacts
+**/cookies.txt
+**/*post_response*.http
+**/login.html
+**/account.html
+
+# Dependencies/build artifacts
+**/node_modules/

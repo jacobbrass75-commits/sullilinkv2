@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CRE Workflow Desk</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>CRE Workflow Desk</h1>
+        <p>PropertyRadar intake, owner-cluster review, and Monday-ready previews without using Monday.com.</p>
+      </div>
+      <div class="status-strip">
+        <span>Dry run</span>
+        <span>No outreach</span>
+        <span>No paid pulls</span>
+        <span>No control claims</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel intake-panel">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="digest" type="button">Digest Intake</button>
+          <button class="tab" data-tab="batch" type="button">Owner Clusters</button>
+        </div>
+
+        <form id="digest-form" class="tab-panel active">
+          <label>
+            Run name
+            <input id="digest-name" name="name" value="daily-digest" autocomplete="off">
+          </label>
+          <label>
+            Upload digest text
+            <input id="digest-file" type="file" accept=".txt,.eml,text/plain">
+          </label>
+          <label>
+            Paste PropertyRadar digest
+            <textarea id="digest-text" rows="16" spellcheck="false" placeholder="Paste the Daily Digest Alert email text here."></textarea>
+          </label>
+          <button class="primary" type="submit">Generate Review Run</button>
+        </form>
+
+        <form id="batch-form" class="tab-panel">
+          <label>
+            Run name
+            <input id="batch-name" name="name" value="owner-clusters" autocomplete="off">
+          </label>
+          <label>
+            Upload PropertyRadar CSV
+            <input id="batch-file" type="file" accept=".csv,text/csv">
+          </label>
+          <div class="split">
+            <label>
+              Or use server CSV path
+              <input id="batch-path" value="../data/Export-20260526-091844.csv" autocomplete="off">
+            </label>
+            <button class="secondary" id="batch-default" type="button">Use Default CSV</button>
+          </div>
+          <button class="primary" type="submit">Build Owner-Cluster Review</button>
+        </form>
+      </section>
+
+      <section class="panel runs-panel">
+        <div class="section-head">
+          <h2>Runs</h2>
+          <button class="secondary" id="refresh-runs" type="button">Refresh</button>
+        </div>
+        <div id="run-list" class="run-list"></div>
+      </section>
+
+      <section class="panel detail-panel">
+        <div class="section-head">
+          <h2 id="detail-title">Review</h2>
+          <div id="download-links" class="downloads"></div>
+        </div>
+        <div id="message" class="message"></div>
+        <div id="summary-grid" class="summary-grid"></div>
+        <div id="detail-body" class="detail-body"></div>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

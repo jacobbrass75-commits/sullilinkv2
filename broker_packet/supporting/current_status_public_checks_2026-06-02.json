@@ -1,0 +1,161 @@
+{
+  "as_of": "2026-06-02",
+  "scope": "Public current-status checks layered onto the TitlePro owner/control packet. These checks do not replace official trustee, lender, PACER, or court docket confirmation before broker action.",
+  "sources": [
+    {
+      "name": "BKalerts - Riverside Express Car Wash, LLC",
+      "url": "https://www.bkalerts.com/recent-bankruptcy-cases/california-central-bankruptcy-court/6%3A25-bk-14654/bankruptcy-case-riverside-express-car-wash-llc",
+      "source_type": "public PACER-derived docket summary"
+    },
+    {
+      "name": "BKalerts - Santa Ana Express Car Wash LLC",
+      "url": "https://www.bkalerts.com/recent-bankruptcy-cases/california-central-bankruptcy-court/6%3A25-bk-15662/bankruptcy-case-santa-ana-express-car-wash-llc",
+      "source_type": "public PACER-derived docket summary"
+    },
+    {
+      "name": "BKalerts - Conejo Riverside Group, LLC",
+      "url": "https://www.bkalerts.com/recent-bankruptcy-cases/california-central-bankruptcy-court/8%3A26-bk-11647/bankruptcy-case-conejo-riverside-group-llc",
+      "source_type": "public PACER-derived docket summary"
+    },
+    {
+      "name": "BKalerts - Cantor Group, LLC",
+      "url": "https://www.bkalerts.com/recent-bankruptcy-cases/california-central-bankruptcy-court/8%3A26-bk-11706/bankruptcy-case-cantor-group-llc",
+      "source_type": "public PACER-derived docket summary"
+    },
+    {
+      "name": "Inforuptcy - Santa Ana Express Car Wash LLC",
+      "url": "https://www.inforuptcy.com/browse-filings/california-central-bankruptcy-court/6%3A25-bk-15662/bankruptcy-case-santa-ana-express-car-wash-llc",
+      "source_type": "public PACER-derived docket summary"
+    },
+    {
+      "name": "BKalerts - California Central business case index",
+      "url": "https://www.bkalerts.com/recent-bankruptcy-cases/california-central-bankruptcy-cases",
+      "source_type": "public PACER-derived case index"
+    },
+    {
+      "name": "Bankruptcy Observer alerts feed",
+      "url": "https://www.bankruptcyobserver.com/alerts",
+      "source_type": "public PACER-derived alerts feed"
+    },
+    {
+      "name": "PropertyShark Pasadena trustee sales",
+      "url": "https://www.propertyshark.com/mason/CA/Pasadena/Trustees-Sales",
+      "source_type": "secondary foreclosure listing"
+    },
+    {
+      "name": "SuperiorDefault public status row - S.B.S. 2024-2355",
+      "url": "https://superiordefault.com/orders/update_index_table?trustee_sale_file_number=2024-2355&landing_page=true",
+      "source_type": "public trustee-status endpoint"
+    },
+    {
+      "name": "SuperiorDefault public status row - S.B.S. 2024-2352",
+      "url": "https://superiordefault.com/orders/update_index_table?trustee_sale_file_number=2024-2352&landing_page=true",
+      "source_type": "public trustee-status endpoint"
+    },
+    {
+      "name": "MK/Assured public February sale sheet",
+      "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQMop8Uelv1hdzsqfBVfz8vG06XVM8CDt6U3fgpKF3bNzrYTN3cgbGuFnAHXAPT5n9rM-QUtcMI8ztY/pub?gid=1204776611&single=true&output=csv",
+      "source_type": "public trustee-sale CSV"
+    },
+    {
+      "name": "MK/Assured public April sale sheet",
+      "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQMop8Uelv1hdzsqfBVfz8vG06XVM8CDt6U3fgpKF3bNzrYTN3cgbGuFnAHXAPT5n9rM-QUtcMI8ztY/pub?gid=1231433151&single=true&output=csv",
+      "source_type": "public trustee-sale CSV"
+    }
+  ],
+  "checks": [
+    {
+      "subject": "Riverside Express Car Wash LLC / 6458 Van Buren Blvd",
+      "case_or_file": "6:25-bk-14654-RB; trustee sale F25-00158",
+      "public_status": "BKalerts shows Chapter 11 voluntary filed 2025-07-10 in C.D. Cal. Riverside, docket header DISMISSED, debtor dismissed 2026-03-25, and last filing 2026-05-07. MK/Assured public February sale sheet lists F25-00158 at 6458 Van Buren Blvd, Riverside, sale time 9:00 AM, PP-bid/cxl $4,300,000.00, result $4,300,000.00, trustee ASSURED.",
+      "packet_interpretation": "The recorded trustee's deed to T Bank is corroborated by a public MK/Assured sale-result row and a public bankruptcy-summary dismissal signal. Still verify the official docket, title/possession, and lender-owned posture before treating status as clean.",
+      "confidence": "High for public MK/Assured row; medium-high for public docket-summary status; not official PACER docket review.",
+      "limitation": "BKalerts is PACER-derived but not the court docket of record. Sale result is public MK/Assured evidence, but current possession/title-insurance posture still needs trustee/lender confirmation.",
+      "next_action": "Confirm official docket dismissal and current T Bank/lender-owned title/possession posture before outreach.",
+      "source_urls": [
+        "https://www.bkalerts.com/recent-bankruptcy-cases/california-central-bankruptcy-court/6%3A25-bk-14654/bankruptcy-case-riverside-express-car-wash-llc",
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQMop8Uelv1hdzsqfBVfz8vG06XVM8CDt6U3fgpKF3bNzrYTN3cgbGuFnAHXAPT5n9rM-QUtcMI8ztY/pub?gid=1204776611&single=true&output=csv"
+      ]
+    },
+    {
+      "subject": "Santa Ana Express Car Wash LLC / 2035 N Tustin Ave",
+      "case_or_file": "6:25-bk-15662-RB; trustee sale F25-00157",
+      "public_status": "BKalerts and Inforuptcy show Chapter 11 voluntary filed 2025-08-12, docket header INTRA, APPEAL, last filing 2026-05-28, and May 2026 docket activity including T Bank response to an order to show cause, continued fee-hearing activity, and a BAP appeal dismissed as stipulated on 2026-04-30. MK/Assured public April sale sheet lists F25-00157 at 2035 N Tustin Ave, Orange, sale time 3:00 PM, PP-bid/cxl $3,200,000.00, result $3,200,000.00, trustee ASSURED.",
+      "packet_interpretation": "Treat this as the higher-risk Express Car Wash lead. The trustee's deed to T Bank and MK/Assured sale-result row support a completed sale path, but public docket activity indicates bankruptcy/appeal/reopen-style risk that should be checked before broker action.",
+      "confidence": "High for public MK/Assured row; medium-high for public docket-summary activity; not official PACER docket review.",
+      "limitation": "Need official docket and trustee/lender confirmation to know whether the sale/title position is presently clear despite the public sale-result row.",
+      "next_action": "Check official PACER docket and current lender/title/possession posture before any title or sale-status representation.",
+      "source_urls": [
+        "https://www.bkalerts.com/recent-bankruptcy-cases/california-central-bankruptcy-court/6%3A25-bk-15662/bankruptcy-case-santa-ana-express-car-wash-llc",
+        "https://www.inforuptcy.com/browse-filings/california-central-bankruptcy-court/6%3A25-bk-15662/bankruptcy-case-santa-ana-express-car-wash-llc",
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQMop8Uelv1hdzsqfBVfz8vG06XVM8CDt6U3fgpKF3bNzrYTN3cgbGuFnAHXAPT5n9rM-QUtcMI8ztY/pub?gid=1231433151&single=true&output=csv"
+      ]
+    },
+    {
+      "subject": "Conejo Riverside Group LLC / S Grove Ave Ontario portfolio",
+      "case_or_file": "8:26-bk-11647",
+      "public_status": "BKalerts case page shows Conejo Riverside Group, LLC Chapter 11 voluntary case 8:26-bk-11647-MH filed 2026-05-28, last filing 2026-06-01, docket header DsclsDue, PlnDue, Incomplete, and a status hearing set for 2026-07-07. The latest public dockets also include Western Alliance Bank's notice of appearance on 2026-05-29.",
+      "packet_interpretation": "Fresh Chapter 11 filing creates major stay/workout risk. Do not push a broker action against the Grove portfolio without official docket and lender/WAB status confirmation.",
+      "confidence": "High for fresh public docket-summary Chapter 11 filing/stay risk; official PACER docket still needed before legal reliance.",
+      "limitation": "Public summary confirms filing signal and visible activity but not full stay orders, SARE deadlines, collateral treatment, or relief-from-stay posture.",
+      "next_action": "Pull/check official C.D. Cal. bankruptcy docket for 8:26-bk-11647 and Preferred Bank/WAB workout status.",
+      "source_urls": [
+        "https://www.bkalerts.com/recent-bankruptcy-cases/california-central-bankruptcy-court/8%3A26-bk-11647/bankruptcy-case-conejo-riverside-group-llc",
+        "https://www.bkalerts.com/recent-bankruptcy-cases/california-central-bankruptcy-cases"
+      ]
+    },
+    {
+      "subject": "Cantor Group LLC related bankruptcy signal",
+      "case_or_file": "8:26-bk-11706",
+      "public_status": "BKalerts case page shows Cantor Group, LLC Chapter 11 voluntary case 8:26-bk-11706-SC filed 2026-05-29, last filing 2026-06-01, docket header DsclsDue, PlnDue, Incomplete, and schedules/statements due 2026-06-12. Bankruptcy Observer alerts feed separately lists the same new Chapter 11 filing.",
+      "packet_interpretation": "Relevant because several owner/control chains in the Monday workflow include Cantor Group, Cantor Group Manager LLC, or Deba Shyam. This is not a substitute for asset-specific stay analysis.",
+      "confidence": "High for fresh public docket-summary Chapter 11 filing/stay risk; official PACER docket still needed before legal reliance.",
+      "limitation": "Need official docket and entity matching to confirm relationship to each collateral owner/borrower.",
+      "next_action": "Use as a cross-check when reviewing Conejo/SDRES/Galois/Cantor-chain assets.",
+      "source_urls": [
+        "https://www.bkalerts.com/recent-bankruptcy-cases/california-central-bankruptcy-court/8%3A26-bk-11706/bankruptcy-case-cantor-group-llc",
+        "https://www.bkalerts.com/recent-bankruptcy-cases/california-central-bankruptcy-cases",
+        "https://www.bankruptcyobserver.com/alerts"
+      ]
+    },
+    {
+      "subject": "SDRES Partners LLC / 210 S Orange Grove Blvd",
+      "case_or_file": "25-00381-2FNT",
+      "public_status": "TitlePro NTS states sale date 2026-06-03 at 11:00 AM and trustee sale no. 25-00381-2FNT. PropertyShark Pasadena trustee-sale listing appears as a secondary cross-check for the same sale number/date, trustor Cantor Group LLC, Fidelity National Title Insurance Company as trustee, Preferred Bank as beneficiary, unpaid balance about $8,736,555, and Pomona/Norwalk sale-location references. The same PropertyShark page also surfaces companion trustee sale no. 25-00380-2FNT for another Pasadena 91105 SDRES/Cantor collateral row and lists Preferred Bank / (866) 684-2727 on its Preferred Bank rows.",
+      "packet_interpretation": "Near-term sale should remain the top current-status call across both 25-00381-2FNT and companion 25-00380-2FNT, but neither is verified active until ServiceLink/Fidelity/Preferred confirms no postponement, cancellation, bankruptcy stay, or sale result. Because Cantor Group filed Chapter 11 on 2026-05-29 and appears in the historical SDRES chain, the official docket/trustee check should also confirm whether that filing affects the collateral.",
+      "confidence": "High for recorded NTS facts from TitlePro; low-to-medium for public secondary listing as current status.",
+      "limitation": "ServiceLink ASAP basic public flow did not expose authoritative result. Secondary listing is not the trustee source of truth.",
+      "next_action": "Call/check ServiceLink/Fidelity/Preferred for 25-00381-2FNT and 25-00380-2FNT on the day of broker action; use (866) 684-2727 as a secondary Preferred Bank status/contact number from PropertyShark.",
+      "source_urls": [
+        "https://www.propertyshark.com/mason/CA/Pasadena/Trustees-Sales"
+      ],
+      "saved_evidence": [
+        "evidence/public_sources/propertyshark_pasadena_trustee_sales_2026-06-01.txt",
+        "evidence/public_sources/sdres_status_2026-06-02/propertyshark_pasadena_trustee_sales_extracted_2026-06-02.md"
+      ]
+    },
+    {
+      "subject": "Alessandro Group LLC / 23750 Alessandro Blvd",
+      "case_or_file": "Nano Banc trustee sale no. 1262662",
+      "public_status": "Exact public searches for Alessandro Group LLC, Nano Banc, 23750 Alessandro, and trustee sale no. 1262662 did not surface a reliable public bankruptcy or live-sale status page.",
+      "packet_interpretation": "Keep Nano Banc NOD/default evidence as recorded TitlePro proof, but present current sale/bankruptcy status as missing.",
+      "confidence": "Low for absence of a public signal; absence is not proof of no case or no sale update.",
+      "limitation": "Requires trustee/lender status check and bankruptcy search in authoritative systems.",
+      "next_action": "Verify Nano Banc/First American sale status and run official bankruptcy/stay check before outreach.",
+      "source_urls": []
+    },
+    {
+      "subject": "Euclid Hazard Capital LLC / 3521 MSB Capital LLC",
+      "case_or_file": "S.B.S. cases 2024-2355 and 2024-2352",
+      "public_status": "SuperiorDefault public status row for case 2024-2355 / 3519 W Washington shows original sale 2025-10-28, current sale 2026-06-18 at 11:00 AM, status Postponed due to Beneficiaries Request, NOS amount $4,137,723.58, opening bid $0.00, sold amount $0.00. SuperiorDefault public status row for case 2024-2352 / 17046 Bellflower shows original sale 2025-10-22, current sale 2026-06-23 at 11:00 AM, status Postponed due to Beneficiaries Request, NOS amount $2,438,509.65, opening bid $0.00, sold amount $0.00.",
+      "packet_interpretation": "Upgrade both Euclid/S.B.S. rows from stale NTS/current-status missing to live postponed trustee-sale leads. Recheck on SuperiorDefault/S.B.S. immediately before outreach because postponements can change.",
+      "confidence": "High for public SuperiorDefault status rows as of this check.",
+      "limitation": "Trustee sale status can change quickly; day-of-sale recheck and payoff/workout confirmation are still required.",
+      "next_action": "Use 3519 as current-sale 2026-06-18 and Bellflower as current-sale 2026-06-23; recheck SuperiorDefault/S.B.S. before broker action.",
+      "source_urls": [
+        "https://superiordefault.com/orders/update_index_table?trustee_sale_file_number=2024-2355&landing_page=true",
+        "https://superiordefault.com/orders/update_index_table?trustee_sale_file_number=2024-2352&landing_page=true"
+      ]
+    }
+  ]
+}
