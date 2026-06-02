@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monday CRE Workflow Mind Map</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --ink: #172033;
+      --muted: #5f6b7a;
+      --line: #c7cedb;
+      --blue: #1f5fbf;
+      --green: #16795b;
+      --orange: #b85c00;
+      --red: #b42318;
+      --purple: #6f42c1;
+      --teal: #0f766e;
+      --card: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+
+    .page {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-end;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      max-width: 900px;
+    }
+
+    .badge {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .mindmap {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) 290px minmax(260px, 1fr);
+      gap: 22px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+
+    .column {
+      display: grid;
+      gap: 14px;
+    }
+
+    .core {
+      position: sticky;
+      top: 20px;
+      background: #13233f;
+      color: #fff;
+      border-radius: 10px;
+      padding: 22px;
+      box-shadow: 0 12px 24px rgba(19, 35, 63, 0.20);
+    }
+
+    .core h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .core p {
+      margin: 0 0 14px;
+      color: #dbe4f3;
+      font-size: 14px;
+    }
+
+    .core ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #f4f7fb;
+      font-size: 14px;
+    }
+
+    .node {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-left: 6px solid var(--blue);
+      border-radius: 8px;
+      padding: 14px 16px;
+      box-shadow: 0 8px 18px rgba(23, 32, 51, 0.06);
+    }
+
+    .node h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    .node ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .green { border-left-color: var(--green); }
+    .orange { border-left-color: var(--orange); }
+    .red { border-left-color: var(--red); }
+    .purple { border-left-color: var(--purple); }
+    .teal { border-left-color: var(--teal); }
+
+    .flow {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 28px;
+    }
+
+    .flow h2, .artifact h2 {
+      margin: 0 0 14px;
+      font-size: 20px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .step {
+      min-height: 92px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px;
+      background: #fbfcff;
+      position: relative;
+      font-size: 13px;
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+
+    .step span {
+      color: var(--muted);
+    }
+
+    .artifact {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid #e5e9f0;
+      padding: 10px;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      background: #f8fafc;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: #23344f;
+      background: #f1f4f8;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    .rule {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-left: 5px solid var(--red);
+      background: #fff7f7;
+      border-radius: 6px;
+      color: #5c1b16;
+      font-size: 14px;
+    }
+
+    @media (max-width: 980px) {
+      .mindmap {
+        grid-template-columns: 1fr;
+      }
+
+      .core {
+        position: static;
+        order: -1;
+      }
+
+      .steps {
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
+      }
+
+      .header {
+        display: block;
+      }
+
+      .badge {
+        display: inline-block;
+        margin-top: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <div>
+        <h1>Monday CRE Workflow Mind Map</h1>
+        <p class="subtitle">PropertyRadar and Gmail intake becomes local dry-run queues, evidence tasks, owner-control disambiguation, broker packets, and only then optional scoped Monday writes.</p>
+      </div>
+      <div class="badge">Default posture: preview only</div>
+    </header>
+
+    <section class="mindmap" aria-label="workflow mind map">
+      <div class="column">
+        <article class="node">
+          <h3>1. Intake</h3>
+          <ul>
+            <li>PropertyRadar daily digest</li>
+            <li>Saved Gmail full-body read</li>
+            <li>PropertyRadar CSV batch export</li>
+            <li>Monday workflow exports</li>
+          </ul>
+        </article>
+
+        <article class="node green">
+          <h3>2. Local Runner</h3>
+          <ul>
+            <li>Parse HTML/text digest</li>
+            <li>Dedupe by Radar ID and APN</li>
+            <li>Preserve source rows and events</li>
+            <li>Generate dry-run artifacts</li>
+          </ul>
+        </article>
+
+        <article class="node orange">
+          <h3>3. Preview Queues</h3>
+          <ul>
+            <li><code>monday_action_queue.csv</code></li>
+            <li>TitlePro approval queue</li>
+            <li>Current-status tasks</li>
+            <li>Owner-control tasks</li>
+          </ul>
+        </article>
+
+        <article class="node teal">
+          <h3>4. Evidence Lanes</h3>
+          <ul>
+            <li>TitlePro actual PDF downloads</li>
+            <li>SOS/entity trace</li>
+            <li>Trustee/provider status</li>
+            <li>Manual contact pasteback</li>
+          </ul>
+        </article>
+      </div>
+
+      <aside class="core">
+        <h2>Core Operating Rule</h2>
+        <p>This is a Monday-first CRE workflow, not a generic automation system.</p>
+        <ul>
+          <li>Run local dry-runs first.</li>
+          <li>Keep roles separate.</li>
+          <li>Use evidence before claims.</li>
+          <li>Gate every paid or live external action.</li>
+        </ul>
+      </aside>
+
+      <div class="column">
+        <article class="node purple">
+          <h3>5. Owner Disambiguation</h3>
+          <ul>
+            <li>Title owner</li>
+            <li>Borrower/trustor</li>
+            <li>Lender/beneficiary</li>
+            <li>Trustee, agent, signer, manager</li>
+          </ul>
+        </article>
+
+        <article class="node red">
+          <h3>6. Safety Gates</h3>
+          <ul>
+            <li>No CSV-only control claims</li>
+            <li>No unsupervised TitlePro pulls</li>
+            <li>No RocketReach reveal automation</li>
+            <li>No Monday writes without full gates</li>
+          </ul>
+        </article>
+
+        <article class="node green">
+          <h3>7. Broker Packet</h3>
+          <ul>
+            <li>HTML report</li>
+            <li>XLSX packet</li>
+            <li>Maps and property visuals</li>
+            <li>Evidence caveats and next actions</li>
+          </ul>
+        </article>
+
+        <article class="node">
+          <h3>8. Optional Monday Sync</h3>
+          <ul>
+            <li>Read-only lookup first</li>
+            <li>Board/group/column map</li>
+            <li>Rollback plan</li>
+            <li>Broker approval</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="flow">
+      <h2>Operating Flow</h2>
+      <div class="steps">
+        <div class="step"><strong>Input</strong><span>Digest, Gmail read, CSV batch, or manual evidence pasteback.</span></div>
+        <div class="step"><strong>Dry Run</strong><span>Parse, normalize, dedupe, and create preview artifacts.</span></div>
+        <div class="step"><strong>Queue</strong><span>Monday tasks, TitlePro decisions, current-status checks, owner-control review.</span></div>
+        <div class="step"><strong>Evidence</strong><span>Download TitlePro PDFs, import SOS/status/contact evidence.</span></div>
+        <div class="step"><strong>Disambiguate</strong><span>Separate title owner, borrower, lender, trustee, signer, agent, and contact.</span></div>
+        <div class="step"><strong>Packet / Sync</strong><span>Broker packet first; live Monday write only after every gate passes.</span></div>
+      </div>
+    </section>
+
+    <section class="artifact">
+      <h2>Artifact Map</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Lane</th>
+            <th>Primary artifact</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Digest preview</td>
+            <td><code>outputs/monday_digest_runs/gmail-preview/</code></td>
+            <td>Daily distressed leads from PropertyRadar/Gmail.</td>
+          </tr>
+          <tr>
+            <td>Batch clusters</td>
+            <td><code>outputs/monday_digest_runs/batch-owner-clusters/</code></td>
+            <td>Candidate owner clusters from the full CSV export.</td>
+          </tr>
+          <tr>
+            <td>TitlePro evidence</td>
+            <td><code>outputs/distressed_cre_research/&lt;run&gt;/documents/&lt;property-slug&gt;/</code></td>
+            <td>Actual downloaded PDFs, screenshots, and extracted role assertions.</td>
+          </tr>
+          <tr>
+            <td>Monday actions</td>
+            <td><code>monday_action_queue.csv</code></td>
+            <td>Preview-only task rows aligned to the Monday workflow.</td>
+          </tr>
+          <tr>
+            <td>Broker packet</td>
+            <td><code>broker_owner_control_report.html</code></td>
+            <td>Broker-readable summary with visuals, evidence, caveats, and next actions.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="rule">CSV owner strings, LLC clusters, contacts, lawyers, registered agents, trustees, and lenders are research leads, not final actual-owner/control claims without supporting evidence.</div>
+    </section>
+  </main>
+</body>
+</html>
