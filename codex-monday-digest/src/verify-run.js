@@ -95,6 +95,9 @@ function verifyDigestRun(runFolder) {
   const manifest = readJson(path.join(runFolder, "run_manifest.json"));
   const gmailConnectorProfilePath = path.join(runFolder, "gmail_connector_source_profile.json");
   const mondayConnectorProfilePath = path.join(runFolder, "monday_connector_source_profile.json");
+  const titleproEvidencePath = path.join(runFolder, "titlepro_evidence_intake.json");
+  const titleproRoleAssertionsPath = path.join(runFolder, "titlepro_role_assertions_preview.json");
+  const titleproEvidenceProfilePath = path.join(runFolder, "titlepro_evidence_source_profile.json");
   const auditEvents = parseJsonl(path.join(runFolder, "audit_events_preview.jsonl"));
 
   checks.push({ pass: Array.isArray(sourceEmails) && sourceEmails.length >= 1, message: "source_emails has at least one source" });
@@ -118,6 +121,24 @@ function verifyDigestRun(runFolder) {
   checks.push({ pass: Array.isArray(approvedTitleproPulls) && approvedTitleproPulls.every(hasApprovedTitleProPullFields), message: "approved TitlePro pull requests are structured pending requests" });
   checks.push({ pass: approvedTitleproPulls.every((row) => row.pull_executed === false && row.external_write_executed === false), message: "approved TitlePro pull requests have not executed paid/browser/write actions" });
   checks.push({ pass: approvedTitleproPulls.every((row) => hasMatchingRecordedTitleProDecision(row, titleproDecisions)), message: "approved TitlePro pull requests match recorded valid approvals" });
+  if (manifest.last_titlepro_evidence_import_at || fs.existsSync(titleproEvidencePath) || fs.existsSync(titleproRoleAssertionsPath)) {
+    checks.push({ pass: fs.existsSync(titleproEvidencePath), message: "TitlePro evidence intake exists after evidence import" });
+    checks.push({ pass: fs.existsSync(titleproRoleAssertionsPath), message: "TitlePro role assertions exist after evidence import" });
+    checks.push({ pass: fs.existsSync(titleproEvidenceProfilePath), message: "TitlePro evidence source profile exists after evidence import" });
+    if (fs.existsSync(titleproEvidencePath) && fs.existsSync(titleproRoleAssertionsPath) && fs.existsSync(titleproEvidenceProfilePath)) {
+      const titleproEvidence = readJson(titleproEvidencePath);
+      const titleproAssertions = readJson(titleproRoleAssertionsPath);
+      const titleproProfile = readJson(titleproEvidenceProfilePath);
+      checks.push({ pass: Array.isArray(titleproEvidence) && titleproEvidence.length > 0 && titleproEvidence.every(hasTitleProEvidenceFields), message: "TitlePro evidence intake rows are structured" });
+      checks.push({ pass: titleproEvidence.every((row) => row.titlepro_pulls_executed === false && row.paid_action_executed === false && row.external_write_executed === false), message: "TitlePro evidence import executed no paid/browser/write actions" });
+      checks.push({ pass: Array.isArray(titleproAssertions) && titleproAssertions.length > 0 && titleproAssertions.every(hasTitleProRoleAssertionFields), message: "TitlePro role assertions are structured" });
+      checks.push({ pass: titleproAssertions.every((row) => row.beneficial_owner_claim_allowed === false && row.outreach_ready === false), message: "TitlePro role assertions do not promote beneficial-owner or outreach-ready claims" });
+      checks.push({ pass: titleproAssertions.every((row) => !row.service_actor || row.control_lead_claim_allowed === false), message: "TitlePro service actors are excluded from control-lead claims" });
+      checks.push({ pass: titleproProfile.titlepro_pulls_executed === 0 && titleproProfile.paid_actions_executed === 0 && titleproProfile.external_writes_executed === 0, message: "TitlePro evidence source profile records zero paid/browser/write actions" });
+      checks.push({ pass: titleproProfile.source_path_scope === "basename_only" && !String(titleproProfile.source_path || "").includes("/"), message: "TitlePro evidence source profile stores basename-only source path" });
+      checks.push({ pass: titleproProfile.record_count === titleproEvidence.length && titleproProfile.role_assertion_count === titleproAssertions.length, message: "TitlePro evidence profile counts match artifacts" });
+    }
+  }
   checks.push({ pass: approvals.length >= leads.length, message: "approval previews exist for every lead" });
   checks.push({ pass: auditEvents.length >= leads.length + 2, message: "audit events exist for parse, dedupe, and blocked decisions" });
   checks.push({ pass: queueDecisions.length >= leads.length, message: "queue decisions exist for every lead" });
@@ -344,6 +365,39 @@ function hasApprovedTitleProPullFields(row) {
   ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
     && row.status === "approved_pending_manual_titlepro_pull"
     && row.paid_action_allowed === true;
+}
+
+function hasTitleProEvidenceFields(row) {
+  return [
+    "evidence_id",
+    "source_type",
+    "titlepro_order_id",
+    "property_address",
+    "match_status",
+    "titlepro_pulls_executed",
+    "paid_action_executed",
+    "external_write_executed",
+    "saved_evidence"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && Array.isArray(row.saved_evidence);
+}
+
+function hasTitleProRoleAssertionFields(row) {
+  return [
+    "assertion_id",
+    "evidence_id",
+    "role",
+    "role_category",
+    "actor",
+    "basis",
+    "confidence",
+    "service_actor",
+    "title_owner_claim_allowed",
+    "control_lead_claim_allowed",
+    "beneficial_owner_claim_allowed",
+    "outreach_ready",
+    "broker_packet_note"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field));
 }
 
 function hasMatchingRecordedTitleProDecision(pullRequest, decisions) {

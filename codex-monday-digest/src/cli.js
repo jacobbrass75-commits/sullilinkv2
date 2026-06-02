@@ -13,6 +13,7 @@ const { verifyRun } = require("./verify-run");
 const { buildBatchArtifacts, writeBatchRun } = require("./batch-owner-clusters");
 const { buildTitleProApprovalQueue } = require("./titlepro-approval-queue");
 const { applyTitleProApprovals, readApprovalFile } = require("./titlepro-approval-intake");
+const { readTitleProEvidenceFile, matchTitleProEvidenceToLeads, buildTitleProRoleAssertions, buildTitleProNeedsReview } = require("./titlepro-evidence-intake");
 const { buildDigestActionQueue, writeActionQueueCsv } = require("./monday-action-queue");
 const { lookupLeads, readLookupFile, readMondayConnectorLookupFile } = require("./monday-lookup");
 const { assertLiveWriteAllowed, redactedBoardShapeFromEnv } = require("./monday-graphql");
@@ -49,6 +50,7 @@ function usage() {
     "  codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --lookup-file MONDAY_EXPORT.csv|json|xlsx",
     "  codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --connector-json MONDAY_CONNECTOR_READ.json",
     "  codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|json",
+    "  codex-monday-digest titlepro-import --run RUN_FOLDER --evidence TITLEPRO_EVIDENCE.json",
     "  codex-monday-digest sync --run RUN_FOLDER --mode live_write"
   ].join("\n");
 }
@@ -416,6 +418,59 @@ function titleProApproveCommand(args) {
   console.log(`titlepro_approval_decisions=${decisions.length} approved_pull_requests=${approvedPullRequests.length} invalid_decisions=${invalidDecisionCount} titlepro_pulls_executed=0`);
 }
 
+function titleProImportCommand(args) {
+  if (!args.run || !args.evidence) {
+    throw new Error("titlepro-import requires --run RUN_FOLDER --evidence TITLEPRO_EVIDENCE.json");
+  }
+  const leadsPath = path.join(args.run, "deduped_leads.json");
+  if (!fs.existsSync(leadsPath)) throw new Error("Run has no deduped_leads.json");
+  const leads = JSON.parse(fs.readFileSync(leadsPath, "utf8"));
+  const source = readTitleProEvidenceFile(args.evidence);
+  const matchedRecords = matchTitleProEvidenceToLeads(source.records, leads);
+  const roleAssertions = buildTitleProRoleAssertions(matchedRecords);
+  const evidenceNeedsReview = buildTitleProNeedsReview(matchedRecords);
+  const needsReviewPath = path.join(args.run, "needs_review.json");
+  const existingNeedsReview = fs.existsSync(needsReviewPath) ? JSON.parse(fs.readFileSync(needsReviewPath, "utf8")) : [];
+  const sourceProfile = {
+    source_path: source.source_path,
+    source_path_scope: source.source_path_scope,
+    source_sha256: source.source_sha256,
+    source_format: source.source_format,
+    as_of: source.as_of,
+    record_count: source.record_count,
+    profile_count: source.profile_count,
+    document_count: source.document_count,
+    matched_record_count: matchedRecords.filter((record) => record.match_status === "matched").length,
+    unmatched_record_count: matchedRecords.filter((record) => record.match_status !== "matched").length,
+    role_assertion_count: roleAssertions.length,
+    titlepro_pulls_executed: 0,
+    paid_actions_executed: 0,
+    external_writes_executed: 0
+  };
+  writeJson(path.join(args.run, "titlepro_evidence_intake.json"), matchedRecords);
+  writeJson(path.join(args.run, "titlepro_role_assertions_preview.json"), roleAssertions);
+  writeJson(path.join(args.run, "titlepro_evidence_source_profile.json"), sourceProfile);
+  writeJson(needsReviewPath, [...existingNeedsReview, ...evidenceNeedsReview]);
+  updateManifestAfterTitleProEvidenceImport(args.run, [
+    path.join(args.run, "titlepro_evidence_intake.json"),
+    path.join(args.run, "titlepro_role_assertions_preview.json"),
+    path.join(args.run, "titlepro_evidence_source_profile.json"),
+    path.join(args.run, "needs_review.json")
+  ]);
+  console.log(`titlepro_evidence_records=${matchedRecords.length} role_assertions=${roleAssertions.length} matched=${sourceProfile.matched_record_count} titlepro_pulls_executed=0`);
+}
+
+function updateManifestAfterTitleProEvidenceImport(runFolder, outputPaths) {
+  const manifestPath = path.join(runFolder, "run_manifest.json");
+  if (!fs.existsSync(manifestPath)) return;
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...outputPaths]));
+  manifest.last_titlepro_evidence_import_at = nowIso();
+  manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
+  manifest.forbidden_actions.titlepro_pulls = manifest.forbidden_actions.titlepro_pulls || 0;
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
 function updateManifestAfterTitleProApproval(runFolder, outputPaths) {
   const manifestPath = path.join(runFolder, "run_manifest.json");
   if (!fs.existsSync(manifestPath)) return;
@@ -464,6 +519,9 @@ function main() {
       case "titlepro-approve":
         titleProApproveCommand(args);
         break;
+      case "titlepro-import":
+        titleProImportCommand(args);
+        break;
       case "batch-owner-clusters":
         batchCommand(args);
         break;
@@ -489,6 +547,7 @@ module.exports = {
   exportCommand,
   syncCommand,
   titleProApproveCommand,
+  titleProImportCommand,
   batchCommand,
   verifyCommand
 };

@@ -69,6 +69,7 @@ CRE Brain / SullyLink database
 - `sync --mode monday_lookup_dry_run --lookup-file` matches existing Monday export rows by Radar ID without writes.
 - `sync --mode monday_lookup_dry_run --connector-json` consumes saved read-only Monday connector JSON, preserves board/item/group IDs, and records zero Monday writes.
 - `titlepro-approve --approvals` records broker/admin approval decisions and approved pending pull-request artifacts without executing any TitlePro pull.
+- `titlepro-import --evidence` consumes already-saved TitlePro profile/document extraction JSON, writes role assertions, and records zero paid/browser/write actions.
 - Shareable packet files have no credentials, cookies, local absolute paths, or paid raw docs.
 - Every broker-facing owner/control claim has evidence and confidence language.
 - TitlePro actions remain serialized and approval-gated.
@@ -84,6 +85,7 @@ npm run proof:gmail-connector
 npm run proof:lookup
 npm run proof:monday-connector
 npm run proof:titlepro-approval
+npm run proof:titlepro-evidence
 npm run app
 ```
 
@@ -97,5 +99,5 @@ http://localhost:8787
 
 - Configure the canonical Gmail label/query (`CRE/PropertyRadar Alerts`) in the connected mailbox before scheduled connector use.
 - Configure the live Monday connector read/export step that saves board items into the `--connector-json` shape; local connector-result matching is present.
-- Add action-time TitlePro pull execution after an approved request is re-confirmed for property, APN/county when known, doc/profile type, reason, and cost ceiling.
+- Add action-time TitlePro pull execution after an approved request is re-confirmed for property, APN/county when known, doc/profile type, reason, and cost ceiling. Saved TitlePro evidence intake is present; browser/order execution remains gated.
 - Add official-provider status checks only after source rights and API shape are confirmed.

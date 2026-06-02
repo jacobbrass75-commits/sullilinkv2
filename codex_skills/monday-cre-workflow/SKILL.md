@@ -100,6 +100,15 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 `titlepro-approve` writes approval decision and approved pending pull-request artifacts only. It does not open TitlePro, order reports, download paid documents, or execute browser actions.
 
+Saved TitlePro evidence import:
+
+```bash
+node src/cli.js titlepro-import --run ../outputs/monday_digest_runs/dev --evidence path/to/titlepro_evidence.json
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+`titlepro-import` consumes already-saved TitlePro profile/document extraction JSON and writes `titlepro_evidence_intake.json`, `titlepro_role_assertions_preview.json`, and `titlepro_evidence_source_profile.json`. It must not open TitlePro, order documents, execute paid pulls, or promote beneficial-owner/outreach-ready claims. Role assertions must keep title owner, borrower/trustor, lender/beneficiary, trustee, signer, and deed-party roles separate.
+
 If Python workbook export fails because `openpyxl` is missing, set `CODEX_PYTHON_BIN` to a Python that has the workspace spreadsheet dependencies.
 
 ## TitlePro Lane

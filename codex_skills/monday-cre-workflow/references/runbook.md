@@ -103,6 +103,15 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 Approval intake should produce `titlepro_approval_decisions.json`, `titlepro_pull_requests_approved.json`, and `titlepro_approval_source_profile.json`. It must leave `pull_executed = false`, `external_write_executed = false`, and `forbidden_actions.titlepro_pulls = 0`.
 
+For TitlePro evidence that has already been saved or manually extracted:
+
+```bash
+node src/cli.js titlepro-import --run ../outputs/monday_digest_runs/dev --evidence path/to/titlepro_evidence.json
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+Evidence import should produce `titlepro_evidence_intake.json`, `titlepro_role_assertions_preview.json`, and `titlepro_evidence_source_profile.json`. It must leave paid/browser/write action counts at zero, keep service actors out of control-lead claims, and keep `beneficial_owner_claim_allowed=false` until independent ownership proof exists.
+
 After action-time confirmation, use the TitlePro skill. Save:
 
 - source URL/report/order id

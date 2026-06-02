@@ -74,12 +74,15 @@ codex-monday-digest batch-owner-clusters --input PROPERTYRADAR_CSV --mode local_
 codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --lookup-file MONDAY_EXPORT.csv
 codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --connector-json MONDAY_CONNECTOR_READ.json
 codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|json
+codex-monday-digest titlepro-import --run RUN_FOLDER --evidence TITLEPRO_EVIDENCE.json
 codex-monday-digest sync --run RUN_FOLDER --mode live_write
 ```
 
 `local_dry_run` and `monday_lookup_dry_run` need no credentials. The lookup mode reads a Monday board export CSV/JSON/XLSX or saved read-only connector JSON, matches existing items by Radar ID, and writes `monday_lookup_results.json` without changing Monday. `live_write` is intentionally blocked unless the later Monday approval and environment gates are satisfied.
 
 `titlepro-approve` reads a broker/admin approval CSV or JSON and writes `titlepro_approval_decisions.json`, `titlepro_pull_requests_approved.json`, and `titlepro_approval_source_profile.json`. It is intake only: approved rows become pending manual TitlePro pull requests, but `pull_executed` stays `false` and no paid TitlePro action is performed.
+
+`titlepro-import` reads already-saved TitlePro profile/document extraction JSON and writes `titlepro_evidence_intake.json`, `titlepro_role_assertions_preview.json`, and `titlepro_evidence_source_profile.json`. It does not open TitlePro, order documents, or execute paid pulls; role assertions preserve title owner, borrower/trustor, lender/beneficiary, trustee, signer, and deed-party separation.
 
 ## Local Proofs
 
@@ -93,6 +96,7 @@ npm run proof:gmail-connector
 npm run proof:lookup
 npm run proof:monday-connector
 npm run proof:titlepro-approval
+npm run proof:titlepro-evidence
 npm run proof:edge
 npm run proof:batch
 ```
@@ -104,6 +108,8 @@ Digest and `gmail_preview` runs also write `titlepro_approval_queue_preview.json
 `gmail_connector_preview` additionally writes `gmail_connector_source_profile.json` with connector source hash, message counts, parsed row counts, and `gmail_mutations_executed=0` / `gmail_sends_executed=0`. Configure and verify the canonical `CRE/PropertyRadar Alerts` label/query before scheduled use.
 
 After a scoped approval is supplied, run `titlepro-approve` to create the separate decision and pending-pull artifacts. These artifacts make the approval reviewable in the dashboard/workbook, but the actual TitlePro browser/order step still requires separate action-time confirmation.
+
+After TitlePro evidence has already been saved or manually extracted, run `titlepro-import` to attach the facts to the run. The generated role assertions keep `beneficial_owner_claim_allowed=false`, `outreach_ready=false`, and exclude service actors such as trustees/lenders from control-lead claims.
 
 Every digest and batch run writes `monday_action_queue.csv` and a workbook `Monday Action Queue` sheet. This queue is for Monday import/review only: rows keep `monday_write_executed=false`, `external_write_executed=false`, `broker_ready=false`, and `control_claim_allowed=false`.
 

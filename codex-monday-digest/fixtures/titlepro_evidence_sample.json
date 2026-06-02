@@ -1,0 +1,49 @@
+{
+  "as_of": "2026-06-02",
+  "profiles": [
+    {
+      "titlepro_order_id": "BTEST2701",
+      "titlepro_url": "https://www.titlepro247.com/Orders/Home/Html/BTEST2701",
+      "radar_id": "P15F1852",
+      "property_address": "2701 STATHAM BLVD, OXNARD, CA 93033",
+      "apn": "999-111-022",
+      "title_owner": "Statham Industrial LLC",
+      "use": "Industrial",
+      "key_profile_facts": [
+        "TitlePro profile shows Statham Industrial LLC as current title owner.",
+        "Profile references a 2026 Notice of Default requiring document review."
+      ],
+      "saved_evidence": [
+        "evidence/titlepro_reports/BTEST2701/BTEST2701__property_profile.html",
+        "evidence/titlepro_reports/BTEST2701/BTEST2701__property_profile.txt"
+      ],
+      "manual_document_targets": [
+        "2026 NOD",
+        "2024 commercial deed of trust"
+      ]
+    }
+  ],
+  "documents": [
+    {
+      "titlepro_order_id": "DTEST2701",
+      "titlepro_url": "https://www.titlepro247.com/Orders/Home/Pdf/DTEST2701",
+      "radar_id": "P15F1852",
+      "recorder_document_number": "20260000111",
+      "recorded_at": "2026-05-29T08:00:00",
+      "county": "Ventura County, CA",
+      "document_type": "Notice of Default and Election to Sell Under Deed of Trust",
+      "property_address": "2701 STATHAM BLVD, OXNARD, CA 93033",
+      "apn": "999-111-022",
+      "trustor": "Statham Industrial LLC",
+      "beneficiary": "Preferred Bank",
+      "trustee": "Fidelity National Title Company",
+      "signer": "Jordan Manager",
+      "signer_capacity": "Manager of Statham Industrial LLC",
+      "saved_evidence": [
+        "evidence/titlepro_documents/DTEST2701/DTEST2701__notice_of_default.pdf",
+        "evidence/titlepro_documents/DTEST2701/DTEST2701__notice_of_default.ocr.txt"
+      ],
+      "owner_disambiguation_note": "This fixture proves recorded roles only. It does not prove private beneficial ownership."
+    }
+  ]
+}
