@@ -82,6 +82,15 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 `monday_lookup_dry_run` reads a Monday board export CSV/JSON/XLSX and matches existing items by Radar ID. It must not call live write mutations.
 
+Downloaded Monday workflow export map:
+
+```bash
+node src/cli.js workflow-map --workflow-dir ../broker_packet/workflows/monday_exports --out ../outputs/monday_digest_runs/workflow-map
+node src/cli.js verify --run ../outputs/monday_digest_runs/workflow-map
+```
+
+`workflow-map` reads exported Monday workflow XLSX files and writes `monday_workflow_map.json`, `monday_workflow_stage_map.json`, `monday_workflow_source_profile.json`, and `monday_workflow_summary.md`. Use it to keep generated tasks/subitems aligned to the actual Monday checklist exports. It is local-only and records zero Monday writes/external actions.
+
 Read-only Monday connector result lookup:
 
 ```bash

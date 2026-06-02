@@ -83,6 +83,26 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 
 The lookup file can be CSV, JSON, or XLSX. Required output is `monday_lookup_results.json`; when a lookup file is supplied, also save `monday_lookup_source_profile.json`.
 
+### Monday Workflow Export Map
+
+When the downloaded Monday workflow/checklist workbooks are available, map them into local reusable artifacts:
+
+```bash
+node src/cli.js workflow-map --workflow-dir ../broker_packet/workflows/monday_exports --out ../outputs/monday_digest_runs/workflow-map
+node src/cli.js verify --run ../outputs/monday_digest_runs/workflow-map
+```
+
+Required output:
+
+- `monday_workflow_map.json`
+- `monday_workflow_stage_map.json`
+- `monday_workflow_source_profile.json`
+- `monday_workflow_summary.md`
+- `needs_review.json`
+- `run_manifest.json`
+
+The workflow map is a template/contract artifact only. It must preserve workbook/sheet/source-row provenance using basename-only source paths, extract parent tasks and subitems, and leave Monday/external write counts at zero.
+
 For a saved read-only Monday connector result:
 
 ```bash

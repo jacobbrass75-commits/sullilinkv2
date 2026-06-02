@@ -20,7 +20,8 @@ The workflow should take PropertyRadar daily digest rows or batch CSV exports, d
    - no RealNex writes
    - no unsupervised TitlePro paid pulls
    - no owner/control claims from CSV owner strings alone
-7. Keep shareable packet output separate from raw evidence, credentials, cookies, PDFs, and old app dumps.
+8. Keep shareable packet output separate from raw evidence, credentials, cookies, PDFs, and old app dumps.
+9. Convert downloaded Monday workflow exports into a reusable local workflow map so future runs can align tasks/subitems to the actual Monday checklist shape.
 
 ## Reused SullyLink / retranToReel Patterns
 
@@ -68,6 +69,7 @@ CRE Brain / SullyLink database
 - Batch CSV preview normalizes APNs when present, collapses duplicate APN rows, and preserves source row indexes.
 - Digest preview writes `titlepro_approval_queue_preview.json`, plus a workbook `TitlePro Approval` sheet, with approval IDs linked to blocked TitlePro subitems and queue decisions.
 - Digest and batch preview write `monday_action_queue.csv`, plus a workbook `Monday Action Queue` sheet, without executing Monday writes or promoting control claims.
+- `workflow-map --workflow-dir/--input` parses exported Monday workflow workbooks into `monday_workflow_map.json`, `monday_workflow_stage_map.json`, and a summary without executing Monday writes.
 - `sync --mode monday_lookup_dry_run --lookup-file` matches existing Monday export rows by Radar ID without writes.
 - `sync --mode monday_lookup_dry_run --connector-json` consumes saved read-only Monday connector JSON, preserves board/item/group IDs, and records zero Monday writes.
 - `titlepro-approve --approvals` records broker/admin approval decisions and approved pending pull-request artifacts without executing any TitlePro pull.
@@ -93,6 +95,7 @@ npm run proof:titlepro-approval
 npm run proof:titlepro-confirm
 npm run proof:titlepro-evidence
 npm run proof:source-audit
+npm run proof:workflow-map
 npm run app
 ```
 
@@ -105,6 +108,7 @@ http://localhost:8787
 ## Open Work
 
 - Run the connected Gmail read and Monday board-item read tools against the live mailbox/board, save their JSON, and pass them through `connector-readiness`; the local readiness contract is present.
+- Re-run `workflow-map` whenever the downloaded Monday workflow exports are refreshed, then compare the new map before changing generated task/subitem defaults.
 - Execute the actual TitlePro browser/order step separately from `titlepro-confirm`, only after a confirmed manual action is selected and explicitly authorized for one request at a time. Approval intake, action-time confirmation, and saved evidence import are present; browser/order execution remains gated.
 - Add official-provider status checks only after source rights and API shape are confirmed.
 - Use `source-audit` before adapting additional SullyLink/retranToReel patterns so broad app code, credentials, and raw artifacts stay out of the Monday-first lane.

@@ -54,11 +54,22 @@ const CONNECTOR_READINESS_FILES = [
   "run_manifest.json"
 ];
 
+const WORKFLOW_MAP_FILES = [
+  "monday_workflow_map.json",
+  "monday_workflow_stage_map.json",
+  "monday_workflow_source_profile.json",
+  "monday_workflow_summary.md",
+  "needs_review.json",
+  "run_manifest.json"
+];
+
 function verifyRun(runFolder) {
   const isConnectorReadiness = fs.existsSync(path.join(runFolder, "connector_readiness_report.json"));
+  const isWorkflowMap = fs.existsSync(path.join(runFolder, "monday_workflow_map.json"));
   const isSourceAudit = fs.existsSync(path.join(runFolder, "source_reuse_audit.json"));
   const isBatch = fs.existsSync(path.join(runFolder, "batch_source_profile.json"));
   if (isConnectorReadiness) return verifyConnectorReadinessRun(runFolder);
+  if (isWorkflowMap) return verifyWorkflowMapRun(runFolder);
   if (isSourceAudit) return verifySourceAuditRun(runFolder);
   return isBatch ? verifyBatchRun(runFolder) : verifyDigestRun(runFolder);
 }
@@ -680,6 +691,143 @@ function verifyConnectorReadinessRun(runFolder) {
   checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
 
   return makeReport(runFolder, "codex-monday-digest Connector Readiness Verification", checks);
+}
+
+function verifyWorkflowMapRun(runFolder) {
+  const checks = [];
+  checkFiles(runFolder, WORKFLOW_MAP_FILES, checks);
+  if (checks.some((check) => !check.pass)) return makeReport(runFolder, "codex-monday-digest Workflow Map Verification", checks);
+
+  const workflowMap = readJson(path.join(runFolder, "monday_workflow_map.json"));
+  const stageMap = readJson(path.join(runFolder, "monday_workflow_stage_map.json"));
+  const sourceProfile = readJson(path.join(runFolder, "monday_workflow_source_profile.json"));
+  const needsReview = readJson(path.join(runFolder, "needs_review.json"));
+  const manifest = readJson(path.join(runFolder, "run_manifest.json"));
+  const summary = fs.readFileSync(path.join(runFolder, "monday_workflow_summary.md"), "utf8");
+  const workflows = workflowMap.workflows || [];
+
+  checks.push({ pass: manifest.mode === "monday_workflow_map", message: "manifest records monday_workflow_map mode" });
+  checks.push({ pass: forbiddenZero(manifest), message: "forbidden action counts are zero" });
+  checks.push({ pass: workflowMap.schema_version === 1 && workflowMap.mode === "monday_workflow_map", message: "workflow map records schema version and monday_workflow_map mode" });
+  checks.push({ pass: workflowMap.guardrails?.monday_live_writes_executed === 0 && workflowMap.guardrails?.external_writes_executed === 0 && workflowMap.guardrails?.control_claim_promotions === 0, message: "workflow map guardrails record zero writes/promotions" });
+  checks.push({ pass: sourceProfile.mode === "monday_workflow_map", message: "source profile records monday_workflow_map mode" });
+  checks.push({ pass: sourceProfile.forbidden_actions && forbiddenZero(sourceProfile), message: "source profile forbidden action counts are zero" });
+  checks.push({ pass: sourceProfile.monday_live_writes_executed === 0 && sourceProfile.external_writes_executed === 0, message: "source profile records zero Monday/external writes" });
+  checks.push({ pass: Array.isArray(workflows) && workflows.length > 0, message: "workflow map includes at least one workflow" });
+  checks.push({ pass: workflows.every(hasWorkflowMapFields), message: "workflows are structured with basename-only source paths" });
+  checks.push({ pass: workflows.every((workflow) => workflow.parent_task_count === workflow.parent_tasks.length), message: "workflow parent task counts match task arrays" });
+  checks.push({ pass: workflows.every((workflow) => workflow.subitem_count === workflow.parent_tasks.reduce((sum, task) => sum + task.subitems.length, 0)), message: "workflow subitem counts match task arrays" });
+  checks.push({ pass: Array.isArray(stageMap) && stageMap.length === workflowMap.parent_task_count && stageMap.every(hasWorkflowStageMapFields), message: "workflow stage map is flat and count-aligned" });
+  checks.push({ pass: stageMap.every((stage) => stage.monday_live_writes_executed === 0 && stage.external_writes_executed === 0), message: "workflow stage map records zero writes" });
+  checks.push({ pass: sourceProfile.parsed_workflow_count === workflows.length, message: "source profile workflow count matches map" });
+  checks.push({ pass: sourceProfile.parent_task_count === workflowMap.parent_task_count && sourceProfile.subitem_count === workflowMap.subitem_count, message: "source profile counts match workflow map" });
+  checks.push({ pass: sourceProfile.skipped_sheet_count === workflowMap.skipped_sheet_count && Array.isArray(sourceProfile.skipped_sheets), message: "source profile skipped-sheet count matches workflow map" });
+  checks.push({ pass: Array.isArray(sourceProfile.sources) && sourceProfile.sources.length > 0 && sourceProfile.sources.every(hasWorkflowSourceFields), message: "workflow source profile stores basename-only source paths" });
+  checks.push({ pass: Array.isArray(needsReview), message: "needs_review is structured as an array" });
+  checks.push({ pass: summary.includes("Monday Workflow Map") && summary.includes("zero external actions"), message: "workflow summary documents local-only purpose" });
+  checks.push({ pass: noAbsoluteLocalPathsInWorkflowMap(runFolder), message: "workflow map outputs contain no absolute local paths" });
+  checks.push({ pass: !summary.includes("Authorization:") && !summary.includes("PASSWORD="), message: "workflow summary contains no credential values" });
+  checks.push({ pass: noCredentialLeaks(runFolder), message: "no configured credential values found in outputs" });
+
+  return makeReport(runFolder, "codex-monday-digest Workflow Map Verification", checks);
+}
+
+function hasWorkflowMapFields(workflow) {
+  return [
+    "workflow_id",
+    "workflow_name",
+    "template_name",
+    "source_path",
+    "source_path_scope",
+    "source_sheet",
+    "columns",
+    "main_columns",
+    "subitem_column_variants",
+    "parent_task_count",
+    "subitem_count",
+    "parent_tasks"
+  ].every((field) => Object.prototype.hasOwnProperty.call(workflow, field))
+    && workflow.source_path_scope === "basename_only"
+    && !String(workflow.source_path || "").includes("/")
+    && Array.isArray(workflow.columns)
+    && Array.isArray(workflow.main_columns)
+    && Array.isArray(workflow.subitem_column_variants)
+    && Array.isArray(workflow.parent_tasks)
+    && workflow.parent_tasks.every(hasWorkflowParentTaskFields);
+}
+
+function hasWorkflowParentTaskFields(task) {
+  return [
+    "task_id",
+    "source_row_index",
+    "name",
+    "person",
+    "status",
+    "date",
+    "long_text",
+    "action_count",
+    "subitems"
+  ].every((field) => Object.prototype.hasOwnProperty.call(task, field))
+    && Array.isArray(task.subitems)
+    && task.subitems.every(hasWorkflowSubitemFields);
+}
+
+function hasWorkflowSubitemFields(subitem) {
+  return [
+    "subitem_id",
+    "source_row_index",
+    "name",
+    "owner",
+    "status",
+    "date",
+    "long_text",
+    "action_count"
+  ].every((field) => Object.prototype.hasOwnProperty.call(subitem, field));
+}
+
+function hasWorkflowSourceFields(source) {
+  return [
+    "source_path",
+    "source_path_scope",
+    "source_sha256",
+    "source_format",
+    "sheet_count"
+  ].every((field) => Object.prototype.hasOwnProperty.call(source, field))
+    && source.source_path_scope === "basename_only"
+    && !String(source.source_path || "").includes("/");
+}
+
+function hasWorkflowStageMapFields(stage) {
+  return [
+    "workflow_id",
+    "workflow_name",
+    "stage_id",
+    "stage_order",
+    "stage_name",
+    "source_path",
+    "source_path_scope",
+    "source_sheet",
+    "source_row_index",
+    "status",
+    "date",
+    "subitem_count",
+    "subitem_names",
+    "long_text_present",
+    "action_count",
+    "monday_live_writes_executed",
+    "external_writes_executed"
+  ].every((field) => Object.prototype.hasOwnProperty.call(stage, field))
+    && stage.source_path_scope === "basename_only"
+    && !String(stage.source_path || "").includes("/")
+    && Array.isArray(stage.subitem_names);
+}
+
+function noAbsoluteLocalPathsInWorkflowMap(runFolder) {
+  const files = WORKFLOW_MAP_FILES.filter((file) => file !== "run_manifest.json");
+  return files.every((file) => {
+    const text = fs.readFileSync(path.join(runFolder, file), "utf8");
+    return !hasAbsoluteLocalPath(text);
+  });
 }
 
 function hasConnectorReadinessCheckFields(row) {

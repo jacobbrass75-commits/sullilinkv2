@@ -17,6 +17,7 @@ const { applyTitleProActionConfirmations, readTitleProConfirmationFile } = requi
 const { readTitleProEvidenceFile, matchTitleProEvidenceToLeads, buildTitleProRoleAssertions, buildTitleProNeedsReview } = require("./titlepro-evidence-intake");
 const { buildSourceReuseAudit, writeSourceAuditRun } = require("./source-reuse-audit");
 const { buildConnectorReadiness, writeConnectorReadinessRun } = require("./connector-readiness");
+const { buildWorkflowMap, writeWorkflowMapRun } = require("./monday-workflow-map");
 const { buildDigestActionQueue, writeActionQueueCsv } = require("./monday-action-queue");
 const { lookupLeads, readLookupFile, readMondayConnectorLookupFile } = require("./monday-lookup");
 const { assertLiveWriteAllowed, redactedBoardShapeFromEnv } = require("./monday-graphql");
@@ -50,6 +51,8 @@ function usage() {
     "  codex-monday-digest export --run RUN_FOLDER --xlsx RUN_FOLDER/monday_import_preview.xlsx",
     "  codex-monday-digest verify --run RUN_FOLDER",
     "  codex-monday-digest batch-owner-clusters --input CSV --mode local_dry_run --out RUN_FOLDER",
+    "  codex-monday-digest workflow-map --workflow-dir MONDAY_EXPORT_DIR --out RUN_FOLDER",
+    "  codex-monday-digest workflow-map --input MONDAY_WORKFLOW_EXPORT.xlsx --out RUN_FOLDER",
     "  codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --lookup-file MONDAY_EXPORT.csv|json|xlsx",
     "  codex-monday-digest sync --run RUN_FOLDER --mode monday_lookup_dry_run --connector-json MONDAY_CONNECTOR_READ.json",
     "  codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|json",
@@ -573,6 +576,17 @@ function sourceAuditCommand(args) {
   console.log(`source_audit_patterns=${matched} risk_path_count=${risks} out=${args.out}`);
 }
 
+function workflowMapCommand(args) {
+  if (!args.out) {
+    throw new Error("workflow-map requires --out RUN_FOLDER");
+  }
+  const workflowDir = args["workflow-dir"] || args.workflow_dir || args.workflowDir;
+  const input = args.input || args.workbook;
+  const workflowMap = buildWorkflowMap({ workflowDir, input });
+  writeWorkflowMapRun(args.out, workflowMap);
+  console.log(`monday_workflow_map=local_only workflows=${workflowMap.workflow_map.workflow_count} parent_tasks=${workflowMap.workflow_map.parent_task_count} subitems=${workflowMap.workflow_map.subitem_count} out=${args.out}`);
+}
+
 function connectorReadinessCommand(args) {
   if (!args.out) {
     throw new Error("connector-readiness requires --out RUN_FOLDER");
@@ -626,6 +640,9 @@ function main() {
       case "batch-owner-clusters":
         batchCommand(args);
         break;
+      case "workflow-map":
+        workflowMapCommand(args);
+        break;
       case "source-audit":
         sourceAuditCommand(args);
         break;
@@ -657,6 +674,7 @@ module.exports = {
   titleProConfirmCommand,
   titleProImportCommand,
   batchCommand,
+  workflowMapCommand,
   sourceAuditCommand,
   connectorReadinessCommand,
   verifyCommand
