@@ -4,7 +4,41 @@ const { FORBIDDEN_ZERO, ensureDir, writeJson, sha256File, nowIso } = require("./
 
 const REQUIRED_REFERENCES = [
   "references/runbook.md",
-  "references/sullilink-reuse.md"
+  "references/sullilink-reuse.md",
+  "references/source-reuse-contract.json"
+];
+
+const REQUIRED_CONTRACT_LANES = [
+  "propertyradar_digest_parser",
+  "apn_dedupe",
+  "daily_import_loop",
+  "titlepro_serial_worker",
+  "recording_document_schema",
+  "owner_entity_clustering",
+  "contact_enrichment"
+];
+
+const REQUIRED_CONTRACT_BLOCKED_ACTIONS = [
+  "monday_live_write",
+  "titlepro_pull",
+  "browser_action",
+  "paid_action",
+  "provider_backfill",
+  "beneficial_owner_claim",
+  "rocketreach_reveal",
+  "realnex_write",
+  "scheduled_live_read_without_readiness"
+];
+
+const REQUIRED_IDENTITY_KEYS = [
+  "gmail_message_id",
+  "gmail_thread_id",
+  "radar_id",
+  "normalized_apn",
+  "source_row_indexes",
+  "monday_item_id",
+  "titlepro_approval_id",
+  "titlepro_request_id"
 ];
 
 const REQUIRED_COMMAND_SNIPPETS = [
@@ -54,6 +88,7 @@ const REQUIRED_SAFETY_PHRASES = [
   "day_of_action_recheck_required=true",
   "copy patterns only",
   "source_reuse_contract.json",
+  "source-reuse-contract.json",
   "Daily digest parser",
   "APN dedupe",
   "TitlePro serial worker"
@@ -76,6 +111,8 @@ function buildSkillPackageCheck({ skillDir, packageJson, goalMd }) {
   const skillMd = fs.existsSync(skillMdPath) ? fs.readFileSync(skillMdPath, "utf8") : "";
   const runbook = readText("references/runbook.md");
   const reuse = readText("references/sullilink-reuse.md");
+  const sourceContractText = readText("references/source-reuse-contract.json");
+  const sourceContract = parseJson(sourceContractText);
   const openaiYaml = fs.existsSync(agentsPath) ? fs.readFileSync(agentsPath, "utf8") : "";
   const packageJsonText = fs.existsSync(packagePath) ? fs.readFileSync(packagePath, "utf8") : "";
   const packageData = packageJsonText ? JSON.parse(packageJsonText) : {};
@@ -107,15 +144,17 @@ function buildSkillPackageCheck({ skillDir, packageJson, goalMd }) {
     addCheck(checks, `proof_script:${scriptName}`, typeof scripts[scriptName] === "string" && scripts[scriptName].length > 0, `${scriptName} exists in package scripts`);
   }
 
-  const combinedDocs = [skillMd, runbook, reuse, goalText].join("\n");
+  const combinedDocs = [skillMd, runbook, reuse, sourceContractText, goalText].join("\n");
   for (const phrase of REQUIRED_SAFETY_PHRASES) {
     addCheck(checks, `safety_phrase:${phrase}`, combinedDocs.includes(phrase), `docs preserve safety phrase: ${phrase}`);
   }
 
+  addSourceContractChecks(checks, sourceContract, scripts, [skillMd, runbook, reuse].join("\n"));
+
   addCheck(checks, "goal_mentions_skill", goalText.includes("Codex skill") && goalText.includes("monday-cre-workflow"), "goal markdown keeps skill objective explicit");
   addCheck(checks, "goal_mentions_source_audit", goalText.includes("source-audit") && goalText.includes("SullyLink"), "goal markdown ties SullyLink reuse to source-audit");
-  addCheck(checks, "no_absolute_local_paths", !hasAbsoluteLocalPath([skillMd, runbook, reuse, openaiYaml].join("\n")), "skill package text contains no absolute local paths");
-  addCheck(checks, "no_secret_values", !hasSecretPattern([skillMd, runbook, reuse, openaiYaml].join("\n")), "skill package text contains no credential-like values");
+  addCheck(checks, "no_absolute_local_paths", !hasAbsoluteLocalPath([skillMd, runbook, reuse, sourceContractText, openaiYaml].join("\n")), "skill package text contains no absolute local paths");
+  addCheck(checks, "no_secret_values", !hasSecretPattern([skillMd, runbook, reuse, sourceContractText, openaiYaml].join("\n")), "skill package text contains no credential-like values");
   addCheck(checks, "references_one_level_deep", oneLevelReferences(skillPath), "skill bundled references are one level deep");
 
   const passed = checks.every((check) => check.status === "pass");
@@ -142,6 +181,13 @@ function buildSkillPackageCheck({ skillDir, packageJson, goalMd }) {
     required_references: REQUIRED_REFERENCES,
     required_command_snippets: REQUIRED_COMMAND_SNIPPETS,
     required_proof_scripts: REQUIRED_PROOF_SCRIPTS,
+    source_reuse_contract: sourceContract ? {
+      source_path: "source-reuse-contract.json",
+      source_path_scope: "basename_only",
+      source_sha256: fs.existsSync(path.join(skillPath, "references", "source-reuse-contract.json")) ? sha256File(path.join(skillPath, "references", "source-reuse-contract.json")) : null,
+      lane_count: Array.isArray(sourceContract.lanes) ? sourceContract.lanes.length : 0,
+      required_lane_ids: REQUIRED_CONTRACT_LANES
+    } : null,
     checks,
     passed,
     forbidden_actions: { ...FORBIDDEN_ZERO }
@@ -274,10 +320,106 @@ function addCheck(checks, id, pass, message) {
   });
 }
 
+function addSourceContractChecks(checks, contract, scripts, docsText) {
+  const lanes = Array.isArray(contract?.lanes) ? contract.lanes : [];
+  const laneIds = lanes.map((lane) => lane.pattern_id);
+  const blockedActions = new Set(lanes.flatMap((lane) => Array.isArray(lane.blocked_actions) ? lane.blocked_actions : []));
+  const proofScripts = new Set(lanes.flatMap((lane) => Array.isArray(lane.proof_scripts) ? lane.proof_scripts : []));
+  const runnerSurfaces = new Set(lanes.flatMap((lane) => Array.isArray(lane.current_runner_surface) ? lane.current_runner_surface : []));
+
+  addCheck(checks, "source_contract_schema", contract?.schema_version === 1 && contract?.mode === "monday_cre_source_reuse_contract", "source-reuse contract has expected schema and mode");
+  addCheck(checks, "source_contract_copy_pattern_only", contract?.copy_strategy === "copy_pattern_not_source", "source-reuse contract copies patterns only");
+  addCheck(checks, "source_contract_forbidden_zero", forbiddenZero(contract), "source-reuse contract records zero forbidden actions");
+  addCheck(checks, "source_contract_required_lanes", REQUIRED_CONTRACT_LANES.every((id) => laneIds.includes(id)), "source-reuse contract includes every required SullyLink pattern lane");
+  addCheck(checks, "source_contract_lane_fields", lanes.every(hasSourceContractLaneFields), "source-reuse contract lanes are structured");
+  addCheck(checks, "source_contract_lane_proofs_exist", [...proofScripts].every((scriptName) => typeof scripts[scriptName] === "string" && scripts[scriptName].length > 0), "source-reuse contract proof scripts exist in package scripts");
+  addCheck(checks, "source_contract_surfaces_documented", [...runnerSurfaces].every((surface) => surfaceDocumented(docsText, surface)), "source-reuse contract runner surfaces are documented in skill docs");
+  addCheck(checks, "source_contract_blocked_actions", REQUIRED_CONTRACT_BLOCKED_ACTIONS.every((action) => blockedActions.has(action)), "source-reuse contract preserves required blocked actions");
+  addCheck(checks, "source_contract_identity_keys", REQUIRED_IDENTITY_KEYS.every((key) => Array.isArray(contract?.identity_ledger_keys) && contract.identity_ledger_keys.includes(key)), "source-reuse contract preserves identity ledger keys");
+  addCheck(checks, "source_contract_connector_guardrails", hasConnectorGuardrails(contract?.connector_readiness_contract), "source-reuse contract preserves connector readiness guardrails");
+  addCheck(checks, "source_contract_titlepro_serial_guardrails", hasTitleProSerialGuardrails(contract?.titlepro_serial_worker_contract), "source-reuse contract preserves TitlePro serial worker guardrails");
+  addCheck(checks, "source_contract_owner_promotion_matrix", hasOwnerPromotionMatrix(contract?.owner_control_promotion_matrix), "source-reuse contract keeps service/contact roles from automatic control or beneficial-owner promotion");
+  addCheck(checks, "source_contract_contact_guardrails", hasContactGuardrails(contract?.contact_enrichment_contract), "source-reuse contract preserves contact enrichment approval and suppression guardrails");
+}
+
+function hasSourceContractLaneFields(lane) {
+  return [
+    "pattern_id",
+    "source_patterns",
+    "useful_pattern",
+    "implementation_status",
+    "current_runner_surface",
+    "proof_scripts",
+    "allowed_input",
+    "blocked_actions"
+  ].every((field) => Object.prototype.hasOwnProperty.call(lane, field))
+    && Array.isArray(lane.source_patterns)
+    && Array.isArray(lane.current_runner_surface)
+    && Array.isArray(lane.proof_scripts)
+    && Array.isArray(lane.blocked_actions);
+}
+
+function surfaceDocumented(docsText, surface) {
+  const text = String(docsText || "");
+  const value = String(surface || "");
+  if (text.includes(value)) return true;
+  const parts = value.split(/\s+/).filter(Boolean);
+  if (!parts.length) return false;
+  return parts.every((part) => text.includes(part));
+}
+
+function hasConnectorGuardrails(contract) {
+  return contract?.canonical_gmail_label === "CRE/PropertyRadar Alerts"
+    && contract.full_body_required === true
+    && contract.snippet_only_allowed === false
+    && contract.scheduled_live_read_allowed_without_readiness === false
+    && ["message_id", "thread_id", "body"].every((field) => contract.required_gmail_fields?.includes(field))
+    && ["board_id", "item_id", "group_id", "radar_id"].every((field) => contract.required_monday_fields?.includes(field));
+}
+
+function hasTitleProSerialGuardrails(contract) {
+  return contract?.one_confirmed_action_per_execution === true
+    && contract.duplicate_order_check_required === true
+    && contract.unsupervised_paid_pull_allowed === false
+    && ["titlepro_approval_id", "titlepro_request_id", "radar_id", "requested_doc_type"].every((field) => contract.idempotency_key_fields?.includes(field))
+    && ["queued", "action_time_confirmed_pending_serial_titlepro_pull", "success", "duplicate_order_reuse", "wrong_property_excluded"].every((status) => contract.allowed_statuses?.includes(status))
+    && ["source_url", "titlepro_order_id", "property_address", "document_type", "capture_date"].every((field) => contract.required_provenance_fields?.includes(field));
+}
+
+function hasOwnerPromotionMatrix(matrix) {
+  return Array.isArray(matrix)
+    && matrix.length >= 5
+    && matrix.every((row) => row.control_claim_allowed_without_more_evidence === false && row.beneficial_owner_claim_allowed === false)
+    && matrix.some((row) => row.role === "registered_agent_lawyer_trustee_lender_title_company")
+    && matrix.some((row) => row.role === "broker_confirmed_contact");
+}
+
+function hasContactGuardrails(contract) {
+  return contract?.manual_pasteback_only_until_approved === true
+    && contract.contact_use_allowed_without_broker_approval === false
+    && contract.outreach_ready_without_suppression_check === false
+    && contract.beneficial_owner_promotion_from_contact_data_allowed === false
+    && ["source_type", "source_url", "source_timestamp", "suppression_status", "broker_approval_status"].every((field) => contract.required_fields?.includes(field));
+}
+
 function validShortDescription(openaiYaml) {
   const match = String(openaiYaml || "").match(/short_description:\s*"([^"]+)"/);
   if (!match) return false;
   return match[1].length >= 25 && match[1].length <= 64;
+}
+
+function parseJson(text) {
+  if (!String(text || "").trim()) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function forbiddenZero(report) {
+  const forbidden = report?.forbidden_actions || {};
+  return Object.keys(FORBIDDEN_ZERO).every((key) => forbidden[key] === 0);
 }
 
 function oneLevelReferences(skillPath) {

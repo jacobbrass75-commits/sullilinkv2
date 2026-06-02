@@ -26,7 +26,7 @@ Use these patterns when adapting the user's older foreclosure app code into the 
 
 ## Runner Contract
 
-Use `source-audit` to generate `source_reuse_contract.json` before adapting more old app behavior. The contract should map each old pattern to current runner surfaces and proof scripts:
+Use the bundled `references/source-reuse-contract.json` as the installed baseline, then run `source-audit` to generate `source_reuse_contract.json` before adapting more old app behavior. Compare lane IDs, proof scripts, blocked actions, and implementation statuses before changing runner behavior. The contract should map each old pattern to current runner surfaces and proof scripts:
 
 - **Daily digest parser:** `parse`, `preview --input`, `preview --gmail-json`; proofs `proof:ken`, `proof:preview`, `proof:gmail-connector`; blocked Gmail mutations, Gmail sends, Monday writes, and TitlePro pulls.
 - **APN dedupe:** `batch-owner-clusters`; proof `proof:batch`; blocked control claims, Monday writes, and provider backfills.

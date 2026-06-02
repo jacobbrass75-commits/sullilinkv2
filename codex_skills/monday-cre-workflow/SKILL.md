@@ -177,6 +177,8 @@ npm run proof:source-audit-real
 
 This defaults to `$HOME/Downloads/retranToReel_codebase 2.zip` and `../external_references`; set `SULLILINK_ZIP` or `SULLILINK_SOURCE_DIR` when those files are stored elsewhere.
 
+The bundled `references/source-reuse-contract.json` is the compact skill contract for old-app pattern reuse. Load it before adapting SullyLink logic when you need exact lane IDs, identity keys, TitlePro serial-worker rules, connector readiness requirements, owner/control promotion limits, or contact enrichment guardrails.
+
 Skill package validation:
 
 ```bash
@@ -238,3 +240,4 @@ Raw paid docs, browser sessions, `.env`, cookies, and bulky evidence folders sta
 
 - Read `references/runbook.md` when executing the workflow end to end.
 - Read `references/sullilink-reuse.md` when importing or adapting logic from SullyLink/retranToReel code.
+- Read `references/source-reuse-contract.json` when validating old-app pattern lanes, proof scripts, blocked actions, identity keys, and promotion rules.

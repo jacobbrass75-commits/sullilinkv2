@@ -27,6 +27,9 @@ test("skill package check validates the Monday CRE skill against repo proofs", (
   assert.equal(report.skill_name, "monday-cre-workflow");
   assert.ok(report.required_references.includes("references/runbook.md"));
   assert.ok(report.required_references.includes("references/sullilink-reuse.md"));
+  assert.ok(report.required_references.includes("references/source-reuse-contract.json"));
+  assert.equal(report.source_reuse_contract.lane_count, 7);
+  assert.ok(report.source_reuse_contract.required_lane_ids.includes("titlepro_serial_worker"));
   assert.ok(report.required_proof_scripts.includes("proof:workflow-map"));
   assert.ok(report.required_proof_scripts.includes("proof:source-audit-real"));
   assert.ok(report.required_proof_scripts.includes("proof:goal-audit"));
@@ -75,6 +78,7 @@ test("skill package bundle is installable from copied skill files", () => {
   assert.ok(bundle.files.some((file) => file.relative_path === "agents/openai.yaml"));
   assert.ok(bundle.files.some((file) => file.relative_path === "references/runbook.md"));
   assert.ok(bundle.files.some((file) => file.relative_path === "references/sullilink-reuse.md"));
+  assert.ok(bundle.files.some((file) => file.relative_path === "references/source-reuse-contract.json"));
   assert.equal(bundle.forbidden_actions.monday_live_writes, 0);
 });
 
@@ -97,6 +101,7 @@ test("skill-pack command writes a verified installable package run", () => {
   assert.match(install, /cp -R/);
   assert.ok(fs.existsSync(path.join(out, "skill_package", "monday-cre-workflow", "SKILL.md")));
   assert.ok(fs.existsSync(path.join(out, "skill_package", "monday-cre-workflow", "agents", "openai.yaml")));
+  assert.ok(fs.existsSync(path.join(out, "skill_package", "monday-cre-workflow", "references", "source-reuse-contract.json")));
 });
 
 test("skill-pack clears stale package files before copying", () => {

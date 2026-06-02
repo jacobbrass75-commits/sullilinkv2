@@ -25,6 +25,7 @@ The workflow should take PropertyRadar daily digest rows or batch CSV exports, d
 10. Keep shareable packet output separate from raw evidence, credentials, cookies, PDFs, and old app dumps.
 11. Convert downloaded Monday workflow exports into a reusable local workflow map so future runs can align tasks/subitems to the actual Monday checklist shape.
 12. Validate and package the skill itself so future Codex runs can prove `SKILL.md`, `agents/openai.yaml`, references, proof scripts, and safety language stayed aligned, then export an installable local skill package.
+13. Bundle a machine-readable `source-reuse-contract.json` in the skill so SullyLink/retranToReel pattern lanes, proof scripts, blocked actions, identity keys, TitlePro serial-worker rules, owner/control promotion limits, and contact guardrails travel with the installed skill.
 
 ## Reused SullyLink / retranToReel Patterns
 
@@ -81,6 +82,7 @@ CRE Brain / SullyLink database
 - `contact-import --contacts` consumes manual contact enrichment pasteback, writes contact assertions, and records zero RocketReach reveals, outreach actions, RealNex writes, or control/beneficial-owner promotions.
 - `status-import --status` consumes saved current-status/provider evidence, writes status assertions, records zero provider lookups/backfills/outreach/external writes, and keeps broker action blocked until day-of-action official recheck.
 - `skill-check --skill-dir --package-json --goal-md` validates the Codex skill package, required references, UI metadata, proof-script alignment, and safety language without executing external actions.
+- The skill package includes `references/source-reuse-contract.json` with required SullyLink pattern lanes, proof scripts, blocked actions, identity keys, TitlePro serial-worker guardrails, owner/control promotion limits, and contact enrichment guardrails.
 - `skill-pack --skill-dir --package-json --goal-md` creates an installable local skill package folder with file hashes and install instructions without executing external actions.
 - `goal-audit --goal-md --package-json --proof-root` maps every acceptance gate in this file to local proof coverage, documented/manual gates, or deferred external gates without claiming completion.
 - `packet-audit --packet-dir` verifies the broker packet has required shareable files, no raw paid docs or local paths/secrets, and owner/control claims with evidence, confidence, and beneficial-owner caveats.

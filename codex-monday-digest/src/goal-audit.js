@@ -42,6 +42,7 @@ const GATE_CATALOG = [
   gate("contact_import", /contact-import/i, ["proof:contact"], "covered_by_local_proof", "Manual contact enrichment pasteback."),
   gate("status_import", /status-import/i, ["proof:status"], "covered_by_local_proof", "Saved current-status/provider evidence import."),
   gate("skill_check", /skill-check/i, ["proof:skill"], "covered_by_local_proof", "Skill package validation."),
+  gate("source_reuse_contract", /source-reuse-contract\.json/i, ["proof:skill"], "covered_by_local_proof", "Bundled machine-readable SullyLink pattern contract validation."),
   gate("skill_pack", /skill-pack/i, ["proof:skill-pack"], "covered_by_local_proof", "Installable skill package export."),
   gate("goal_audit", /goal-audit/i, ["proof:goal-audit"], "covered_by_local_proof", "Repeatable goal completion audit surface."),
   gate("packet_audit", /packet-audit --packet-dir/i, ["proof:packet-audit"], "covered_by_local_proof", "Shareable packet and broker claim audit surface."),

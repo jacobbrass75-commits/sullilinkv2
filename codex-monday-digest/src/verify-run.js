@@ -960,7 +960,8 @@ function verifySkillPackageRun(runFolder) {
   checks.push({ pass: report.skill_name === "monday-cre-workflow", message: "skill package report is for monday-cre-workflow" });
   checks.push({ pass: Array.isArray(reportChecks) && reportChecks.length >= 30 && reportChecks.every(hasSkillPackageCheckFields), message: "skill package checks are structured" });
   checks.push({ pass: reportChecks.every((check) => check.status === "pass"), message: "all skill package checks passed" });
-  checks.push({ pass: Array.isArray(report.required_references) && report.required_references.includes("references/runbook.md") && report.required_references.includes("references/sullilink-reuse.md"), message: "skill package requires runbook and SullyLink references" });
+  checks.push({ pass: Array.isArray(report.required_references) && report.required_references.includes("references/runbook.md") && report.required_references.includes("references/sullilink-reuse.md") && report.required_references.includes("references/source-reuse-contract.json"), message: "skill package requires runbook and SullyLink contract references" });
+  checks.push({ pass: report.source_reuse_contract?.source_path_scope === "basename_only" && report.source_reuse_contract?.lane_count >= 7, message: "skill package records source-reuse contract coverage" });
   checks.push({ pass: Array.isArray(report.required_proof_scripts) && report.required_proof_scripts.includes("proof:skill") === false && report.required_proof_scripts.includes("proof:workflow-map"), message: "skill package proof requirements cover workflow-map without self-dependency" });
   checks.push({ pass: report.skill_source?.source_path_scope === "basename_only" && !String(report.skill_source?.source_path || "").includes("/"), message: "skill source path is basename-only" });
   checks.push({ pass: report.package_source?.source_path_scope === "basename_only" && !String(report.package_source?.source_path || "").includes("/"), message: "package source path is basename-only" });
@@ -994,6 +995,7 @@ function verifySkillBundleRun(runFolder) {
   checks.push({ pass: fs.existsSync(path.join(packageDir, "agents", "openai.yaml")), message: "packaged skill includes agents/openai.yaml" });
   checks.push({ pass: fs.existsSync(path.join(packageDir, "references", "runbook.md")), message: "packaged skill includes runbook reference" });
   checks.push({ pass: fs.existsSync(path.join(packageDir, "references", "sullilink-reuse.md")), message: "packaged skill includes SullyLink reuse reference" });
+  checks.push({ pass: fs.existsSync(path.join(packageDir, "references", "source-reuse-contract.json")), message: "packaged skill includes source-reuse contract reference" });
   checks.push({ pass: bundle.files.every((file) => packagedFileMatchesHash(packageDir, file)), message: "packaged skill files match manifest hashes" });
   checks.push({ pass: packagedFileSetMatchesManifest(packageDir, bundle.files), message: "packaged skill contains only manifest-listed files" });
   checks.push({ pass: install.includes("cp -R") && install.includes("${CODEX_HOME:-$HOME/.codex}/skills"), message: "install guide includes local Codex skill install command" });

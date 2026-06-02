@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "mode": "monday_cre_source_reuse_contract",
+  "contract_scope": "Map old SullyLink/retranToReel patterns into the current Monday-first runner and skill package without copying old source, credentials, cookies, browser sessions, raw paid docs, or broad app code.",
+  "copy_strategy": "copy_pattern_not_source",
+  "required_before_adapting_more_old_code": "Run source-audit against the local SullyLink/retranToReel references, then compare generated source_reuse_contract.json to this bundled contract.",
+  "identity_ledger_keys": [
+    "gmail_message_id",
+    "gmail_thread_id",
+    "radar_id",
+    "normalized_apn",
+    "source_row_indexes",
+    "monday_board_id",
+    "monday_item_id",
+    "titlepro_approval_id",
+    "titlepro_request_id"
+  ],
+  "connector_readiness_contract": {
+    "canonical_gmail_label": "CRE/PropertyRadar Alerts",
+    "full_body_required": true,
+    "snippet_only_allowed": false,
+    "required_gmail_fields": ["message_id", "thread_id", "body"],
+    "required_monday_fields": ["board_id", "item_id", "group_id", "radar_id"],
+    "scheduled_live_read_allowed_without_readiness": false
+  },
+  "titlepro_serial_worker_contract": {
+    "one_confirmed_action_per_execution": true,
+    "idempotency_key_fields": ["titlepro_approval_id", "titlepro_request_id", "radar_id", "normalized_apn", "requested_doc_type"],
+    "duplicate_order_check_required": true,
+    "allowed_statuses": ["queued", "action_time_confirmed_pending_serial_titlepro_pull", "processing", "success", "duplicate_order_reuse", "wrong_property_excluded", "date_mismatch_review", "search_failed", "skipped"],
+    "required_provenance_fields": ["source_url", "titlepro_order_id", "property_address", "apn", "county", "document_type", "recording_number", "recording_date", "capture_date"],
+    "unsupervised_paid_pull_allowed": false
+  },
+  "owner_control_promotion_matrix": [
+    {
+      "role": "title_owner",
+      "control_claim_allowed_without_more_evidence": false,
+      "beneficial_owner_claim_allowed": false,
+      "notes": "Title owner proves title string only; control needs trust/entity/signature/SOS/current-status support."
+    },
+    {
+      "role": "borrower_trustor_or_signer",
+      "control_claim_allowed_without_more_evidence": false,
+      "beneficial_owner_claim_allowed": false,
+      "notes": "Use as control-candidate evidence only when tied to property/APN and current records."
+    },
+    {
+      "role": "manager_member_or_authorized_person",
+      "control_claim_allowed_without_more_evidence": false,
+      "beneficial_owner_claim_allowed": false,
+      "notes": "SOS role can support a likely control lead only with title/current-status/property evidence."
+    },
+    {
+      "role": "registered_agent_lawyer_trustee_lender_title_company",
+      "control_claim_allowed_without_more_evidence": false,
+      "beneficial_owner_claim_allowed": false,
+      "notes": "Treat as service actor unless independent evidence proves control."
+    },
+    {
+      "role": "broker_confirmed_contact",
+      "control_claim_allowed_without_more_evidence": false,
+      "beneficial_owner_claim_allowed": false,
+      "notes": "Contact data alone cannot prove ownership or beneficial control."
+    }
+  ],
+  "contact_enrichment_contract": {
+    "required_fields": ["source_type", "source_url", "source_timestamp", "suppression_status", "broker_approval_status"],
+    "manual_pasteback_only_until_approved": true,
+    "contact_use_allowed_without_broker_approval": false,
+    "outreach_ready_without_suppression_check": false,
+    "beneficial_owner_promotion_from_contact_data_allowed": false
+  },
+  "lanes": [
+    {
+      "pattern_id": "propertyradar_digest_parser",
+      "source_patterns": ["propertyradar-alerts.js", "email_importer.py"],
+      "useful_pattern": "PropertyRadar daily digest HTML/text parsing with source-event preservation.",
+      "implementation_status": "implemented",
+      "current_runner_surface": ["parse", "preview --input", "preview --gmail-json"],
+      "proof_scripts": ["proof:ken", "proof:preview", "proof:gmail-connector"],
+      "allowed_input": "Saved digest text/HTML or saved read-only Gmail connector JSON.",
+      "blocked_actions": ["gmail_mutation", "gmail_send", "monday_live_write", "titlepro_pull"]
+    },
+    {
+      "pattern_id": "apn_dedupe",
+      "source_patterns": ["dedupe_spreadsheet.py", "foreclosure-import.js"],
+      "useful_pattern": "Normalize APNs, skip existing APNs, and report imported/skipped counts.",
+      "implementation_status": "implemented",
+      "current_runner_surface": ["batch-owner-clusters"],
+      "proof_scripts": ["proof:batch"],
+      "allowed_input": "PropertyRadar CSV/XLSX export.",
+      "blocked_actions": ["control_claim_promotion", "monday_live_write", "provider_backfill"]
+    },
+    {
+      "pattern_id": "daily_import_loop",
+      "source_patterns": ["daily_update.py", "sync-propertyradar-alerts.js", "propertyradar-feed.js"],
+      "useful_pattern": "Daily polling/import loop with idempotency and counts.",
+      "implementation_status": "not_started",
+      "current_runner_surface": ["connector-readiness", "preview --gmail-json", "sync --connector-json"],
+      "proof_scripts": ["proof:connector-readiness", "proof:gmail-connector", "proof:monday-connector"],
+      "allowed_input": "Saved read-only Gmail and Monday connector JSON.",
+      "blocked_actions": ["scheduled_live_read_without_readiness", "gmail_mutation", "monday_live_write"]
+    },
+    {
+      "pattern_id": "titlepro_serial_worker",
+      "source_patterns": ["titlepro_worker.py", "titlepro_scraper_worker.py", "titleProSQLite.py", "CODEBASE_GUIDE.md"],
+      "useful_pattern": "One-at-a-time TitlePro worker with queued, processing, success, mismatch, failed, skipped statuses.",
+      "implementation_status": "approval_and_saved_evidence_present",
+      "current_runner_surface": ["titlepro-approve", "titlepro-confirm", "titlepro-import"],
+      "proof_scripts": ["proof:titlepro-approval", "proof:titlepro-confirm", "proof:titlepro-evidence"],
+      "allowed_input": "Approval CSV/JSON, action-time confirmation CSV/JSON, or already-saved TitlePro evidence JSON.",
+      "blocked_actions": ["titlepro_pull", "browser_action", "paid_action", "external_write"]
+    },
+    {
+      "pattern_id": "recording_document_schema",
+      "source_patterns": ["recording_doc_extractor.py", "recDocReader/reader.py"],
+      "useful_pattern": "Recording document fact schema for NOD/NTS/DOT extraction.",
+      "implementation_status": "implemented",
+      "current_runner_surface": ["titlepro-import", "status-import"],
+      "proof_scripts": ["proof:titlepro-evidence", "proof:status"],
+      "allowed_input": "Already-saved document extraction JSON or saved current-status/provider evidence JSON.",
+      "blocked_actions": ["beneficial_owner_claim", "outreach_ready_claim", "provider_backfill"]
+    },
+    {
+      "pattern_id": "owner_entity_clustering",
+      "source_patterns": ["cluster.js", "resolve-llc.js", "portfolio-distress.js", "distress-score.js"],
+      "useful_pattern": "Entity/portfolio grouping and distress scoring as candidate signals.",
+      "implementation_status": "partial_batch_preview",
+      "current_runner_surface": ["batch-owner-clusters", "monday_action_queue.csv"],
+      "proof_scripts": ["proof:batch"],
+      "allowed_input": "PropertyRadar CSV/XLSX batch export.",
+      "blocked_actions": ["control_claim_promotion", "beneficial_owner_claim", "broker_ready_claim"]
+    },
+    {
+      "pattern_id": "contact_enrichment",
+      "source_patterns": ["broker-email-lookup", "llc-manager-finder", "realnex-crm", "realnex.js"],
+      "useful_pattern": "Contact lookup and CRM enrichment tools.",
+      "implementation_status": "not_started",
+      "current_runner_surface": ["contact-import"],
+      "proof_scripts": ["proof:contact"],
+      "allowed_input": "Manual contact enrichment CSV/JSON pasteback.",
+      "blocked_actions": ["rocketreach_reveal", "outreach_send", "realnex_write", "beneficial_owner_claim"]
+    }
+  ],
+  "forbidden_actions": {
+    "monday_live_writes": 0,
+    "gmail_writes_or_sends": 0,
+    "titlepro_pulls": 0,
+    "realnex_writes": 0,
+    "provider_backfills": 0,
+    "control_claim_promotions": 0
+  }
+}

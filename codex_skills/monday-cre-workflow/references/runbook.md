@@ -227,6 +227,8 @@ Required output:
 
 Treat matched files as pattern evidence only. Use `source_reuse_contract.json` to map each old pattern to current runner commands, proof scripts, allowed input, and blocked actions. Exclude old `.env` files, cookies, browser sessions, raw PDFs/images, `.git`, `node_modules`, contact dumps, and old app database material from shareable artifacts. If a source audit detects secret-like text, it may record file and pattern counts only; it must not copy values.
 
+Use the bundled `references/source-reuse-contract.json` as the installed-skill baseline when comparing generated source-audit output or adapting additional old app behavior. It also records the identity ledger keys, connector readiness guardrails, TitlePro serial-worker rules, owner/control promotion matrix, and contact enrichment guardrails.
+
 ## Packet Build
 
 For broker-facing output:
