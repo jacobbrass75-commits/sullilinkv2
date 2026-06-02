@@ -79,6 +79,8 @@ else:
     add_sheet(wb, "TitlePro Confirmed", read_json("titlepro_confirmed_manual_actions.json", []))
     add_sheet(wb, "TitlePro Evidence", read_json("titlepro_evidence_intake.json", []))
     add_sheet(wb, "Role Assertions", read_json("titlepro_role_assertions_preview.json", []))
+    add_sheet(wb, "Current Status", read_json("current_status_intake.json", []))
+    add_sheet(wb, "Status Assertions", read_json("current_status_assertions_preview.json", []))
     add_sheet(wb, "Contact Enrichment", read_json("contact_enrichment_intake.json", []))
     add_sheet(wb, "Contact Assertions", read_json("contact_role_assertions_preview.json", []))
     add_sheet(wb, "Broker Packets", read_json("broker_packets_preview.json", []))

@@ -178,6 +178,24 @@ Required output:
 
 Contact import is not a contact-reveal, outreach, or CRM-sync tool. It must leave `rocketreach_reveals_executed = 0`, `external_lookups_executed = 0`, `realnex_writes_executed = 0`, `outreach_actions_executed = 0`, and keep every contact assertion `contact_use_allowed=false`, `outreach_ready=false`, and `beneficial_owner_claim_allowed=false`.
 
+### Saved Current-Status / Provider Evidence
+
+For trustee/provider/current-status evidence that was gathered manually outside the runner, import pasteback rows:
+
+```bash
+node src/cli.js status-import --run ../outputs/monday_digest_runs/dev --status path/to/current_status.json
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+Required output:
+
+- `current_status_intake.json`
+- `current_status_assertions_preview.json`
+- `current_status_source_profile.json`
+- refreshed `needs_review.json`
+
+Status import is not a provider lookup, provider backfill, outreach, or external-write tool. It must leave `provider_backfills_executed = 0`, `external_lookups_executed = 0`, `outreach_actions_executed = 0`, `external_writes_executed = 0`, and keep every status assertion `current_status_use_allowed=false`, `current_status_urgency_claim_allowed=false`, `broker_action_ready=false`, `outreach_ready=false`, `provider_backfill_allowed=false`, and `day_of_action_recheck_required=true`.
+
 After a confirmed manual action is selected for serial execution, use the TitlePro skill. Save:
 
 - source URL/report/order id

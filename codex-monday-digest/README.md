@@ -80,6 +80,7 @@ codex-monday-digest titlepro-approve --run RUN_FOLDER --approvals APPROVALS.csv|
 codex-monday-digest titlepro-confirm --run RUN_FOLDER --confirmations CONFIRMATIONS.csv|json
 codex-monday-digest titlepro-import --run RUN_FOLDER --evidence TITLEPRO_EVIDENCE.json
 codex-monday-digest contact-import --run RUN_FOLDER --contacts CONTACTS.csv|json
+codex-monday-digest status-import --run RUN_FOLDER --status CURRENT_STATUS.csv|json
 codex-monday-digest source-audit --zip SOURCE.zip --source-dir EXTERNAL_REFERENCE_DIR --goal-md GOAL.md --out RUN_FOLDER
 codex-monday-digest sync --run RUN_FOLDER --mode live_write
 ```
@@ -95,6 +96,8 @@ codex-monday-digest sync --run RUN_FOLDER --mode live_write
 `titlepro-import` reads already-saved TitlePro profile/document extraction JSON and writes `titlepro_evidence_intake.json`, `titlepro_role_assertions_preview.json`, and `titlepro_evidence_source_profile.json`. It does not open TitlePro, order documents, or execute paid pulls; role assertions preserve title owner, borrower/trustor, lender/beneficiary, trustee, signer, and deed-party separation.
 
 `contact-import` reads manual contact enrichment pasteback CSV/JSON, including RocketReach/public/manual rows supplied outside the runner. It writes `contact_enrichment_intake.json`, `contact_role_assertions_preview.json`, and `contact_enrichment_source_profile.json`. It does not search RocketReach, reveal contacts, send outreach, or write RealNex; imported contacts stay `outreach_ready=false` and require broker approval.
+
+`status-import` reads saved current-status/provider evidence CSV/JSON supplied outside the runner. It writes `current_status_intake.json`, `current_status_assertions_preview.json`, and `current_status_source_profile.json`, then appends `needs_review.json`. It does not call trustee/provider sites, backfill providers, send outreach, or write external systems; imported status facts stay blocked until an official day-of-action recheck.
 
 `source-audit` reads a SullyLink/retranToReel source zip and/or ignored extracted reference directory, plus the current goal markdown, and writes a compact reuse plan. It reports which old patterns should be copied conceptually, which paths are excluded as risky, and records zero external actions. It never copies old source files, credentials, cookies, raw paid docs, or dependency trees into the shareable repo.
 
@@ -116,6 +119,7 @@ npm run proof:titlepro-approval
 npm run proof:titlepro-confirm
 npm run proof:titlepro-evidence
 npm run proof:contact
+npm run proof:status
 npm run proof:source-audit
 npm run proof:workflow-map
 npm run proof:edge
@@ -137,6 +141,8 @@ After action-time confirmation is supplied, run `titlepro-confirm` to produce co
 After TitlePro evidence has already been saved or manually extracted, run `titlepro-import` to attach the facts to the run. The generated role assertions keep `beneficial_owner_claim_allowed=false`, `outreach_ready=false`, and exclude service actors such as trustees/lenders from control-lead claims.
 
 After manual RocketReach/public contact enrichment is pasted back, run `contact-import` to attach the contacts to the run. The generated assertions keep `contact_use_allowed=false`, `outreach_ready=false`, `realnex_write_allowed=false`, and `beneficial_owner_claim_allowed=false` until broker approval and suppression checks exist.
+
+After saved current-status/provider evidence is pasted back, run `status-import` to attach it to the run. The generated assertions keep `current_status_use_allowed=false`, `current_status_urgency_claim_allowed=false`, `broker_action_ready=false`, `outreach_ready=false`, and `provider_backfill_allowed=false`; every row carries `day_of_action_recheck_required=true`.
 
 Every digest and batch run writes `monday_action_queue.csv` and a workbook `Monday Action Queue` sheet. This queue is for Monday import/review only: rows keep `monday_write_executed=false`, `external_write_executed=false`, `broker_ready=false`, and `control_claim_allowed=false`.
 

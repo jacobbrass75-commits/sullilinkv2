@@ -15,14 +15,15 @@ The workflow should take PropertyRadar daily digest rows or batch CSV exports, d
 5. Add a preview-only TitlePro approval queue so missing-evidence decisions become Monday-operational without enabling paid pulls.
 6. Keep TitlePro approval intake, action-time confirmation, and saved evidence import as record-only lanes that report zero TitlePro pulls, browser actions, paid actions, and external writes.
 7. Add manual contact enrichment pasteback as a record-only lane for RocketReach/public/manual contacts without outreach or RealNex writes.
-8. Preserve the current safety model:
+8. Add saved current-status/provider evidence import as a record-only lane without provider lookups, provider backfills, outreach, or external writes.
+9. Preserve the current safety model:
    - no Monday live writes by default
    - no Gmail sends
    - no RealNex writes
    - no unsupervised TitlePro paid pulls
    - no owner/control claims from CSV owner strings alone
-9. Keep shareable packet output separate from raw evidence, credentials, cookies, PDFs, and old app dumps.
-10. Convert downloaded Monday workflow exports into a reusable local workflow map so future runs can align tasks/subitems to the actual Monday checklist shape.
+10. Keep shareable packet output separate from raw evidence, credentials, cookies, PDFs, and old app dumps.
+11. Convert downloaded Monday workflow exports into a reusable local workflow map so future runs can align tasks/subitems to the actual Monday checklist shape.
 
 ## Reused SullyLink / retranToReel Patterns
 
@@ -77,6 +78,7 @@ CRE Brain / SullyLink database
 - `titlepro-confirm --confirmations` records action-time confirmation against approved pending requests, refreshes the action queue, and records zero TitlePro/browser/write execution.
 - `titlepro-import --evidence` consumes already-saved TitlePro profile/document extraction JSON, writes role assertions, and records zero paid/browser/write actions.
 - `contact-import --contacts` consumes manual contact enrichment pasteback, writes contact assertions, and records zero RocketReach reveals, outreach actions, RealNex writes, or control/beneficial-owner promotions.
+- `status-import --status` consumes saved current-status/provider evidence, writes status assertions, records zero provider lookups/backfills/outreach/external writes, and keeps broker action blocked until day-of-action official recheck.
 - `source-audit --zip/--source-dir --goal-md` turns SullyLink/retranToReel reference material and the current goal markdown into a compact reuse plan without copying old source, credentials, cookies, dependency trees, or raw paid docs.
 - Shareable packet files have no credentials, cookies, local absolute paths, or paid raw docs.
 - Every broker-facing owner/control claim has evidence and confidence language.
@@ -97,6 +99,7 @@ npm run proof:titlepro-approval
 npm run proof:titlepro-confirm
 npm run proof:titlepro-evidence
 npm run proof:contact
+npm run proof:status
 npm run proof:source-audit
 npm run proof:workflow-map
 npm run app
@@ -114,5 +117,5 @@ http://localhost:8787
 - Re-run `workflow-map` whenever the downloaded Monday workflow exports are refreshed, then compare the new map before changing generated task/subitem defaults.
 - Execute the actual TitlePro browser/order step separately from `titlepro-confirm`, only after a confirmed manual action is selected and explicitly authorized for one request at a time. Approval intake, action-time confirmation, and saved evidence import are present; browser/order execution remains gated.
 - Keep RocketReach/contact enrichment as manual pasteback until a separate approved integration exists; `contact-import` is present but does not reveal, scrape, send, or sync contacts.
-- Add official-provider status checks only after source rights and API shape are confirmed.
+- Add official-provider live status checks only after source rights and API shape are confirmed; saved status/provider evidence import is present through `status-import`.
 - Use `source-audit` before adapting additional SullyLink/retranToReel patterns so broad app code, credentials, and raw artifacts stay out of the Monday-first lane.

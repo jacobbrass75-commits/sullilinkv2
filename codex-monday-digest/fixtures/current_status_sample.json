@@ -1,0 +1,21 @@
+{
+  "as_of": "2026-06-02",
+  "checks": [
+    {
+      "radar_id": "P15F1852",
+      "subject": "Statham Industrial LLC / 2701 STATHAM BLVD, OXNARD",
+      "case_or_file": "Fidelity/ServiceLink trustee sale no. 25-00381-2FNT",
+      "provider": "Fidelity National Title / ServiceLink",
+      "public_status": "Saved status note: trustee-sale evidence still requires day-of-action official recheck before broker use.",
+      "packet_interpretation": "Use as saved status evidence only; do not clear outreach hold.",
+      "confidence": "manual_saved_status",
+      "source_urls": [
+        "https://example.com/status-channel"
+      ],
+      "saved_evidence": [
+        "evidence/status/statham_saved_status.json"
+      ],
+      "next_action": "Recheck official trustee/provider status on day of broker action."
+    }
+  ]
+}

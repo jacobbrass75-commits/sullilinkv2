@@ -16,6 +16,7 @@ const { applyTitleProApprovals, readApprovalFile } = require("./titlepro-approva
 const { applyTitleProActionConfirmations, readTitleProConfirmationFile } = require("./titlepro-action-confirmation");
 const { readTitleProEvidenceFile, matchTitleProEvidenceToLeads, buildTitleProRoleAssertions, buildTitleProNeedsReview } = require("./titlepro-evidence-intake");
 const { readContactEnrichmentFile, matchContactEnrichmentToLeads, buildContactRoleAssertions, buildContactNeedsReview } = require("./contact-enrichment-intake");
+const { readCurrentStatusFile, matchCurrentStatusToLeads, buildCurrentStatusAssertions, buildCurrentStatusNeedsReview } = require("./current-status-intake");
 const { buildSourceReuseAudit, writeSourceAuditRun } = require("./source-reuse-audit");
 const { buildConnectorReadiness, writeConnectorReadinessRun } = require("./connector-readiness");
 const { buildWorkflowMap, writeWorkflowMapRun } = require("./monday-workflow-map");
@@ -60,6 +61,7 @@ function usage() {
     "  codex-monday-digest titlepro-confirm --run RUN_FOLDER --confirmations CONFIRMATIONS.csv|json",
     "  codex-monday-digest titlepro-import --run RUN_FOLDER --evidence TITLEPRO_EVIDENCE.json",
     "  codex-monday-digest contact-import --run RUN_FOLDER --contacts CONTACTS.csv|json",
+    "  codex-monday-digest status-import --run RUN_FOLDER --status STATUS.json|csv",
     "  codex-monday-digest source-audit --zip SOURCE.zip --source-dir EXTERNAL_REFERENCE_DIR --goal-md GOAL.md --out RUN_FOLDER",
     "  codex-monday-digest connector-readiness --gmail-json GMAIL_CONNECTOR_READ.json --monday-json MONDAY_CONNECTOR_READ.json --label LABEL --since WINDOW --out RUN_FOLDER",
     "  codex-monday-digest sync --run RUN_FOLDER --mode live_write"
@@ -564,6 +566,48 @@ function contactImportCommand(args) {
   console.log(`contact_enrichment_records=${matchedRecords.length} contact_assertions=${assertions.length} matched=${sourceProfile.matched_record_count} outreach_actions_executed=0`);
 }
 
+function statusImportCommand(args) {
+  const statusPath = args.status || args["status-file"] || args.status_file || args.statusFile;
+  if (!args.run || !statusPath) {
+    throw new Error("status-import requires --run RUN_FOLDER --status STATUS.json|csv");
+  }
+  const leadsPath = path.join(args.run, "deduped_leads.json");
+  if (!fs.existsSync(leadsPath)) throw new Error("Run has no deduped_leads.json");
+  const leads = JSON.parse(fs.readFileSync(leadsPath, "utf8"));
+  const source = readCurrentStatusFile(statusPath);
+  const matchedRecords = matchCurrentStatusToLeads(source.records, leads);
+  const assertions = buildCurrentStatusAssertions(matchedRecords);
+  const statusNeedsReview = buildCurrentStatusNeedsReview(matchedRecords);
+  const needsReviewPath = path.join(args.run, "needs_review.json");
+  const existingNeedsReview = fs.existsSync(needsReviewPath) ? JSON.parse(fs.readFileSync(needsReviewPath, "utf8")) : [];
+  const sourceProfile = {
+    source_path: source.source_path,
+    source_path_scope: source.source_path_scope,
+    source_sha256: source.source_sha256,
+    source_format: source.source_format,
+    as_of: source.as_of,
+    record_count: source.record_count,
+    matched_record_count: matchedRecords.filter((record) => record.match_status === "matched").length,
+    unmatched_record_count: matchedRecords.filter((record) => record.match_status !== "matched").length,
+    assertion_count: assertions.length,
+    provider_backfills_executed: 0,
+    external_lookups_executed: 0,
+    outreach_actions_executed: 0,
+    external_writes_executed: 0
+  };
+  writeJson(path.join(args.run, "current_status_intake.json"), matchedRecords);
+  writeJson(path.join(args.run, "current_status_assertions_preview.json"), assertions);
+  writeJson(path.join(args.run, "current_status_source_profile.json"), sourceProfile);
+  writeJson(needsReviewPath, [...existingNeedsReview, ...statusNeedsReview]);
+  updateManifestAfterCurrentStatusImport(args.run, [
+    path.join(args.run, "current_status_intake.json"),
+    path.join(args.run, "current_status_assertions_preview.json"),
+    path.join(args.run, "current_status_source_profile.json"),
+    path.join(args.run, "needs_review.json")
+  ]);
+  console.log(`current_status_records=${matchedRecords.length} current_status_assertions=${assertions.length} matched=${sourceProfile.matched_record_count} provider_backfills_executed=0`);
+}
+
 function updateManifestAfterTitleProConfirmation(runFolder, outputPaths) {
   const manifestPath = path.join(runFolder, "run_manifest.json");
   if (!fs.existsSync(manifestPath)) return;
@@ -572,6 +616,18 @@ function updateManifestAfterTitleProConfirmation(runFolder, outputPaths) {
   manifest.last_titlepro_action_confirmation_at = nowIso();
   manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
   manifest.forbidden_actions.titlepro_pulls = manifest.forbidden_actions.titlepro_pulls || 0;
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
+function updateManifestAfterCurrentStatusImport(runFolder, outputPaths) {
+  const manifestPath = path.join(runFolder, "run_manifest.json");
+  if (!fs.existsSync(manifestPath)) return;
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  manifest.output_paths = Array.from(new Set([...(manifest.output_paths || []), ...outputPaths]));
+  manifest.last_current_status_import_at = nowIso();
+  manifest.forbidden_actions = manifest.forbidden_actions || { ...FORBIDDEN_ZERO };
+  manifest.forbidden_actions.provider_backfills = manifest.forbidden_actions.provider_backfills || 0;
+  manifest.forbidden_actions.control_claim_promotions = manifest.forbidden_actions.control_claim_promotions || 0;
   fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
@@ -698,6 +754,9 @@ function main() {
       case "contact-import":
         contactImportCommand(args);
         break;
+      case "status-import":
+        statusImportCommand(args);
+        break;
       case "batch-owner-clusters":
         batchCommand(args);
         break;
@@ -735,6 +794,7 @@ module.exports = {
   titleProConfirmCommand,
   titleProImportCommand,
   contactImportCommand,
+  statusImportCommand,
   batchCommand,
   workflowMapCommand,
   sourceAuditCommand,

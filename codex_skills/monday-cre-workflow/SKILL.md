@@ -20,6 +20,7 @@ This skill coordinates the Monday-first distressed CRE workflow. It does not rep
    - PropertyRadar daily digest text/HTML.
    - PropertyRadar CSV/XLSX batch export.
    - Existing TitlePro/report evidence.
+   - Saved current-status/provider evidence.
    - Human/manual RocketReach or contact enrichment pasteback.
 3. Run local previews before external writes. Default to `local_dry_run`; do not write Monday, send Gmail, sync RealNex, or order TitlePro docs unless the user explicitly approves that exact action.
 4. Preserve role separation in every output: title owner, borrower/trustor, beneficiary/lender, trustee, registered agent, manager/member, signer, likely control lead, and broker-confirmed contact.
@@ -144,6 +145,15 @@ node src/cli.js verify --run ../outputs/monday_digest_runs/dev
 ```
 
 `contact-import` consumes manually supplied contact enrichment rows and writes `contact_enrichment_intake.json`, `contact_role_assertions_preview.json`, and `contact_enrichment_source_profile.json`. It must not search RocketReach, reveal contacts, send outreach, write RealNex, or promote contacts to beneficial-owner/control claims. Imported contacts stay blocked until broker approval and suppression checks exist.
+
+Saved current-status/provider evidence import:
+
+```bash
+node src/cli.js status-import --run ../outputs/monday_digest_runs/dev --status path/to/current_status.json
+node src/cli.js verify --run ../outputs/monday_digest_runs/dev
+```
+
+`status-import` consumes saved current-status/provider evidence and writes `current_status_intake.json`, `current_status_assertions_preview.json`, and `current_status_source_profile.json`. It must not call trustee/provider sites, backfill providers, send outreach, write external systems, or mark broker action ready. Imported status assertions stay blocked with `day_of_action_recheck_required=true`.
 
 SullyLink/retranToReel source bundle audit:
 

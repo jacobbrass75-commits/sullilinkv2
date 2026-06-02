@@ -135,6 +135,9 @@ function verifyDigestRun(runFolder) {
   const contactEnrichmentPath = path.join(runFolder, "contact_enrichment_intake.json");
   const contactAssertionsPath = path.join(runFolder, "contact_role_assertions_preview.json");
   const contactProfilePath = path.join(runFolder, "contact_enrichment_source_profile.json");
+  const currentStatusPath = path.join(runFolder, "current_status_intake.json");
+  const currentStatusAssertionsPath = path.join(runFolder, "current_status_assertions_preview.json");
+  const currentStatusProfilePath = path.join(runFolder, "current_status_source_profile.json");
   const auditEvents = parseJsonl(path.join(runFolder, "audit_events_preview.jsonl"));
 
   checks.push({ pass: Array.isArray(sourceEmails) && sourceEmails.length >= 1, message: "source_emails has at least one source" });
@@ -210,6 +213,26 @@ function verifyDigestRun(runFolder) {
       checks.push({ pass: contactProfile.rocketreach_reveals_executed === 0 && contactProfile.external_lookups_executed === 0 && contactProfile.realnex_writes_executed === 0 && contactProfile.outreach_actions_executed === 0 && contactProfile.external_writes_executed === 0, message: "contact enrichment source profile records zero lookup/outreach/CRM actions" });
       checks.push({ pass: contactProfile.source_path_scope === "basename_only" && !String(contactProfile.source_path || "").includes("/"), message: "contact enrichment source profile stores basename-only source path" });
       checks.push({ pass: contactProfile.record_count === contactRecords.length && contactProfile.role_assertion_count === contactAssertions.length, message: "contact enrichment profile counts match artifacts" });
+    }
+  }
+  if (manifest.last_current_status_import_at || fs.existsSync(currentStatusPath) || fs.existsSync(currentStatusAssertionsPath)) {
+    checks.push({ pass: fs.existsSync(currentStatusPath), message: "current status intake exists after status import" });
+    checks.push({ pass: fs.existsSync(currentStatusAssertionsPath), message: "current status assertions exist after status import" });
+    checks.push({ pass: fs.existsSync(currentStatusProfilePath), message: "current status source profile exists" });
+    if (fs.existsSync(currentStatusPath) && fs.existsSync(currentStatusAssertionsPath) && fs.existsSync(currentStatusProfilePath)) {
+      const currentStatusRecords = readJson(currentStatusPath);
+      const currentStatusAssertions = readJson(currentStatusAssertionsPath);
+      const currentStatusProfile = readJson(currentStatusProfilePath);
+      checks.push({ pass: Array.isArray(currentStatusRecords) && currentStatusRecords.length > 0 && currentStatusRecords.every(hasCurrentStatusIntakeFields), message: "current status intake rows are structured" });
+      checks.push({ pass: currentStatusRecords.every((row) => row.provider_backfill_executed === false && row.external_lookup_executed === false && row.outreach_executed === false && row.external_write_executed === false), message: "current status import executed no provider lookup, outreach, or write actions" });
+      checks.push({ pass: Array.isArray(currentStatusAssertions) && currentStatusAssertions.every(hasCurrentStatusAssertionFields), message: "current status assertions are structured" });
+      checks.push({ pass: currentStatusAssertions.every((row) => row.current_status_use_allowed === false && row.current_status_urgency_claim_allowed === false && row.broker_action_ready === false && row.outreach_ready === false && row.provider_backfill_allowed === false && row.day_of_action_recheck_required === true), message: "current status assertions stay blocked until day-of-action recheck" });
+      checks.push({ pass: currentStatusAssertions.every((row) => currentStatusRecords.some((record) => record.current_status_id === row.current_status_id)), message: "current status assertions match imported status records" });
+      checks.push({ pass: currentStatusProfile.provider_backfills_executed === 0 && currentStatusProfile.external_lookups_executed === 0 && currentStatusProfile.outreach_actions_executed === 0 && currentStatusProfile.external_writes_executed === 0, message: "current status source profile records zero provider/outreach/write actions" });
+      checks.push({ pass: currentStatusProfile.source_path_scope === "basename_only" && !String(currentStatusProfile.source_path || "").includes("/"), message: "current status source profile stores basename-only source path" });
+      checks.push({ pass: currentStatusProfile.record_count === currentStatusRecords.length && currentStatusProfile.assertion_count === currentStatusAssertions.length, message: "current status profile counts match artifacts" });
+      checks.push({ pass: currentStatusProfile.matched_record_count + currentStatusProfile.unmatched_record_count === currentStatusRecords.length, message: "current status profile match counts cover all rows" });
+      checks.push({ pass: noAbsoluteLocalPathsInCurrentStatus(runFolder), message: "current status outputs contain no absolute local paths" });
     }
   }
   checks.push({ pass: approvals.length >= leads.length, message: "approval previews exist for every lead" });
@@ -581,6 +604,72 @@ function hasContactAssertionFields(row) {
     && row.broker_approval_required === true;
 }
 
+function hasCurrentStatusIntakeFields(row) {
+  return [
+    "current_status_id",
+    "source_row_index",
+    "lead_key",
+    "radar_id",
+    "subject",
+    "property_address",
+    "normalized_address_key",
+    "provider",
+    "case_or_file",
+    "public_status",
+    "status_summary",
+    "sale_date",
+    "status_as_of",
+    "packet_interpretation",
+    "confidence",
+    "source_urls",
+    "saved_evidence",
+    "next_action",
+    "notes",
+    "provider_backfill_executed",
+    "external_lookup_executed",
+    "outreach_executed",
+    "external_write_executed",
+    "matched_radar_id",
+    "match_status"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && Array.isArray(row.source_urls)
+    && Array.isArray(row.saved_evidence);
+}
+
+function hasCurrentStatusAssertionFields(row) {
+  return [
+    "current_status_assertion_id",
+    "current_status_id",
+    "lead_key",
+    "radar_id",
+    "match_status",
+    "provider",
+    "case_or_file",
+    "property_address",
+    "public_status",
+    "status_summary",
+    "sale_date",
+    "status_as_of",
+    "confidence",
+    "source_url_count",
+    "saved_evidence_count",
+    "current_status_use_allowed",
+    "current_status_urgency_claim_allowed",
+    "broker_action_ready",
+    "outreach_ready",
+    "provider_backfill_allowed",
+    "day_of_action_recheck_required",
+    "basis",
+    "next_action"
+  ].every((field) => Object.prototype.hasOwnProperty.call(row, field))
+    && row.current_status_use_allowed === false
+    && row.current_status_urgency_claim_allowed === false
+    && row.broker_action_ready === false
+    && row.outreach_ready === false
+    && row.provider_backfill_allowed === false
+    && row.day_of_action_recheck_required === true;
+}
+
 function hasMatchingRecordedTitleProDecision(pullRequest, decisions) {
   return decisions.some((decision) => {
     return decision.approval_recorded === true
@@ -915,6 +1004,18 @@ function hasConnectorReadinessCheckFields(row) {
 
 function noAbsoluteLocalPathsInConnectorReadiness(runFolder) {
   const files = CONNECTOR_READINESS_FILES.filter((file) => file !== "run_manifest.json");
+  return files.every((file) => {
+    const text = fs.readFileSync(path.join(runFolder, file), "utf8");
+    return !hasAbsoluteLocalPath(text);
+  });
+}
+
+function noAbsoluteLocalPathsInCurrentStatus(runFolder) {
+  const files = [
+    "current_status_intake.json",
+    "current_status_assertions_preview.json",
+    "current_status_source_profile.json"
+  ];
   return files.every((file) => {
     const text = fs.readFileSync(path.join(runFolder, file), "utf8");
     return !hasAbsoluteLocalPath(text);
